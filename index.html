@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Explore the World Wide Web</title>
+  <style>
+    :root {
+      --primary: #3b82f6;
+      --secondary: #f3f4f6;
+      --text: #1f2937;
+      --card-bg: #ffffff;
+      --card-hover: #e0e7ff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--secondary); color: var(--text); display: flex; flex-direction: column; align-items: center; padding: 2rem; }
+    h1 { margin-bottom: 1rem; font-size: 2rem; color: var(--primary); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; width: 100%; max-width: 1000px; margin-bottom: 2rem; }
+    .card { background: var(--card-bg); border-radius: 1rem; padding: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; cursor: pointer; transition: background 0.3s, transform 0.2s; }
+    .card:hover { background: var(--card-hover); transform: translateY(-5px); }
+    .card h2 { font-size: 1.25rem; margin-bottom: 0.5rem; }
+    #fact-details { background: var(--card-bg); border-radius: 1rem; padding: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 800px; width: 100%; min-height: 150px; transition: opacity 0.3s; }
+    #fact-details.hidden { opacity: 0; }
+  </style>
+</head>
+<body>
+  <h1>Explore the World Wide Web</h1>
+  <div class="grid">
+    <div class="card" data-key="invention">
+      <h2>Invention</h2>
+      <p>Tim Berners-Lee, 1989</p>
+    </div>
+    <div class="card" data-key="first-site">
+      <h2>First Website</h2>
+      <p>1991 at CERN</p>
+    </div>
+    <div class="card" data-key="growth">
+      <h2>Growth</h2>
+      <p>Over 1.8B sites</p>
+    </div>
+    <div class="card" data-key="https">
+      <h2>HTTPS</h2>
+      <p>Introduced 1994</p>
+    </div>
+    <div class="card" data-key="mobile">
+      <h2>Mobile Web</h2>
+      <p>Smartphone era, 2007</p>
+    </div>
+  </div>
+  <div id="fact-details" class="hidden"></div>
+  <script>
+    const facts = {
+      invention: `<h3>Invention</h3><p>The World Wide Web was invented by Tim Berners-Lee in 1989 while working at CERN. He proposed a system of interlinked hypertext documents to be accessed via the internet.</p>`,
+      "first-site": `<h3>First Website</h3><p>The first website went live on August 6, 1991, hosted by CERN. It explained the basics of the WWW project and how to create web pages.</p>`,
+      growth: `<h3>Growth</h3><p>As of 2025, there are over 1.8 billion websites on the internet, covering every topic imaginable and reflecting rapid global growth.</p>`,
+      https: `<h3>HTTPS</h3><p>HTTPS, the secure version of HTTP, was first introduced in 1994 to enable encrypted communication and secure identification of web servers.</p>`,
+      mobile: `<h3>Mobile Web</h3><p>The mobile web era began around 2007 with the launch of the iPhone, revolutionizing how people access and experience the web.</p>`
+    };
+    const cards = document.querySelectorAll('.card');
+    const details = document.getElementById('fact-details');
+    cards.forEach(card => {
+      card.addEventListener('click', () => {
+        const key = card.dataset.key;
+        details.classList.add('hidden');
+        setTimeout(() => {
+          details.innerHTML = facts[key];
+          details.classList.remove('hidden');
+        }, 200);
+      });
+    });
+  </script>
+</body>
+</html>
+
