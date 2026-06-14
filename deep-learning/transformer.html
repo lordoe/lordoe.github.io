@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transformer — Self-Attention &amp; Architecture</title>
+<script>
+  MathJax = {
+    tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+    options: { skipHtmlTags: ['script','noscript','style','textarea'] }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0e11;
+    --bg2: #16161b;
+    --bg3: #1e1e26;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.13);
+    --text: #e8e6f0;
+    --muted: #7a7890;
+    --accent: #167a5a;
+    --accent-dim: rgba(22,122,90,0.15);
+    --orange: #c96a28;
+    --orange-dim: rgba(201,106,40,0.15);
+    --blue: #2970c4;
+    --blue-dim: rgba(41,112,196,0.15);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem 3rem;
+  }
+
+  header {
+    width: 100%;
+    max-width: 860px;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  h1 {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.05rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+  }
+
+  .subtitle {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .main {
+    width: 100%;
+    max-width: 860px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  /* ── section card ── */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .card h2 {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .card p {
+    font-size: 0.82rem;
+    line-height: 1.65;
+    color: var(--muted);
+  }
+  .card p b { color: var(--text); font-weight: 500; }
+
+  /* ── formula box ── */
+  .formula-box {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    color: var(--text);
+    overflow-x: auto;
+    text-align: center;
+  }
+  .formula-box mjx-container { color: var(--text) !important; }
+  mjx-container { color: var(--text) !important; }
+
+  /* ── dim table ── */
+  .dim-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .dim-chip {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border2);
+    background: var(--bg3);
+    color: var(--text);
+  }
+  .dim-chip span { color: var(--accent); }
+
+  /* ── attention heatmap ── */
+  .heatmap-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: center;
+  }
+
+  .heatmap-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .heatmap-controls label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .heatmap-controls input[type=range] {
+    -webkit-appearance: none;
+    height: 3px;
+    background: var(--border2);
+    border-radius: 2px;
+    width: 160px;
+    cursor: pointer;
+    outline: none;
+  }
+  .heatmap-controls input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+  }
+
+  #temp-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    min-width: 28px;
+  }
+
+  #cell-info {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    min-height: 1rem;
+  }
+  #cell-info span { color: var(--text); }
+
+  canvas#heatmap {
+    border-radius: 8px;
+    cursor: pointer;
+    display: block;
+  }
+
+  /* ── row/col axis labels ── */
+  .heatmap-outer {
+    position: relative;
+  }
+  .axis-label-row {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--muted);
+    text-align: center;
+    width: 100%;
+    margin-top: 4px;
+    letter-spacing: 0.02em;
+  }
+
+  /* ── multi-head diagram ── */
+  .mha-diagram {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 0;
+  }
+
+  .mha-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .mha-node {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    padding: 5px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border2);
+    background: var(--bg3);
+    color: var(--text);
+    text-align: center;
+    white-space: nowrap;
+  }
+  .mha-node.input  { border-color: var(--border2); color: var(--muted); }
+  .mha-node.head   { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+  .mha-node.concat { border-color: var(--blue); color: var(--blue); background: var(--blue-dim); }
+  .mha-node.proj   { border-color: var(--orange); color: var(--orange); background: var(--orange-dim); }
+
+  .mha-arrow {
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .mha-brace {
+    font-size: 1.6rem;
+    color: var(--border2);
+    line-height: 1;
+    align-self: center;
+  }
+
+  /* ── masking SVG section ── */
+  .mask-row {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+  }
+
+  .mask-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .mask-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--muted);
+    text-align: center;
+    max-width: 120px;
+  }
+  .mask-label b { color: var(--text); font-weight: 500; }
+
+  /* ── transformer block diagram ── */
+  .tf-block {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+  }
+
+  .tf-diagram {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+
+  .tf-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+  }
+
+  .tf-box {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    padding: 6px 20px;
+    border-radius: 6px;
+    border: 1px solid;
+    text-align: center;
+    min-width: 150px;
+  }
+  .tf-box.ln  { border-color: var(--blue); color: var(--blue); background: var(--blue-dim); }
+  .tf-box.attn { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+  .tf-box.mlp  { border-color: var(--orange); color: var(--orange); background: var(--orange-dim); }
+  .tf-box.io   { border-color: var(--border2); color: var(--muted); background: var(--bg3); }
+  .tf-box.add  { border-color: var(--border2); color: var(--muted); background: var(--bg3); padding: 4px 10px; min-width: auto; border-radius: 50%; }
+
+  .tf-arrow-v {
+    width: 2px;
+    background: var(--border2);
+    height: 20px;
+    margin: 0 auto;
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  .tf-l-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    letter-spacing: 0.04em;
+    padding: 0 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg3);
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ── comparison table ── */
+  .cmp-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.78rem;
+  }
+  .cmp-table th {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    font-weight: 500;
+    color: var(--muted);
+    text-align: left;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border2);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .cmp-table td {
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: middle;
+  }
+  .cmp-table tr:last-child td { border-bottom: none; }
+  .cmp-table td:first-child {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+  .yes { color: #6bcb77; font-weight: 500; }
+  .no  { color: #ff6b6b; font-weight: 500; }
+  .partial { color: #ffd93d; font-weight: 500; }
+
+  /* ── src note ── */
+  .src-note {
+    font-size: 0.7rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    border-top: 1px solid var(--border);
+    padding-top: 0.75rem;
+    margin-top: 0.25rem;
+  }
+
+  /* ── residual stream SVG ── */
+  .residual-svg { display: block; }
+
+  /* section divider */
+  .section-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 0.1rem 0;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>transformer.arch</h1>
+  <span class="subtitle">// Self-Attention &amp; Transformer Architecture</span>
+</header>
+
+<div class="main">
+
+  <!-- ═══════════════════════════════════════════════════════
+       SECTION 1 — Self-Attention: Intuition
+  ═══════════════════════════════════════════════════════ -->
+  <div class="card">
+    <h2>01 — Self-Attention: Intuition</h2>
+
+    <p>
+      Die Kernidee: der Output <b>y<sub>t</sub></b> eines Tokens wird als gewichtete Summe der
+      <b>Value-Vektoren</b> v<sub>t'</sub> aller anderen Tokens berechnet.
+      Die Gewichte kommen aus der <b>Ähnlichkeit</b> zwischen Tokens.
+    </p>
+
+    <div class="formula-box">
+      \[ \mathbf{y}_t = \sum_{t'} A_{t,t'}\, \mathbf{v}_{t'} \quad \text{mit} \quad \mathbf{v}_t = \mathrm{Linear}(\mathbf{x}_t) \]
+    </div>
+
+    <p>
+      Die <b>Attention-Matrix A</b> kodiert, welche Tokens auf welche anderen "achten".
+      Ein hoher Wert A<sub>t,t'</sub> bedeutet: Token t zieht viel Information aus Token t'.
+      Da A durch Softmax normiert wird, summiert jede Zeile auf 1.
+    </p>
+
+    <div class="formula-box">
+      \[ \sum_{t'} A_{t,t'} = 1 \quad \text{(Softmax-Normierung pro Zeile)} \]
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SECTION 2 — Attention Matrix + Interactive Heatmap
+  ═══════════════════════════════════════════════════════ -->
+  <div class="card">
+    <h2>02 — Attention-Matrix: Definition &amp; Visualisierung</h2>
+
+    <div class="formula-box">
+      \[ A = \mathrm{softmax}_{t'}\!\left(\frac{\mathbf{Q}\mathbf{K}^\top}{\tau}\right), \quad \mathbf{Q} = \mathrm{Linear}(\mathbf{X}),\quad \mathbf{K} = \mathrm{Linear}(\mathbf{X}) \]
+    </div>
+
+    <p>Dimensionen der beteiligten Tensoren:</p>
+
+    <div class="dim-list">
+      <div class="dim-chip"><span>X</span>: (B, T, D) — Batch, Zeit, Features</div>
+      <div class="dim-chip"><span>Q, K</span>: (B, T, d) — projiziert auf Dim. d</div>
+      <div class="dim-chip"><span>A</span>: (B, T, T) — Attention-Gewichte</div>
+      <div class="dim-chip"><span>τ</span>: Temperatur (Skalierung)</div>
+    </div>
+
+    <hr class="section-divider">
+
+    <div class="heatmap-wrap">
+      <div class="heatmap-controls">
+        <label>
+          Temperature &tau;
+          <input type="range" id="temp-slider" min="0.1" max="3.0" step="0.05" value="1.0">
+          <span id="temp-val">1.0</span>
+        </label>
+        <span id="cell-info">// Klick auf Zelle für Details</span>
+      </div>
+
+      <div class="heatmap-outer">
+        <canvas id="heatmap" width="312" height="312"></canvas>
+        <div class="axis-label-row">t' (Keys) →</div>
+      </div>
+
+      <p style="font-size:0.72rem; color: var(--muted); text-align:center; max-width:380px;">
+        Jede Zeile = ein Query-Token (t). Jede Spalte = ein Key-Token (t').
+        <b style="color:var(--text)">Hell</b> = hohe Attention, <b style="color:var(--text)">Dunkel</b> = niedrige Attention.
+        Hohe Temperatur → gleichmäßige Verteilung. Niedrige Temperatur → scharfe Peaks.
+      </p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SECTION 3 — Multi-Head Attention
+  ═══════════════════════════════════════════════════════ -->
+  <div class="card">
+    <h2>03 — Multi-Head Attention</h2>
+
+    <p>
+      Statt einer einzigen Attention-Matrix werden <b>H parallele Heads</b> berechnet.
+      Jeder Head hat eigene Projektionen Q<sup>h</sup>, K<sup>h</sup>, V<sup>h</sup> auf Dimension d/H.
+      Damit kann das Modell gleichzeitig auf <b>verschiedene Aspekte</b> der Sequenz achten.
+    </p>
+
+    <div class="formula-box">
+      \[ \mathbf{y}_t = \sum_h \sum_{t'} A_{t,t'}^{h}\, \mathbf{v}_{t'}^{h}, \quad \text{mit} \quad \mathbf{v}_{t'}^{h} = W_V^h\, \mathbf{x}_{t'} \]
+    </div>
+
+    <div class="mha-diagram">
+      <div class="mha-row">
+        <div class="mha-node input">Input X<br><span style="font-size:0.62rem;color:var(--muted)">(B, T, D)</span></div>
+      </div>
+      <div class="mha-arrow" style="font-size:1rem;margin:4px 0;">↓</div>
+
+      <div class="mha-row" style="gap:0.75rem;">
+        <div class="mha-node head">Head 1<br><span style="font-size:0.62rem">Q¹,K¹,V¹</span></div>
+        <div class="mha-node head">Head 2<br><span style="font-size:0.62rem">Q²,K²,V²</span></div>
+        <div class="mha-node head" style="opacity:0.5">…</div>
+        <div class="mha-node head">Head H<br><span style="font-size:0.62rem">Qᴴ,Kᴴ,Vᴴ</span></div>
+      </div>
+      <div class="mha-arrow" style="font-size:1rem;margin:4px 0;">↓</div>
+
+      <div class="mha-row">
+        <div class="mha-node concat">Concat<br><span style="font-size:0.62rem">alle Head-Outputs</span></div>
+      </div>
+      <div class="mha-arrow" style="font-size:1rem;margin:4px 0;">↓</div>
+
+      <div class="mha-row">
+        <div class="mha-node proj">Linear W_O<br><span style="font-size:0.62rem">Output-Projektion</span></div>
+      </div>
+      <div class="mha-arrow" style="font-size:1rem;margin:4px 0;">↓</div>
+      <div class="mha-row">
+        <div class="mha-node input">Output Y<br><span style="font-size:0.62rem;color:var(--muted)">(B, T, D)</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SECTION 4 — Attention Masking
+  ═══════════════════════════════════════════════════════ -->
+  <div class="card">
+    <h2>04 — Attention Masking</h2>
+
+    <p>
+      Durch Masken in der Attention-Matrix wird gesteuert, welche Token-Paare sich
+      "sehen" dürfen. Die drei häufigsten Muster:
+    </p>
+
+    <div class="mask-row">
+
+      <!-- 1. Causal -->
+      <div class="mask-item">
+        <svg width="110" height="110" viewBox="0 0 110 110">
+          <defs>
+            <pattern id="grid-causal" width="18.33" height="18.33" patternUnits="userSpaceOnUse">
+              <rect width="18.33" height="18.33" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="0.5"/>
+            </pattern>
+          </defs>
+          <!-- background -->
+          <rect x="5" y="5" width="100" height="100" rx="4" fill="#1e1e26" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+          <!-- active cells (lower triangular, 6×6) -->
+          <g fill="rgba(22,122,90,0.75)">
+            <!-- row 0 -->
+            <rect x="5" y="5" width="18" height="18" rx="1"/>
+            <!-- row 1 -->
+            <rect x="5" y="23" width="18" height="18" rx="1"/>
+            <rect x="23" y="23" width="18" height="18" rx="1"/>
+            <!-- row 2 -->
+            <rect x="5" y="41" width="18" height="18" rx="1"/>
+            <rect x="23" y="41" width="18" height="18" rx="1"/>
+            <rect x="41" y="41" width="18" height="18" rx="1"/>
+            <!-- row 3 -->
+            <rect x="5" y="59" width="18" height="18" rx="1"/>
+            <rect x="23" y="59" width="18" height="18" rx="1"/>
+            <rect x="41" y="59" width="18" height="18" rx="1"/>
+            <rect x="59" y="59" width="18" height="18" rx="1"/>
+            <!-- row 4 -->
+            <rect x="5" y="77" width="18" height="18" rx="1"/>
+            <rect x="23" y="77" width="18" height="18" rx="1"/>
+            <rect x="41" y="77" width="18" height="18" rx="1"/>
+            <rect x="59" y="77" width="18" height="18" rx="1"/>
+            <rect x="77" y="77" width="18" height="18" rx="1"/>
+            <!-- row 5 -->
+            <rect x="5" y="95" width="18" height="9" rx="1"/>
+            <rect x="23" y="95" width="18" height="9" rx="1"/>
+            <rect x="41" y="95" width="18" height="9" rx="1"/>
+            <rect x="59" y="95" width="18" height="9" rx="1"/>
+            <rect x="77" y="95" width="18" height="9" rx="1"/>
+            <rect x="95" y="95" width="10" height="9" rx="1"/>
+          </g>
+          <rect x="5" y="5" width="100" height="100" rx="4" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+        </svg>
+        <div class="mask-label"><b>Causal / AR</b><br>A<sub>t,t'</sub>=0 für t'&gt;t<br>untere Dreiecksmatrix</div>
+      </div>
+
+      <!-- 2. Sliding window -->
+      <div class="mask-item">
+        <svg width="110" height="110" viewBox="0 0 110 110">
+          <rect x="5" y="5" width="100" height="100" rx="4" fill="#1e1e26" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+          <!-- sliding window w=2: each token sees itself + 2 on each side (causal: left only) -->
+          <g fill="rgba(22,122,90,0.75)">
+            <!-- row 0: col 0 -->
+            <rect x="5" y="5" width="18" height="18" rx="1"/>
+            <!-- row 1: col 0-1 -->
+            <rect x="5" y="23" width="18" height="18" rx="1"/>
+            <rect x="23" y="23" width="18" height="18" rx="1"/>
+            <!-- row 2: col 0-2 -->
+            <rect x="5" y="41" width="18" height="18" rx="1"/>
+            <rect x="23" y="41" width="18" height="18" rx="1"/>
+            <rect x="41" y="41" width="18" height="18" rx="1"/>
+            <!-- row 3: col 1-3 (window of 3) -->
+            <rect x="23" y="59" width="18" height="18" rx="1"/>
+            <rect x="41" y="59" width="18" height="18" rx="1"/>
+            <rect x="59" y="59" width="18" height="18" rx="1"/>
+            <!-- row 4: col 2-4 -->
+            <rect x="41" y="77" width="18" height="18" rx="1"/>
+            <rect x="59" y="77" width="18" height="18" rx="1"/>
+            <rect x="77" y="77" width="18" height="18" rx="1"/>
+            <!-- row 5: col 3-5 -->
+            <rect x="59" y="95" width="18" height="9" rx="1"/>
+            <rect x="77" y="95" width="18" height="9" rx="1"/>
+            <rect x="95" y="95" width="10" height="9" rx="1"/>
+          </g>
+          <rect x="5" y="5" width="100" height="100" rx="4" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+        </svg>
+        <div class="mask-label"><b>Sliding Window</b><br>nur Fenster der Größe w<br>um jeden Token</div>
+      </div>
+
+      <!-- 3. Chunked -->
+      <div class="mask-item">
+        <svg width="110" height="110" viewBox="0 0 110 110">
+          <rect x="5" y="5" width="100" height="100" rx="4" fill="#1e1e26" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+          <!-- chunk 1: tokens 0-2 (rows/cols 0-2) -->
+          <g fill="rgba(22,122,90,0.75)">
+            <rect x="5" y="5" width="18" height="18" rx="1"/>
+            <rect x="23" y="5" width="18" height="18" rx="1"/>
+            <rect x="41" y="5" width="18" height="18" rx="1"/>
+            <rect x="5" y="23" width="18" height="18" rx="1"/>
+            <rect x="23" y="23" width="18" height="18" rx="1"/>
+            <rect x="41" y="23" width="18" height="18" rx="1"/>
+            <rect x="5" y="41" width="18" height="18" rx="1"/>
+            <rect x="23" y="41" width="18" height="18" rx="1"/>
+            <rect x="41" y="41" width="18" height="18" rx="1"/>
+          </g>
+          <!-- chunk 2: tokens 3-5 -->
+          <g fill="rgba(22,122,90,0.75)">
+            <rect x="59" y="59" width="18" height="18" rx="1"/>
+            <rect x="77" y="59" width="18" height="18" rx="1"/>
+            <rect x="95" y="59" width="10" height="18" rx="1"/>
+            <rect x="59" y="77" width="18" height="18" rx="1"/>
+            <rect x="77" y="77" width="18" height="18" rx="1"/>
+            <rect x="95" y="77" width="10" height="18" rx="1"/>
+            <rect x="59" y="95" width="18" height="9" rx="1"/>
+            <rect x="77" y="95" width="18" height="9" rx="1"/>
+            <rect x="95" y="95" width="10" height="9" rx="1"/>
+          </g>
+          <!-- cross-chunk (sparse, diagonal) -->
+          <g fill="rgba(22,122,90,0.35)">
+            <rect x="5" y="59" width="18" height="18" rx="1"/>
+            <rect x="23" y="77" width="18" height="18" rx="1"/>
+            <rect x="41" y="95" width="18" height="9" rx="1"/>
+          </g>
+          <rect x="5" y="5" width="100" height="100" rx="4" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+          <!-- chunk divider lines -->
+          <line x1="5" y1="59" x2="105" y2="59" stroke="rgba(255,255,255,0.15)" stroke-width="1" stroke-dasharray="3,2"/>
+          <line x1="59" y1="5" x2="59" y2="105" stroke="rgba(255,255,255,0.15)" stroke-width="1" stroke-dasharray="3,2"/>
+        </svg>
+        <div class="mask-label"><b>Chunked</b><br>vollständig innerhalb<br>jedes Chunks + schwache<br>Cross-Chunk-Attention</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SECTION 5 — Transformer Backbone
+  ═══════════════════════════════════════════════════════ -->
+  <div class="card">
+    <h2>05 — Transformer-Block (×L Schichten)</h2>
+
+    <p>
+      Jeder der L identisch aufgebauten Blöcke enthält zwei Teilmodule —
+      jeweils mit <b>LayerNorm</b> davor und einem <b>Skip-Connection</b> danach.
+    </p>
+
+    <div class="tf-block">
+
+      <div class="tf-diagram">
+
+        <!-- Output y -->
+        <div class="tf-box io" style="margin-bottom:0;">Output y</div>
+        <div style="width:2px;height:18px;background:var(--border2);margin:0 auto;"></div>
+
+        <!-- Add (skip 2) -->
+        <div style="display:flex;align-items:center;gap:0;">
+          <div style="width:60px;height:2px;background:var(--border2);"></div>
+          <div class="tf-box add">+</div>
+          <div style="width:60px;height:2px;background:var(--border2);"></div>
+        </div>
+        <div style="width:2px;height:12px;background:var(--border2);margin:0 auto;"></div>
+
+        <!-- MLP -->
+        <div class="tf-box mlp">MLP (Feed-Forward)</div>
+        <div style="width:2px;height:12px;background:var(--border2);margin:0 auto;"></div>
+
+        <!-- LN 2 -->
+        <div class="tf-box ln">LayerNorm</div>
+        <div style="width:2px;height:18px;background:var(--border2);margin:0 auto;"></div>
+
+        <!-- Add (skip 1) -->
+        <div style="display:flex;align-items:center;gap:0;">
+          <div style="width:60px;height:2px;background:var(--border2);"></div>
+          <div class="tf-box add">+</div>
+          <div style="width:60px;height:2px;background:var(--border2);"></div>
+        </div>
+        <div style="width:2px;height:12px;background:var(--border2);margin:0 auto;"></div>
+
+        <!-- Multi-Head Attention -->
+        <div class="tf-box attn">Multi-Head Attention</div>
+        <div style="width:2px;height:12px;background:var(--border2);margin:0 auto;"></div>
+
+        <!-- LN 1 -->
+        <div class="tf-box ln">LayerNorm</div>
+        <div style="width:2px;height:18px;background:var(--border2);margin:0 auto;"></div>
+
+        <!-- Input x -->
+        <div class="tf-box io">Input x</div>
+      </div>
+
+      <!-- ×L label -->
+      <div class="tf-l-label" style="height:320px;">× L Schichten</div>
+
+    </div>
+
+    <p>
+      <b>Skip-Connections</b> ermöglichen einen stabilen Gradientenfluss über viele Schichten.
+      <b>LayerNorm</b> normalisiert die Aktivierungen vor jedem Teilmodul.
+    </p>
+
+    <div class="dim-list">
+      <div class="dim-chip"><span style="color:var(--blue)">LayerNorm</span>: normalisiert über D</div>
+      <div class="dim-chip"><span style="color:var(--accent)">Attention</span>: Kontext-Aggregation</div>
+      <div class="dim-chip"><span style="color:var(--orange)">MLP</span>: nicht-lineare Transformation</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SECTION 6 — Positional Encoding
+  ═══════════════════════════════════════════════════════ -->
+  <div class="card">
+    <h2>06 — Positional Encoding</h2>
+
+    <p>
+      Transformers haben <b>keine inhärente Reihenfolge</b>: die Self-Attention ist
+      permutationsinvariant — ohne Positionsinfo behandelt das Modell die Sequenz
+      als ungeordnete Menge (Bag of Tokens).
+    </p>
+
+    <div class="formula-box">
+      \[ \mathbf{x}_t \;\leftarrow\; \mathbf{x}_t + \mathbf{p}(t) \]
+    </div>
+
+    <p>
+      Der Positionsvektor \(\mathbf{p}(t)\) wird zum Token-Embedding addiert und kodiert die
+      Position t im Kontext. Zwei Varianten:
+    </p>
+
+    <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+      <div style="flex:1;min-width:200px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:0.75rem;display:flex;flex-direction:column;gap:0.4rem;">
+        <div style="font-family:'DM Mono',monospace;font-size:0.7rem;font-weight:500;color:var(--accent);">SINUSOIDAL (FIXED)</div>
+        <div class="formula-box" style="padding:0.3rem 0.75rem;">
+          \[ p(t)_{2i} = \sin\!\left(\tfrac{t}{10000^{2i/D}}\right) \]
+        </div>
+        <p style="font-size:0.75rem;">Deterministisch, keine gelernten Parameter, generalisiert auf ungesehene Positionen.</p>
+      </div>
+      <div style="flex:1;min-width:200px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:0.75rem;display:flex;flex-direction:column;gap:0.4rem;">
+        <div style="font-family:'DM Mono',monospace;font-size:0.7rem;font-weight:500;color:var(--orange);">LEARNED (TRAINABLE)</div>
+        <div class="formula-box" style="padding:0.3rem 0.75rem;">
+          \[ \mathbf{p}(t) = \mathbf{E}_{\mathrm{pos}}[t] \]
+        </div>
+        <p style="font-size:0.75rem;">Einbettungsmatrix \(\mathbf{E}_{\mathrm{pos}} \in \mathbb{R}^{T_{\max} \times D}\) wird trainiert (z.B. GPT-2).</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SECTION 7 — Comparison Table
+  ═══════════════════════════════════════════════════════ -->
+  <div class="card">
+    <h2>07 — Vergleich: Conv1D vs. RNN vs. Transformer</h2>
+
+    <table class="cmp-table">
+      <thead>
+        <tr>
+          <th>Eigenschaft</th>
+          <th>Conv1D</th>
+          <th>RNN</th>
+          <th>Transformer</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Rezeptives Feld</td>
+          <td class="partial">endlich (Fenstergröße)</td>
+          <td class="yes">global (theoretisch)</td>
+          <td class="yes">global (abhängig v. Maske)</td>
+        </tr>
+        <tr>
+          <td>Parallelisierbar</td>
+          <td class="yes">ja</td>
+          <td class="no">nein (sequenziell)</td>
+          <td class="yes">ja</td>
+        </tr>
+        <tr>
+          <td>Nicht-linear</td>
+          <td class="no">nein</td>
+          <td class="yes">ja</td>
+          <td class="yes">ja (über MLP)</td>
+        </tr>
+        <tr>
+          <td>Positional Encoding nötig</td>
+          <td class="no">nein</td>
+          <td class="no">nein</td>
+          <td class="yes">ja</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>
+      Transformers vereinen globales Rezeptives Feld und volle Parallelisierbarkeit —
+      auf Kosten von quadratischem Aufwand O(T²) in der Sequence-Länge.
+    </p>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SECTION 8 — Cross-Attention
+  ═══════════════════════════════════════════════════════ -->
+  <div class="card">
+    <h2>08 — Cross-Attention (Encoder–Decoder)</h2>
+
+    <p>
+      Bei Aufgaben mit verschiedenen Input- und Output-Sequenzen (Übersetzung, Transkription)
+      liefert die <b>Eingabesequenz X</b> die Queries, und die <b>Zielsequenz Y</b>
+      liefert Keys und Values:
+    </p>
+
+    <div class="formula-box">
+      \[ \mathbf{Z}_{t'} = \sum_{t} A_{t,t'}\, \mathbf{v}_t, \quad \mathbf{Q} = \mathrm{Linear}(\mathbf{X}),\quad \mathbf{K} = \mathrm{Linear}(\mathbf{Y}),\quad \mathbf{V} = \mathrm{Linear}(\mathbf{Y}) \]
+    </div>
+
+    <div class="mha-diagram">
+      <div class="mha-row" style="gap:1.5rem;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:0.4rem;">
+          <div class="mha-node input">Input X</div>
+          <div class="mha-arrow">↓</div>
+          <div class="mha-node head" style="min-width:80px;">Q</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:0.4rem;">
+          <div class="mha-node input">Target Y</div>
+          <div class="mha-arrow">↓</div>
+          <div style="display:flex;gap:0.4rem;">
+            <div class="mha-node proj" style="min-width:50px;">K</div>
+            <div class="mha-node proj" style="min-width:50px;">V</div>
+          </div>
+        </div>
+      </div>
+      <div class="mha-arrow" style="font-size:1rem;margin:4px 0;">↓</div>
+      <div class="mha-row">
+        <div class="mha-node concat">Cross-Attention A = softmax(QKᵀ/√d)</div>
+      </div>
+      <div class="mha-arrow" style="font-size:1rem;margin:4px 0;">↓</div>
+      <div class="mha-row">
+        <div class="mha-node input">Output Z (aligned)</div>
+      </div>
+    </div>
+
+    <p>
+      Cross-Attention ist das zentrale Bindeglied in Encoder–Decoder-Architekturen
+      (z.B. original Transformer für Maschinelle Übersetzung, Whisper für Sprache).
+    </p>
+
+    <hr class="section-divider">
+    <p class="src-note">// Quelle: Foliensatz 08 — RNN &amp; Transformers (ML SS2026)</p>
+  </div>
+
+</div><!-- .main -->
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// Interactive Attention Heatmap
+// ═══════════════════════════════════════════════════════════════
+
+(function() {
+  const N = 6;
+  const canvas = document.getElementById('heatmap');
+  const ctx = canvas.getContext('2d');
+  const slider = document.getElementById('temp-slider');
+  const tempVal = document.getElementById('temp-val');
+  const cellInfo = document.getElementById('cell-info');
+
+  // Canvas size — leave 1px gap between cells
+  const CELL = 50;
+  const GAP = 2;
+  const TOTAL = N * CELL + (N - 1) * GAP;
+  canvas.width = TOTAL;
+  canvas.height = TOTAL;
+
+  // ── Raw logits: diagonal + structured pattern ──────────────
+  // Simulate QK^T — stronger diagonal + some off-diagonal attention
+  const logits = [];
+  for (let i = 0; i < N; i++) {
+    logits.push([]);
+    for (let j = 0; j < N; j++) {
+      let v = -1.5;
+      if (i === j) v = 3.5;                       // diagonal: self-attention
+      else if (Math.abs(i - j) === 1) v = 1.8;    // adjacent
+      else if (i === 2 && j === 5) v = 2.2;        // token 2 attends to 5
+      else if (i === 4 && j === 1) v = 1.4;        // token 4 attends to 1
+      else if (i === 0 && j === 3) v = 0.5;
+      else v = (Math.sin(i * 1.3 + j * 0.7) * 0.8 - 0.5);
+      logits[i].push(v);
+    }
+  }
+
+  function softmax(row) {
+    const max = Math.max(...row);
+    const exps = row.map(v => Math.exp(v - max));
+    const sum = exps.reduce((a, b) => a + b, 0);
+    return exps.map(v => v / sum);
+  }
+
+  function computeAttention(tau) {
+    return logits.map(row => softmax(row.map(v => v / tau)));
+  }
+
+  function lerp(a, b, t) { return a + (b - a) * t; }
+
+  // Color: dark (#1e1e26) → accent green (#167a5a) → bright (#e8e6f0)
+  function attentionColor(w) {
+    if (w < 0.5) {
+      const t = w * 2;
+      const r = Math.round(lerp(0x1e, 0x16, t));
+      const g = Math.round(lerp(0x1e, 0x7a, t));
+      const b = Math.round(lerp(0x26, 0x5a, t));
+      return `rgb(${r},${g},${b})`;
+    } else {
+      const t = (w - 0.5) * 2;
+      const r = Math.round(lerp(0x16, 0xe8, t));
+      const g = Math.round(lerp(0x7a, 0xe6, t));
+      const b = Math.round(lerp(0x5a, 0xf0, t));
+      return `rgb(${r},${g},${b})`;
+    }
+  }
+
+  let A = computeAttention(1.0);
+  let highlighted = null;
+
+  function cellPos(i) { return i * (CELL + GAP); }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    for (let i = 0; i < N; i++) {
+      for (let j = 0; j < N; j++) {
+        const x = cellPos(j);
+        const y = cellPos(i);
+        const w = A[i][j];
+        ctx.fillStyle = attentionColor(w);
+        ctx.beginPath();
+        ctx.roundRect(x, y, CELL, CELL, 4);
+        ctx.fill();
+
+        // weight text
+        ctx.fillStyle = w > 0.45 ? 'rgba(0,0,0,0.7)' : 'rgba(232,230,240,0.55)';
+        ctx.font = '600 11px DM Mono, monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(w.toFixed(2), x + CELL / 2, y + CELL / 2);
+      }
+    }
+
+    // highlight
+    if (highlighted) {
+      const { i, j } = highlighted;
+      ctx.strokeStyle = 'rgba(232,230,240,0.9)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(cellPos(j) + 1, cellPos(i) + 1, CELL - 2, CELL - 2, 4);
+      ctx.stroke();
+    }
+
+    // row/col index labels
+    ctx.font = '500 10px DM Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = 'rgba(122,120,144,0.6)';
+  }
+
+  function update() {
+    const tau = parseFloat(slider.value);
+    tempVal.textContent = tau.toFixed(2);
+    A = computeAttention(tau);
+    draw();
+  }
+
+  // ── Interaction ────────────────────────────────────────────
+  function getCellFromEvent(e) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const px = (e.clientX - rect.left) * scaleX;
+    const py = (e.clientY - rect.top) * scaleY;
+    const j = Math.floor(px / (CELL + GAP));
+    const i = Math.floor(py / (CELL + GAP));
+    // check not in gap
+    const xInCell = px - j * (CELL + GAP);
+    const yInCell = py - i * (CELL + GAP);
+    if (i >= 0 && i < N && j >= 0 && j < N && xInCell < CELL && yInCell < CELL) {
+      return { i, j };
+    }
+    return null;
+  }
+
+  canvas.addEventListener('click', function(e) {
+    const cell = getCellFromEvent(e);
+    if (cell) {
+      highlighted = cell;
+      const w = A[cell.i][cell.j];
+      cellInfo.innerHTML = `A[${cell.i},${cell.j}] = <span>${w.toFixed(4)}</span> — Token ${cell.i} → Token ${cell.j}`;
+    } else {
+      highlighted = null;
+      cellInfo.innerHTML = '// Klick auf Zelle für Details';
+    }
+    draw();
+  });
+
+  canvas.addEventListener('mousemove', function(e) {
+    const cell = getCellFromEvent(e);
+    canvas.style.cursor = cell ? 'crosshair' : 'default';
+  });
+
+  slider.addEventListener('input', update);
+
+  // Initial draw
+  update();
+
+  // Handle canvas size for DPR (retina)
+  const dpr = window.devicePixelRatio || 1;
+  if (dpr > 1) {
+    const logicalSize = TOTAL;
+    canvas.style.width = logicalSize + 'px';
+    canvas.style.height = logicalSize + 'px';
+    canvas.width = logicalSize * dpr;
+    canvas.height = logicalSize * dpr;
+    ctx.scale(dpr, dpr);
+    update();
+  }
+
+})();
+</script>
+
+</body>
+</html>

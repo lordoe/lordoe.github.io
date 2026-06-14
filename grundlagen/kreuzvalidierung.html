@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kreuzvalidierung</title>
+<script>
+  MathJax = {
+    tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+    options: { skipHtmlTags: ['script','noscript','style','textarea'] }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #0f0f11;
+    --surface:  #17171a;
+    --surface2: #1e1e22;
+    --border:   rgba(255,255,255,0.07);
+    --border2:  rgba(255,255,255,0.13);
+    --text:     #e8e6e0;
+    --muted:    #6a6866;
+    --accent:   #4ecdc4;
+    --mono:     'DM Mono', monospace;
+    --sans:     'DM Sans', sans-serif;
+    --train:    #4ecdc4;
+    --val:      #e05a5a;
+    --test:     #c96a28;
+    --inactive: #2a2a2f;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 40px 24px 80px;
+    max-width: 860px;
+    margin: 0 auto;
+  }
+
+  mjx-container { color: var(--text) !important; }
+
+  header { margin-bottom: 40px; }
+  header .tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  header h1 {
+    font-size: clamp(22px, 3.5vw, 32px);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 10px;
+  }
+  header p { color: var(--muted); font-size: 14px; max-width: 600px; line-height: 1.7; }
+
+  .section-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  section { margin-bottom: 44px; }
+
+  .demo-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 24px;
+  }
+
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .slider-label {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .slider-label span {
+    color: var(--accent);
+    font-size: 15px;
+  }
+  input[type=range] {
+    -webkit-appearance: none;
+    appearance: none;
+    flex: 1;
+    min-width: 120px;
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 2px;
+    outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+  }
+
+  .mode-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .mode-tab {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border2);
+    background: none;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .mode-tab:hover { color: var(--text); }
+  .mode-tab.active { background: var(--surface2); color: var(--accent); border-color: var(--accent); }
+
+  .fold-grid {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    align-items: stretch;
+    min-height: 44px;
+  }
+  .fold-block {
+    flex: 1;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    transition: background 0.22s, color 0.22s, transform 0.22s;
+    padding: 6px 2px;
+    cursor: default;
+    user-select: none;
+  }
+  .fold-block.train {
+    background: rgba(78,205,196,0.15);
+    color: var(--train);
+    border: 1px solid rgba(78,205,196,0.25);
+  }
+  .fold-block.val {
+    background: rgba(224,90,90,0.22);
+    color: var(--val);
+    border: 1px solid rgba(224,90,90,0.4);
+    transform: scaleY(1.08);
+  }
+  .fold-block.test-held {
+    background: rgba(201,106,40,0.18);
+    color: var(--test);
+    border: 1px solid rgba(201,106,40,0.35);
+  }
+  .fold-block.inactive {
+    background: var(--inactive);
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+
+  .fold-label-row {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+  }
+  .fold-label {
+    flex: 1;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  .iteration-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 20px;
+  }
+  .iter-row {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+  .iter-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    width: 52px;
+    flex-shrink: 0;
+    text-align: right;
+    padding-right: 8px;
+  }
+  .iter-block {
+    flex: 1;
+    height: 20px;
+    border-radius: 4px;
+    background: rgba(78,205,196,0.12);
+    border: 1px solid rgba(78,205,196,0.18);
+    transition: background 0.18s;
+  }
+  .iter-block.val {
+    background: rgba(224,90,90,0.22);
+    border: 1px solid rgba(224,90,90,0.35);
+  }
+  .iter-block.test-held {
+    background: rgba(201,106,40,0.18);
+    border: 1px solid rgba(201,106,40,0.3);
+  }
+  .iter-score {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    width: 48px;
+    flex-shrink: 0;
+    padding-left: 8px;
+  }
+  .iter-score.active { color: var(--val); }
+
+  .stats-row {
+    display: flex;
+    gap: 24px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .stat {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .stat span { color: var(--text); }
+  .stat .label { font-size: 10px; display: block; margin-bottom: 2px; }
+
+  .legend {
+    display: flex;
+    gap: 20px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .legend-dot {
+    width: 12px; height: 12px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .card .card-head {
+    font-family: var(--mono);
+    font-size: 11px;
+    margin-bottom: 8px;
+  }
+  .card p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .card strong { color: var(--text); }
+
+  .formula-block {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 18px 22px;
+    line-height: 2.2;
+    margin: 12px 0;
+  }
+  .formula-block .fl {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    margin-bottom: 6px;
+    display: block;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .warn-box {
+    background: rgba(224,90,90,0.08);
+    border: 1px solid rgba(224,90,90,0.22);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.65;
+  }
+  .warn-box strong { color: #e05a5a; }
+
+  .src-note {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 60px;
+    opacity: 0.5;
+  }
+
+  .split-diagram {
+    display: flex;
+    gap: 3px;
+    height: 36px;
+    margin: 16px 0 8px;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .split-seg {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 500;
+    transition: flex 0.3s;
+  }
+
+  .k-bias-vis {
+    margin-top: 16px;
+  }
+  .k-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .k-row .k-val { color: var(--accent); width: 48px; flex-shrink: 0; }
+  .k-row .k-bar-wrap { flex: 1; display: flex; gap: 6px; }
+  .k-bar {
+    height: 10px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .k-row .k-desc { color: var(--muted); font-size: 11px; min-width: 120px; }
+
+  .anim-btn {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 6px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--accent);
+    cursor: pointer;
+    transition: all 0.12s;
+    margin-bottom: 20px;
+  }
+  .anim-btn:hover { border-color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="tag">// grundlagen</div>
+  <h1>Kreuzvalidierung</h1>
+  <p>Um zu wissen, wie gut ein Modell auf unbekannten Daten funktioniert, braucht man ein systematisches Evaluationsverfahren. Cross-Validation löst das Problem des unstabilen Train/Test-Splits.</p>
+</header>
+
+<!-- WARUM DREI MENGEN -->
+<section>
+  <div class="section-title">Das Evaluationsproblem — warum drei Mengen?</div>
+  <p style="font-size:14px; color:var(--muted); line-height:1.7; margin-bottom:20px;">
+    Wirklich unbekannte Daten haben keine Labels. Die Lösung: Einen Teil der gelabelten Daten vom Training ausschließen und damit den Einsatz auf unbekannten Daten <em>simulieren</em> (Holdout-Methode).
+    Sobald man jedoch die Hyperparameter (z.&nbsp;B. Polynomgrad, k bei k-NN) ebenfalls anhand der Testmenge optimiert, verliert sie ihre Unabhängigkeit — daher braucht man eine dritte Menge.
+  </p>
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-head" style="color:var(--train)">Training Set</div>
+      <p>Das Modell wird auf diesen Daten trainiert. Typisch: <strong>60–70 %</strong> der Gesamtdaten.</p>
+    </div>
+    <div class="card">
+      <div class="card-head" style="color:#a78bfa">Validation Set</div>
+      <p>Zum Tuning von Hyperparametern. <strong>10–20 %</strong>. Wird während der Modellauswahl genutzt.</p>
+    </div>
+    <div class="card">
+      <div class="card-head" style="color:var(--test)">Test Set</div>
+      <p>Einmalig am Ende — liefert eine <strong>unverzerrte</strong> Schätzung der Generalisierungsfähigkeit.</p>
+    </div>
+  </div>
+  <div class="split-diagram">
+    <div class="split-seg" style="flex:65; background:rgba(78,205,196,0.18); color:var(--train); border:1px solid rgba(78,205,196,0.3);">Training ~65 %</div>
+    <div class="split-seg" style="flex:15; background:rgba(167,139,250,0.18); color:#a78bfa; border:1px solid rgba(167,139,250,0.3);">Val ~15 %</div>
+    <div class="split-seg" style="flex:20; background:rgba(201,106,40,0.18); color:var(--test); border:1px solid rgba(201,106,40,0.3);">Test ~20 %</div>
+  </div>
+  <p style="font-size:12px; color:var(--muted); margin-top:6px;">
+    Typische Aufteilung: 80/20 oder 66/33 für Training/Test. Ergebnisse variieren stark je nach Wie der Split gemacht wird.
+  </p>
+</section>
+
+<!-- K-FOLD INTERAKTIV -->
+<section>
+  <div class="section-title">Interaktive Demo — k-fold Cross-Validation</div>
+  <div class="demo-wrap">
+
+    <div class="mode-tabs">
+      <button class="mode-tab active" id="tab-kfold" onclick="setMode('kfold')">k-fold CV</button>
+      <button class="mode-tab" id="tab-loo" onclick="setMode('loo')">Leave-One-Out (LOO)</button>
+    </div>
+
+    <div id="loo-hint" style="display:none; font-family:var(--mono); font-size:12px; color:var(--muted); margin-bottom:16px; padding:10px 14px; background:var(--surface2); border-radius:8px; border:1px solid var(--border2);">
+      LOO-CV ist ein Spezialfall mit <span style="color:var(--accent);">k = n</span> (Anzahl Datenpunkte). Jeder Datenpunkt ist genau einmal Validation-Beispiel. Setze n = Anzahl Datenpunkte unten.
+    </div>
+
+    <div class="slider-row" id="k-slider-row">
+      <div class="slider-label">k = <span id="k-val-label">5</span></div>
+      <input type="range" id="k-slider" min="2" max="10" value="5">
+      <div class="slider-label" style="white-space:nowrap;">Fold-Größe: <span id="fold-size-label" style="color:var(--muted);">n/k</span></div>
+    </div>
+
+    <div class="slider-row" id="n-slider-row">
+      <div class="slider-label">n = <span id="n-val-label">20</span> Datenpunkte</div>
+      <input type="range" id="n-slider" min="6" max="30" value="20">
+    </div>
+
+    <div id="iter-label-txt" style="font-family:var(--mono); font-size:11px; color:var(--muted); margin-bottom:10px;"></div>
+
+    <button class="anim-btn" id="anim-btn" onclick="toggleAnim()">▶ Rotation abspielen</button>
+
+    <div class="fold-grid" id="fold-grid"></div>
+    <div class="fold-label-row" id="fold-labels"></div>
+
+    <div class="iteration-list" id="iter-list"></div>
+
+    <div class="stats-row">
+      <div class="stat">
+        <span class="label">Aktueller Fold (Validation)</span>
+        <span id="stat-val-fold">—</span>
+      </div>
+      <div class="stat">
+        <span class="label">Ø Score (simuliert)</span>
+        <span id="stat-mean">—</span>
+      </div>
+      <div class="stat">
+        <span class="label">Std-Abweichung</span>
+        <span id="stat-std">—</span>
+      </div>
+      <div class="stat">
+        <span class="label">Gesamt-Iterationen</span>
+        <span id="stat-iters">—</span>
+      </div>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(78,205,196,0.3);border:1px solid rgba(78,205,196,0.5)"></div>Training</div>
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(224,90,90,0.3);border:1px solid rgba(224,90,90,0.5)"></div>Validation (aktuell)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(201,106,40,0.25);border:1px solid rgba(201,106,40,0.4)"></div>Test-Hold-Out</div>
+    </div>
+  </div>
+</section>
+
+<!-- FORMEL -->
+<section>
+  <div class="section-title">Formeln — aus der Vorlesung</div>
+
+  <div class="formula-block">
+    <span class="fl">k-fold CV — Gesamtschätzung (Mittelwert)</span>
+    \[ E = \frac{1}{k} \sum_{i=1}^{k} E_i \]
+    <p style="font-size:12px; color:var(--muted); margin-top:8px;">\(E_i\) = Performance auf dem \(i\)-ten Validation-Fold; \(k\) = Anzahl Folds</p>
+  </div>
+
+  <div class="formula-block">
+    <span class="fl">Standardabweichung über Folds</span>
+    \[ \sigma = \sqrt{\frac{1}{k} \sum_{i=1}^{k} (E_i - E)^2} \]
+    <p style="font-size:12px; color:var(--muted); margin-top:8px;">Niedrigere Std.-Abweichung = stabilere Ergebnisse. Beim Vergleich zweier Klassifikatoren immer auch \(\sigma\) berücksichtigen.</p>
+  </div>
+
+  <div class="formula-block">
+    <span class="fl">Leave-One-Out CV (LOO-CV) — Spezialfall k = n</span>
+    \[ E_{\text{LOO}} = \frac{1}{n} \sum_{i=1}^{n} E_i \]
+    <p style="font-size:12px; color:var(--muted); margin-top:8px;">Jeder der \(n\) Datenpunkte wird genau einmal als Validation-Datenpunkt verwendet. Maximale Nutzung der Trainingsdaten, aber hoher Rechenaufwand.</p>
+  </div>
+
+  <div class="formula-block">
+    <span class="fl">Accuracy — Evaluationsmaß</span>
+    \[ \text{Accuracy} = \frac{TP + TN}{TP + FP + TN + FN} = \frac{TP + TN}{\text{\# Samples}} \]
+  </div>
+</section>
+
+<!-- BIAS-VARIANCE BEI K -->
+<section>
+  <div class="section-title">Bias-Variance-Tradeoff bei der Wahl von k</div>
+  <p style="font-size:14px; color:var(--muted); line-height:1.7; margin-bottom:20px;">
+    Die Wahl von k beeinflusst, wie viele Daten zum Training zur Verfügung stehen und wie stabil die Schätzung ist.
+    In der Praxis wird oft <strong style="color:var(--text);">k = 10</strong> verwendet. Bei kleinen Datensätzen: kleineres k (nicht zu kleine Trainingsmengen). Bei sehr großen Datensätzen: ebenfalls kleineres k (aus Laufzeitgründen). Läufe können parallelisiert werden.
+  </p>
+  <div class="k-bias-vis" id="k-bias-vis"></div>
+</section>
+
+<!-- TYPISCHE FEHLER -->
+<section>
+  <div class="section-title">Typische Fehler bei der Evaluation</div>
+  <div class="warn-box">
+    <strong>Data Leakage:</strong> Preprocessing (z.&nbsp;B. Normalisierung, Feature-Selektion) auf dem gesamten Datensatz vor dem Split durchführen — statt nur auf den Trainingsdaten. Dadurch "sieht" das Modell indirekt Validierungsdaten. Ergebnis: zu optimistische Fehlerrate.
+  </div>
+  <div class="warn-box">
+    <strong>Test-Set-Kontamination:</strong> Das Test-Set zum Hyperparameter-Tuning nutzen. Es muss strikt einmalig am Ende verwendet werden.
+  </div>
+  <div class="warn-box">
+    <strong>Falsches Splitting bei Zeitreihen:</strong> Bei zeitabhängigen Daten darf das Validation-Set nie Zeitpunkte <em>vor</em> dem Training-Set enthalten. Zufälliges Shufflen führt zu Data Leakage aus der Zukunft.
+  </div>
+  <div class="warn-box">
+    <strong>Training-Fehler als Evaluationsmaß:</strong> Vollständig aufgebaute Decision Trees — 100 % korrekt auf Trainingsdaten. Perceptron auf linear separierbaren Daten: ebenfalls 100 %. Kein Hinweis auf Generalisierungsfähigkeit.
+  </div>
+</section>
+
+<!-- CARDS VERGLEICH -->
+<section>
+  <div class="section-title">Vergleich — Holdout vs. Cross-Validation</div>
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-head" style="color:var(--muted)">Holdout-Methode</div>
+      <p>Einfach, schnell. Ergebnisse variieren <strong>stark</strong> je nach zufälligem Split. Wenig Daten zum Training bei kleinen Datensätzen.</p>
+    </div>
+    <div class="card">
+      <div class="card-head" style="color:var(--accent)">k-fold CV</div>
+      <p>Stabilere Schätzung. Jeder Datenpunkt wird genau einmal zur Validation verwendet. Laufzeit steigt linear mit k — aber parallelisierbar.</p>
+    </div>
+    <div class="card">
+      <div class="card-head" style="color:#a78bfa">LOO-CV</div>
+      <p>Maximale Trainingsdata-Nutzung. Bei \(n\) Datenpunkten: \(n\) Modelltrainings. Praktisch nur für kleine Datensätze.</p>
+    </div>
+  </div>
+</section>
+
+<p class="src-note">// Quelle: Foliensatz 05 — KNN, Decision Trees, Evaluation (ML SS2026)</p>
+
+<script>
+let mode = 'kfold';
+let currentFold = 0;
+let animTimer = null;
+let animRunning = false;
+
+const rng = (() => {
+  let s = 42;
+  return () => { s ^= s<<13; s ^= s>>17; s ^= s<<5; return (s>>>0)/2**32; };
+})();
+
+function getK() {
+  const n = getN();
+  if (mode === 'loo') return n;
+  return parseInt(document.getElementById('k-slider').value);
+}
+function getN() { return parseInt(document.getElementById('n-slider').value); }
+
+function fakeScores(k) {
+  const base = 0.82 + rng() * 0.12;
+  return Array.from({length: k}, () => Math.min(1, Math.max(0.5, base + (rng()-0.5)*0.14)));
+}
+
+let cachedScores = [];
+let cachedK = -1;
+
+function getScores(k) {
+  if (k !== cachedK) {
+    cachedScores = fakeScores(k);
+    cachedK = k;
+  }
+  return cachedScores;
+}
+
+function render() {
+  const k = getK();
+  const n = getN();
+  const foldSize = Math.floor(n / k);
+  const scores = getScores(k);
+
+  document.getElementById('k-val-label').textContent = mode === 'loo' ? n : getK();
+  document.getElementById('n-val-label').textContent = n;
+  document.getElementById('fold-size-label').textContent = foldSize;
+
+  if (currentFold >= k) currentFold = 0;
+
+  document.getElementById('iter-label-txt').textContent =
+    `Iteration ${currentFold + 1} von ${k} — Fold ${currentFold + 1} ist Validation-Fold`;
+
+  const grid = document.getElementById('fold-grid');
+  const labelRow = document.getElementById('fold-labels');
+  grid.innerHTML = '';
+  labelRow.innerHTML = '';
+
+  const maxBlocks = mode === 'loo' ? Math.min(n, 20) : k;
+
+  for (let i = 0; i < maxBlocks; i++) {
+    const b = document.createElement('div');
+    b.className = 'fold-block';
+    const isVal = (mode === 'loo') ? (i === currentFold) : (i === currentFold);
+
+    if (isVal) {
+      b.classList.add('val');
+      b.textContent = mode === 'loo' ? `x${i+1}` : `F${i+1}`;
+    } else {
+      b.classList.add('train');
+      b.textContent = mode === 'loo' ? `x${i+1}` : `F${i+1}`;
+    }
+    grid.appendChild(b);
+
+    const lbl = document.createElement('div');
+    lbl.className = 'fold-label';
+    lbl.textContent = mode === 'loo' ? (i+1) : `Fold ${i+1}`;
+    labelRow.appendChild(lbl);
+  }
+
+  if (mode === 'loo' && n > 20) {
+    const ellipsis = document.createElement('div');
+    ellipsis.className = 'fold-block inactive';
+    ellipsis.style.flex = '0.5';
+    ellipsis.textContent = '…';
+    grid.appendChild(ellipsis);
+  }
+
+  const iterList = document.getElementById('iter-list');
+  const showIters = Math.min(k, 12);
+  iterList.innerHTML = '';
+
+  for (let i = 0; i < showIters; i++) {
+    const row = document.createElement('div');
+    row.className = 'iter-row';
+
+    const lbl = document.createElement('div');
+    lbl.className = 'iter-label';
+    lbl.textContent = `Iter. ${i+1}`;
+    row.appendChild(lbl);
+
+    const blockWrap = document.createElement('div');
+    blockWrap.style.flex = '1';
+    blockWrap.style.display = 'flex';
+    blockWrap.style.gap = '3px';
+
+    const miniK = mode === 'loo' ? Math.min(n, 20) : k;
+    for (let j = 0; j < miniK; j++) {
+      const bl = document.createElement('div');
+      bl.className = 'iter-block';
+      if (j === i) bl.classList.add('val');
+      blockWrap.appendChild(bl);
+    }
+    if (mode === 'loo' && n > 20) {
+      const el = document.createElement('div');
+      el.className = 'iter-block';
+      el.style.flex = '0.4';
+      blockWrap.appendChild(el);
+    }
+
+    row.appendChild(blockWrap);
+
+    const sc = document.createElement('div');
+    sc.className = 'iter-score' + (i === currentFold ? ' active' : '');
+    sc.textContent = `E${i+1}=${(scores[i]*100).toFixed(1)}%`;
+    row.appendChild(sc);
+
+    iterList.appendChild(row);
+  }
+  if (k > showIters) {
+    const more = document.createElement('div');
+    more.className = 'iter-row';
+    more.innerHTML = `<div class="iter-label"></div><div style="font-family:var(--mono);font-size:10px;color:var(--muted);">… noch ${k - showIters} weitere Iterationen</div>`;
+    iterList.appendChild(more);
+  }
+
+  const mean = scores.reduce((a,b)=>a+b,0)/k;
+  const std = Math.sqrt(scores.reduce((a,b)=>a+(b-mean)**2,0)/k);
+
+  document.getElementById('stat-val-fold').textContent = `Fold ${currentFold + 1}`;
+  document.getElementById('stat-mean').textContent = `${(mean*100).toFixed(1)} %`;
+  document.getElementById('stat-std').textContent = `±${(std*100).toFixed(1)} %`;
+  document.getElementById('stat-iters').textContent = k;
+}
+
+function setMode(m) {
+  mode = m;
+  currentFold = 0;
+  cachedK = -1;
+  document.getElementById('tab-kfold').classList.toggle('active', m === 'kfold');
+  document.getElementById('tab-loo').classList.toggle('active', m === 'loo');
+  document.getElementById('k-slider-row').style.display = m === 'kfold' ? 'flex' : 'none';
+  document.getElementById('loo-hint').style.display = m === 'loo' ? 'block' : 'none';
+  stopAnim();
+  render();
+}
+
+function toggleAnim() {
+  if (animRunning) stopAnim();
+  else startAnim();
+}
+function startAnim() {
+  animRunning = true;
+  document.getElementById('anim-btn').textContent = '⏸ Pause';
+  animTimer = setInterval(() => {
+    const k = getK();
+    currentFold = (currentFold + 1) % k;
+    render();
+  }, 900);
+}
+function stopAnim() {
+  animRunning = false;
+  document.getElementById('anim-btn').textContent = '▶ Rotation abspielen';
+  if (animTimer) clearInterval(animTimer);
+}
+
+document.getElementById('k-slider').addEventListener('input', () => {
+  cachedK = -1;
+  currentFold = 0;
+  stopAnim();
+  render();
+});
+document.getElementById('n-slider').addEventListener('input', () => {
+  cachedK = -1;
+  currentFold = 0;
+  stopAnim();
+  render();
+});
+
+function buildKBiasVis() {
+  const rows = [
+    { k: 2,  biasLvl: 0.88, varLvl: 0.15, desc: 'Hoher Bias, niedrige Varianz. Wenig Training.' },
+    { k: 5,  biasLvl: 0.65, varLvl: 0.38, desc: 'Guter Kompromiss für kleine Datensätze.' },
+    { k: 10, biasLvl: 0.35, varLvl: 0.62, desc: 'Standard. Gute Balance Bias/Varianz.' },
+    { k: 20, biasLvl: 0.20, varLvl: 0.80, desc: 'Niedriger Bias, hohe Varianz. Teuer.' },
+  ];
+  const container = document.getElementById('k-bias-vis');
+  container.innerHTML = '';
+
+  const header = document.createElement('div');
+  header.style.cssText = 'display:flex;gap:12px;font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:10px;align-items:center;';
+  header.innerHTML = '<div style="width:48px"></div><div style="flex:1;display:flex;gap:6px;"><div style="flex:1;text-align:center;">Bias</div><div style="flex:1;text-align:center;">Varianz</div></div><div style="min-width:120px;"></div>';
+  container.appendChild(header);
+
+  rows.forEach(r => {
+    const row = document.createElement('div');
+    row.className = 'k-row';
+    row.innerHTML = `
+      <div class="k-val">k = ${r.k}</div>
+      <div class="k-bar-wrap">
+        <div style="flex:1;background:var(--surface2);border-radius:4px;height:10px;overflow:hidden;">
+          <div class="k-bar" style="width:${r.biasLvl*100}%;background:rgba(224,90,90,0.55);height:10px;border-radius:4px;"></div>
+        </div>
+        <div style="flex:1;background:var(--surface2);border-radius:4px;height:10px;overflow:hidden;">
+          <div class="k-bar" style="width:${r.varLvl*100}%;background:rgba(78,205,196,0.55);height:10px;border-radius:4px;"></div>
+        </div>
+      </div>
+      <div class="k-desc">${r.desc}</div>
+    `;
+    container.appendChild(row);
+  });
+
+  const legend = document.createElement('div');
+  legend.className = 'legend';
+  legend.style.marginTop = '12px';
+  legend.innerHTML = `
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(224,90,90,0.55)"></div>Bias (Unterschätzung Trainingsleistung)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(78,205,196,0.55)"></div>Varianz (Instabilität)</div>
+  `;
+  container.appendChild(legend);
+}
+
+buildKBiasVis();
+render();
+</script>
+</body>
+</html>

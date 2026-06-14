@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MDP — Grundlagen</title>
+<script>
+  MathJax = {
+    tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+    options: { skipHtmlTags: ['script','noscript','style','textarea'] }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #0e0e11;
+    --bg2:     #16161b;
+    --bg3:     #1e1e26;
+    --border:  rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.13);
+    --text:    #e8e6f0;
+    --muted:   #7a7890;
+    --accent:  #c96a28;
+    --accent-dim: rgba(201,106,40,0.12);
+    --accent-dim2: rgba(201,106,40,0.22);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem 3rem;
+  }
+
+  /* ── header ────────────────────────────────────── */
+  header {
+    width: 100%;
+    max-width: 900px;
+    margin-bottom: 1.75rem;
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  h1 {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.05rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+  }
+
+  .subtitle {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* ── tab bar ───────────────────────────────────── */
+  .tab-bar {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    gap: 4px;
+    margin-bottom: 1.5rem;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 4px;
+  }
+
+  .tab-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.76rem;
+    font-weight: 500;
+    padding: 7px 18px;
+    border-radius: 7px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+  }
+  .tab-btn:hover { color: var(--text); background: var(--bg3); }
+  .tab-btn.active {
+    background: var(--accent-dim2);
+    color: var(--accent);
+    border: 1px solid rgba(201,106,40,0.3);
+  }
+
+  /* ── main content ──────────────────────────────── */
+  .main {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .tab-panel { display: none; flex-direction: column; gap: 1.25rem; }
+  .tab-panel.active { display: flex; }
+
+  /* ── cards / sections ──────────────────────────── */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.4rem 1.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+
+  .card-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.76rem;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .card p {
+    font-size: 0.85rem;
+    line-height: 1.75;
+    color: #b8b6c8;
+  }
+
+  .card p b { color: var(--text); font-weight: 500; }
+
+  /* ── info-grid for four RL elements ────────────── */
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 10px;
+  }
+
+  .info-item {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 1rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    border-top: 2px solid var(--accent);
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .info-item:hover { background: rgba(201,106,40,0.06); border-color: rgba(201,106,40,0.4); }
+
+  .info-item .item-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .info-item .item-formula {
+    font-size: 0.78rem;
+    color: var(--accent);
+    font-family: 'DM Mono', monospace;
+    margin-bottom: 2px;
+  }
+
+  .info-item .item-desc {
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* ── SVG diagrams ──────────────────────────────── */
+  .svg-wrap {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: auto;
+  }
+
+  svg text {
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* ── formula box ───────────────────────────────── */
+  .formula-box {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 0.9rem 1.2rem;
+    font-size: 0.88rem;
+    line-height: 1.8;
+    overflow-x: auto;
+  }
+
+  /* ── two-column layout for Bellman ────────────── */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* ── slider row ────────────────────────────────── */
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .slider-row label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  input[type=range] {
+    accent-color: var(--accent);
+    width: 140px;
+    cursor: pointer;
+  }
+
+  .slider-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--accent);
+    min-width: 36px;
+  }
+
+  /* ── bar chart for discount ────────────────────── */
+  #gamma-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 90px;
+    padding: 8px 12px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .gamma-bar {
+    flex: 1;
+    min-width: 14px;
+    border-radius: 3px 3px 0 0;
+    background: var(--accent);
+    transition: height 0.25s ease;
+    position: relative;
+  }
+
+  .gamma-bar-0 { background: #e07a38; }
+
+  /* ── MathJax color override ────────────────────── */
+  mjx-container { color: var(--text) !important; }
+
+  /* ── source note ───────────────────────────────── */
+  .src-note {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-top: 1rem;
+    opacity: 0.6;
+    text-align: right;
+    width: 100%;
+    max-width: 900px;
+  }
+
+  /* ── loop animation for agent-env diagram ──────── */
+  @keyframes dash-flow {
+    to { stroke-dashoffset: -24; }
+  }
+
+  .flow-arrow {
+    stroke-dasharray: 8 4;
+    stroke-dashoffset: 0;
+    animation: dash-flow 0.9s linear infinite;
+  }
+
+  /* ── state machine styling ─────────────────────── */
+  .state-circle {
+    fill: var(--bg3);
+    stroke: var(--accent);
+    stroke-width: 2;
+  }
+
+  .transition-arrow {
+    fill: none;
+    stroke: #5a5878;
+    stroke-width: 1.5;
+    marker-end: url(#arr);
+  }
+
+  .transition-label {
+    font-size: 10px;
+    fill: var(--muted);
+  }
+
+  .transition-accent {
+    stroke: var(--accent);
+    opacity: 0.7;
+  }
+
+  /* backup diagram nodes */
+  .node-state {
+    fill: var(--bg3);
+    stroke: #8080a8;
+    stroke-width: 2;
+  }
+  .node-action {
+    fill: #5a3a1c;
+    stroke: var(--accent);
+    stroke-width: 1.5;
+  }
+  .node-optimal-state {
+    fill: var(--bg3);
+    stroke: var(--accent);
+    stroke-width: 2.5;
+  }
+  .node-optimal-action {
+    fill: rgba(201,106,40,0.25);
+    stroke: var(--accent);
+    stroke-width: 2;
+  }
+  .backup-line {
+    stroke: #5a5878;
+    stroke-width: 1.5;
+    fill: none;
+  }
+  .backup-line-accent {
+    stroke: var(--accent);
+    stroke-width: 1.5;
+    fill: none;
+    opacity: 0.7;
+  }
+
+  /* bellman explanation side by side */
+  .bellman-explain {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .bellman-explain p {
+    font-size: 0.82rem;
+    line-height: 1.7;
+    color: #b8b6c8;
+  }
+  .bellman-explain p b { color: var(--text); font-weight: 500; }
+
+  /* intuition block */
+  .intuition-box {
+    background: rgba(201,106,40,0.07);
+    border: 1px solid rgba(201,106,40,0.25);
+    border-radius: 8px;
+    padding: 0.9rem 1.1rem;
+    font-size: 0.82rem;
+    line-height: 1.7;
+    color: #c8b8a0;
+  }
+  .intuition-box strong { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>MDP — Grundlagen</h1>
+  <span class="subtitle">// Markov Decision Processes · Reinforcement Learning</span>
+</header>
+
+<!-- ── Tab Bar ───────────────────────────────────────── -->
+<div class="tab-bar" role="tablist">
+  <button class="tab-btn active" role="tab" data-tab="grundlagen">Grundlagen</button>
+  <button class="tab-btn" role="tab" data-tab="mdp-formal">MDP Formal</button>
+  <button class="tab-btn" role="tab" data-tab="bellman">Bellman-Gleichungen</button>
+</div>
+
+<div class="main">
+
+<!-- ══════════════════════════════════════════════════════
+     TAB 1: GRUNDLAGEN
+══════════════════════════════════════════════════════ -->
+<div class="tab-panel active" id="tab-grundlagen">
+
+  <!-- Agent-Environment Loop -->
+  <div class="card">
+    <div class="card-title">Agent–Umgebungs-Schleife</div>
+    <p>
+      Das fundamentale Paradigma des Reinforcement Learnings: Ein <b>Agent</b> wählt zu jedem
+      Zeitschritt \(t\) eine <b>Aktion</b> \(A_t\). Die <b>Umgebung</b> antwortet mit einem neuen
+      <b>Zustand</b> \(S_{t+1}\) und einem skalaren <b>Reward</b> \(R_{t+1}\). Ziel: Policy \(\pi\)
+      so optimieren, dass der kumulative erwartete Reward maximiert wird.
+    </p>
+
+    <div class="svg-wrap">
+      <svg width="560" height="200" viewBox="0 0 560 200" style="max-width:100%">
+        <defs>
+          <marker id="arr-loop" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#c96a28"/>
+          </marker>
+          <marker id="arr-loop-muted" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#7a7890"/>
+          </marker>
+        </defs>
+
+        <!-- Agent box -->
+        <rect x="30" y="70" width="140" height="60" rx="10"
+              fill="#1e1e26" stroke="#c96a28" stroke-width="2"/>
+        <text x="100" y="97" text-anchor="middle" fill="#e8e6f0" font-size="13" font-weight="500">Agent</text>
+        <text x="100" y="116" text-anchor="middle" fill="#7a7890" font-size="10">wählt Aktion</text>
+
+        <!-- Environment box -->
+        <rect x="390" y="70" width="140" height="60" rx="10"
+              fill="#1e1e26" stroke="#5a5878" stroke-width="2"/>
+        <text x="460" y="97" text-anchor="middle" fill="#e8e6f0" font-size="13" font-weight="500">Umgebung</text>
+        <text x="460" y="116" text-anchor="middle" fill="#7a7890" font-size="10">Zustand + Reward</text>
+
+        <!-- Arrow: Agent → Env (action, top) -->
+        <path class="flow-arrow" d="M170,88 L390,88"
+              stroke="#c96a28" stroke-width="2" fill="none"
+              marker-end="url(#arr-loop)"/>
+        <text x="280" y="80" text-anchor="middle" fill="#c96a28" font-size="11">Aktion \(A_t\)</text>
+
+        <!-- Arrow: Env → Agent (reward + state, bottom) -->
+        <path class="flow-arrow" d="M390,112 L170,112"
+              stroke="#7a7890" stroke-width="2" fill="none"
+              marker-end="url(#arr-loop-muted)"/>
+        <text x="280" y="132" text-anchor="middle" fill="#7a7890" font-size="10">Reward \(R_{t+1}\), Zustand \(S_{t+1}\)</text>
+
+        <!-- Time labels -->
+        <text x="100" y="175" text-anchor="middle" fill="#4a4860" font-size="10">t</text>
+        <text x="460" y="175" text-anchor="middle" fill="#4a4860" font-size="10">t+1</text>
+        <line x1="100" y1="165" x2="100" y2="155" stroke="#4a4860" stroke-width="1"/>
+        <line x1="460" y1="165" x2="460" y2="155" stroke="#4a4860" stroke-width="1"/>
+
+        <!-- Loop back arrow (bottom) -->
+        <path d="M460,155 Q460,185 280,185 Q100,185 100,155"
+              stroke="#4a4860" stroke-width="1" fill="none" stroke-dasharray="4 3"/>
+        <text x="280" y="197" text-anchor="middle" fill="#4a4860" font-size="9">Schritt t → t+1 wiederholt sich</text>
+      </svg>
+    </div>
+
+    <div class="intuition-box">
+      Die Interaktion erzeugt eine <strong>Trajektorie</strong>:
+      \(S_0, A_0, R_1, S_1, A_1, R_2, S_2, \ldots\) — der Agent lernt, welche Aktionen in welchen
+      Zuständen langfristig den höchsten Reward bringen.
+    </div>
+  </div>
+
+  <!-- Four Elements -->
+  <div class="card">
+    <div class="card-title">Die vier Elemente eines RL-Systems</div>
+    <p>
+      Jedes vollständige RL-System besteht aus diesen Bausteinen (nach Sutton &amp; Barto, Kap. 1):
+    </p>
+
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="item-label">Policy \(\pi\)</div>
+        <div class="item-formula">π(a | s)</div>
+        <div class="item-desc">
+          Abbildung von Zuständen auf Aktionswahrscheinlichkeiten. Deterministische Policy:
+          \(\pi(s) = a\). Stochastische Policy: \(\pi(a|s) = \Pr\{A_t = a \mid S_t = s\}\).
+          Die Policy ist das Verhalten des Agenten — alles andere dient ihrer Verbesserung.
+        </div>
+      </div>
+
+      <div class="info-item">
+        <div class="item-label">Reward \(R_t\)</div>
+        <div class="item-formula">R_t ∈ ℝ</div>
+        <div class="item-desc">
+          Skalares Feedbacksignal von der Umgebung nach jedem Schritt. Definiert das Ziel des
+          Agenten: <em>maximiere den erwarteten kumulierten zukünftigen Reward</em>.
+          Rewards werden vom Designer festgelegt und kodieren das gewünschte Verhalten.
+        </div>
+      </div>
+
+      <div class="info-item">
+        <div class="item-label">Value-Funktion \(V^\pi\)</div>
+        <div class="item-formula">V^π(s)</div>
+        <div class="item-desc">
+          Erwarteter kumulierter Reward, wenn der Agent in Zustand \(s\) startet und Policy
+          \(\pi\) folgt. Während Rewards kurzfristiges Feedback geben, bewertet die
+          Value-Funktion <em>langfristige</em> Wünschbarkeit eines Zustands.
+        </div>
+      </div>
+
+      <div class="info-item">
+        <div class="item-label">Modell</div>
+        <div class="item-formula">p(s', r | s, a)</div>
+        <div class="item-desc">
+          <em>Optional</em> — mimics das Verhalten der Umgebung.
+          Modellbasierte Methoden (z.B. Dyna, AlphaZero) nutzen es zur Planung.
+          Modellfreie Methoden (Q-Learning, Policy Gradient) lernen direkt aus Erfahrung.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Intuition -->
+  <div class="card">
+    <div class="card-title">Was unterscheidet RL von anderen ML-Paradigmen?</div>
+    <div class="two-col">
+      <div>
+        <p>
+          <b>Kein Lehrer</b> — im Gegensatz zu Supervised Learning gibt es keine Ground-Truth-Labels.
+          Der Agent erhält nur ein skalares Reward-Signal und muss selbst herausfinden, was gute
+          Aktionen sind.
+        </p>
+      </div>
+      <div>
+        <p>
+          <b>Sequenzielle Entscheidungen</b> — Aktionen beeinflussen zukünftige Zustände und damit
+          zukünftige Rewards. Es gibt einen fundamentalen <b>Exploration-Exploitation-Tradeoff</b>:
+          unbekannte Aktionen erkunden vs. bekannte gute Aktionen ausführen.
+        </p>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end tab-grundlagen -->
+
+
+<!-- ══════════════════════════════════════════════════════
+     TAB 2: MDP FORMAL
+══════════════════════════════════════════════════════ -->
+<div class="tab-panel" id="tab-mdp-formal">
+
+  <!-- Markov Property -->
+  <div class="card">
+    <div class="card-title">Markov-Eigenschaft</div>
+    <p>
+      Ein Zustand \(S_t\) hat die <b>Markov-Eigenschaft</b>, wenn er die gesamte relevante
+      Geschichte zusammenfasst. Die Zukunft ist bedingt unabhängig von der Vergangenheit,
+      gegeben dem aktuellen Zustand:
+    </p>
+
+    <div class="formula-box">
+      \[
+        p(s', r \mid s, a) \;=\; \Pr\{S_{t+1} = s',\; R_{t+1} = r \;\mid\; S_t = s,\; A_t = a\}
+      \]
+    </div>
+
+    <p>
+      Diese <b>Transitionsdynamik</b> \(p : \mathcal{S} \times \mathcal{R} \times \mathcal{S} \times \mathcal{A} \to [0,1]\)
+      ist die zentrale Funktion eines MDP. Sie beschreibt vollständig, mit welcher Wahrscheinlichkeit
+      Zustand \(s'\) und Reward \(r\) folgen, wenn in Zustand \(s\) Aktion \(a\) gewählt wird.
+      Es gilt: \(\sum_{s'} \sum_r p(s', r \mid s, a) = 1\) für alle \(s, a\).
+    </p>
+
+    <p>
+      Daraus lassen sich weitere nützliche Größen ableiten:<br>
+      <b>Zustandsübergangswahrscheinlichkeit:</b>
+      \[p(s' \mid s, a) = \sum_{r \in \mathcal{R}} p(s', r \mid s, a)\]
+      <b>Erwarteter Reward:</b>
+      \[r(s, a) = \mathbb{E}[R_{t+1} \mid S_t = s, A_t = a] = \sum_r r \sum_{s'} p(s',r \mid s,a)\]
+    </p>
+  </div>
+
+  <!-- Recycling Robot -->
+  <div class="card">
+    <div class="card-title">Beispiel: Recycling-Roboter (Sutton &amp; Barto, Beispiel 3.3)</div>
+    <p>
+      Ein mobiler Roboter sammelt Dosen. Er hat zwei Zustände: <b>high</b> (Batterie voll) und
+      <b>low</b> (Batterie schwach). Er kann suchen (<em>search</em>), warten (<em>wait</em>)
+      oder zurück zur Ladestation (<em>recharge</em>).
+    </p>
+
+    <div class="svg-wrap" style="min-height: 280px;">
+      <svg width="600" height="280" viewBox="0 0 600 280" style="max-width:100%">
+        <defs>
+          <marker id="arr" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+            <path d="M0,0.5 L0,6.5 L7,3.5 z" fill="#7a7890"/>
+          </marker>
+          <marker id="arr-acc" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+            <path d="M0,0.5 L0,6.5 L7,3.5 z" fill="#c96a28"/>
+          </marker>
+        </defs>
+
+        <!-- State: HIGH -->
+        <circle cx="160" cy="130" r="52" class="state-circle"/>
+        <text x="160" y="126" text-anchor="middle" fill="#e8e6f0" font-size="15" font-weight="500">high</text>
+        <text x="160" y="144" text-anchor="middle" fill="#7a7890" font-size="10">Batterie voll</text>
+
+        <!-- State: LOW -->
+        <circle cx="440" cy="130" r="52" class="state-circle"/>
+        <text x="440" y="126" text-anchor="middle" fill="#e8e6f0" font-size="15" font-weight="500">low</text>
+        <text x="440" y="144" text-anchor="middle" fill="#7a7890" font-size="10">Batterie schwach</text>
+
+        <!-- HIGH → HIGH (search, self-loop top) -->
+        <path d="M130,80 Q120,25 160,20 Q200,20 192,75"
+              class="transition-arrow" marker-end="url(#arr-acc)" stroke="#c96a28" opacity="0.8"/>
+        <text x="160" y="14" text-anchor="middle" fill="#c96a28" font-size="9.5" font-weight="500">search</text>
+        <text x="160" y="27" text-anchor="middle" fill="#7a7890" font-size="9">α, r_search</text>
+
+        <!-- HIGH → LOW (search) -->
+        <path d="M208,110 Q300,85 392,108"
+              class="transition-arrow" marker-end="url(#arr)" stroke="#a0909a"/>
+        <text x="300" y="88" text-anchor="middle" fill="#a0909a" font-size="9.5">search</text>
+        <text x="300" y="100" text-anchor="middle" fill="#7a7890" font-size="9">1−α, r_search</text>
+
+        <!-- HIGH → HIGH (wait, self-loop) - use different path -->
+        <path d="M138,175 Q80,230 110,175" style="display:none"/>
+
+        <!-- LOW → LOW (search, self-loop bottom) -->
+        <path d="M470,178 Q520,230 460,240 Q400,245 412,182"
+              class="transition-arrow" marker-end="url(#arr)" stroke="#7a7890"/>
+        <text x="464" y="252" text-anchor="middle" fill="#7a7890" font-size="9.5">search</text>
+        <text x="464" y="264" text-anchor="middle" fill="#7a7890" font-size="9">β, r_search</text>
+
+        <!-- LOW → HIGH (recharge) -->
+        <path d="M392,152 Q300,180 212,154"
+              class="transition-arrow" marker-end="url(#arr-acc)" stroke="#c96a28" opacity="0.7"/>
+        <text x="300" y="176" text-anchor="middle" fill="#c96a28" font-size="9.5">recharge</text>
+        <text x="300" y="187" text-anchor="middle" fill="#7a7890" font-size="9">p=1, r=0</text>
+
+        <!-- HIGH wait self-loop -->
+        <path d="M138,176 Q75,220 108,175"
+              class="transition-arrow" marker-end="url(#arr)" stroke="#7a7890"/>
+        <text x="80" y="215" text-anchor="middle" fill="#7a7890" font-size="9.5">wait</text>
+        <text x="80" y="226" text-anchor="middle" fill="#7a7890" font-size="9">p=1, r_wait</text>
+
+        <!-- LOW wait self-loop -->
+        <path d="M395,178 Q320,235 360,182"
+              class="transition-arrow" marker-end="url(#arr)" stroke="#7a7890"/>
+        <text x="340" y="240" text-anchor="middle" fill="#7a7890" font-size="9.5">wait</text>
+        <text x="340" y="252" text-anchor="middle" fill="#7a7890" font-size="9">p=1, r_wait</text>
+
+        <!-- LOW → depleted (search, rare) label note -->
+        <text x="300" y="275" text-anchor="middle" fill="#4a4860" font-size="9">
+          α, β ∈ (0,1): Wahrscheinlichkeit, Batterie nicht zu entladen
+        </text>
+      </svg>
+    </div>
+
+    <div class="two-col">
+      <div class="formula-box" style="font-size:0.8rem">
+        <b style="color:var(--accent)">high → high</b> via search:<br>
+        \(p(\text{high},r_s \mid \text{high}, \text{search}) = \alpha\)
+        <br><br>
+        <b style="color:var(--accent)">high → low</b> via search:<br>
+        \(p(\text{low},r_s \mid \text{high}, \text{search}) = 1-\alpha\)
+      </div>
+      <div class="formula-box" style="font-size:0.8rem">
+        <b style="color:var(--accent)">low → high</b> via recharge:<br>
+        \(p(\text{high},0 \mid \text{low}, \text{recharge}) = 1\)
+        <br><br>
+        <b style="color:var(--accent)">low → low</b> via search:<br>
+        \(p(\text{low},r_s \mid \text{low}, \text{search}) = \beta\)
+      </div>
+    </div>
+  </div>
+
+  <!-- Return + Gamma Slider -->
+  <div class="card">
+    <div class="card-title">Return und Diskontierung</div>
+
+    <p>
+      Der <b>Return</b> \(G_t\) ist die Summe aller zukünftigen Rewards. Für episodische Aufgaben
+      (mit Endzustand \(T\)):
+    </p>
+    <div class="formula-box">
+      \[G_t = R_{t+1} + R_{t+2} + \cdots + R_T\]
+    </div>
+
+    <p>
+      Für fortsetzende Aufgaben wird ein <b>Diskontierungsfaktor</b> \(\gamma \in [0,1)\) eingeführt,
+      um konvergenz zu gewährleisten und zukünftige Rewards weniger zu gewichten:
+    </p>
+    <div class="formula-box">
+      \[
+        G_t \;=\; \sum_{k=0}^{\infty} \gamma^k R_{t+k+1}
+           \;=\; R_{t+1} + \gamma G_{t+1}
+      \]
+    </div>
+
+    <p>
+      Die rekursive Form \(G_t = R_{t+1} + \gamma G_{t+1}\) ist fundamental — sie liegt allen
+      Bellman-Gleichungen zugrunde. Bei \(\gamma = 0\) interessiert nur der unmittelbare Reward;
+      bei \(\gamma \to 1\) zählt die gesamte Zukunft gleich.
+    </p>
+
+    <!-- Interactive gamma slider -->
+    <div class="slider-row">
+      <label>
+        Diskontierungsfaktor γ:
+        <input type="range" id="gamma-slider" min="0" max="0.99" step="0.01" value="0.9">
+        <span class="slider-val" id="gamma-val">0.90</span>
+      </label>
+    </div>
+
+    <div id="gamma-chart" title="γ^k für k = 0..14"></div>
+    <div style="font-size:0.73rem; color:var(--muted); font-family:'DM Mono',monospace; margin-top:4px; text-align:center">
+      γ<sup>k</sup> für k = 0, 1, 2, … , 14 — zeigt, wie stark zukünftige Rewards abgezinst werden
+    </div>
+  </div>
+
+</div><!-- end tab-mdp-formal -->
+
+
+<!-- ══════════════════════════════════════════════════════
+     TAB 3: BELLMAN-GLEICHUNGEN
+══════════════════════════════════════════════════════ -->
+<div class="tab-panel" id="tab-bellman">
+
+  <!-- State-Value Function -->
+  <div class="card">
+    <div class="card-title">Zustands-Wertfunktion \(v_\pi(s)\)</div>
+
+    <p>
+      Die <b>Zustands-Wertfunktion</b> unter Policy \(\pi\) gibt den erwarteten Return an, wenn
+      der Agent in Zustand \(s\) startet und Policy \(\pi\) folgt:
+    </p>
+    <div class="formula-box">
+      \[
+        v_\pi(s) = \mathbb{E}_\pi[G_t \mid S_t = s]
+                 = \sum_{a} \pi(a|s)\sum_{s',r} p(s',r|s,a)\bigl[r + \gamma\, v_\pi(s')\bigr]
+      \]
+    </div>
+
+    <div class="two-col">
+      <!-- Backup diagram for v_π -->
+      <div>
+        <div class="card-title" style="font-size:0.68rem; margin-bottom:8px">Backup-Diagramm für \(v_\pi\)</div>
+        <div class="svg-wrap">
+          <svg width="200" height="220" viewBox="0 0 200 220">
+            <defs>
+              <marker id="arr-bk" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+                <path d="M0,0.5 L0,6.5 L7,3.5 z" fill="#5a5878"/>
+              </marker>
+            </defs>
+            <!-- root state -->
+            <circle cx="100" cy="22" r="14" class="node-state"/>
+            <text x="100" y="27" text-anchor="middle" fill="#8080a8" font-size="11">s</text>
+
+            <!-- action nodes -->
+            <circle cx="55"  cy="85" r="8" class="node-action"/>
+            <circle cx="100" cy="85" r="8" class="node-action"/>
+            <circle cx="145" cy="85" r="8" class="node-action"/>
+
+            <!-- lines root → actions -->
+            <line x1="100" y1="36" x2="57"  y2="78" class="backup-line"/>
+            <line x1="100" y1="36" x2="100" y2="77" class="backup-line"/>
+            <line x1="100" y1="36" x2="143" y2="78" class="backup-line"/>
+
+            <!-- π(a|s) label -->
+            <text x="68" y="60" fill="#7a7890" font-size="9">π(a|s)</text>
+
+            <!-- successor states under left action -->
+            <circle cx="30"  cy="165" r="12" class="node-state"/>
+            <circle cx="75"  cy="165" r="12" class="node-state"/>
+            <!-- successor states under middle action -->
+            <circle cx="100" cy="165" r="12" class="node-state"/>
+            <!-- successor states under right action -->
+            <circle cx="130" cy="165" r="12" class="node-state"/>
+            <circle cx="168" cy="165" r="12" class="node-state"/>
+
+            <!-- lines left action → states -->
+            <line x1="55" y1="93" x2="33"  y2="153" class="backup-line" marker-end="url(#arr-bk)"/>
+            <line x1="55" y1="93" x2="73"  y2="153" class="backup-line" marker-end="url(#arr-bk)"/>
+            <!-- lines middle action → states -->
+            <line x1="100" y1="93" x2="100" y2="153" class="backup-line" marker-end="url(#arr-bk)"/>
+            <!-- lines right action → states -->
+            <line x1="145" y1="93" x2="132" y2="153" class="backup-line" marker-end="url(#arr-bk)"/>
+            <line x1="145" y1="93" x2="166" y2="153" class="backup-line" marker-end="url(#arr-bk)"/>
+
+            <!-- p(s',r|s,a) label -->
+            <text x="32" y="135" fill="#7a7890" font-size="9">p(s',r|s,a)</text>
+
+            <!-- s' labels -->
+            <text x="30"  y="170" text-anchor="middle" fill="#8080a8" font-size="9">s'</text>
+            <text x="75"  y="170" text-anchor="middle" fill="#8080a8" font-size="9">s'</text>
+            <text x="100" y="170" text-anchor="middle" fill="#8080a8" font-size="9">s'</text>
+            <text x="130" y="170" text-anchor="middle" fill="#8080a8" font-size="9">s'</text>
+            <text x="168" y="170" text-anchor="middle" fill="#8080a8" font-size="9">s'</text>
+
+            <!-- Legend -->
+            <circle cx="22" cy="205" r="8" class="node-state"/>
+            <text x="34" y="209" fill="#7a7890" font-size="9">= Zustand</text>
+            <circle cx="105" cy="205" r="6" class="node-action"/>
+            <text x="115" y="209" fill="#7a7890" font-size="9">= Aktion</text>
+          </svg>
+        </div>
+      </div>
+
+      <div class="bellman-explain">
+        <p>
+          Das Backup-Diagramm liest sich von oben nach unten: Aus Zustand \(s\) wählt die Policy
+          \(\pi\) eine Aktion mit Wahrscheinlichkeit \(\pi(a|s)\) — der <b>hohle Kreis</b> oben
+          ist der Zustand, die <b>gefüllten kleinen Kreise</b> sind Zustands-Aktions-Paare.
+        </p>
+        <p>
+          Danach bestimmt die Umgebung mit \(p(s',r|s,a)\) den Folge­zustand \(s'\) und Reward
+          \(r\). Der Wert von \(s\) ist der Erwartungswert über alle diese Möglichkeiten.
+        </p>
+        <div class="intuition-box">
+          <strong>Intuition:</strong> Der Wert eines Zustands entspricht dem unmittelbaren Reward
+          <em>plus</em> dem diskontierten Wert aller möglichen Folgezustände — gewichtet nach
+          Policy und Transitionsdynamik.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Action-Value Function -->
+  <div class="card">
+    <div class="card-title">Aktions-Wertfunktion \(q_\pi(s,a)\)</div>
+
+    <p>
+      Die <b>Aktions-Wertfunktion</b> (Q-Funktion) bewertet das Ausführen von Aktion \(a\) in
+      Zustand \(s\) und anschließendes Folgen von Policy \(\pi\):
+    </p>
+    <div class="formula-box">
+      \[
+        q_\pi(s,a) = \mathbb{E}_\pi[G_t \mid S_t = s, A_t = a]
+                   = \sum_{s',r} p(s',r|s,a)\Bigl[r + \gamma \sum_{a'} \pi(a'|s')\, q_\pi(s',a')\Bigr]
+      \]
+    </div>
+
+    <div class="two-col">
+      <!-- Backup diagram for q_π -->
+      <div>
+        <div class="card-title" style="font-size:0.68rem; margin-bottom:8px">Backup-Diagramm für \(q_\pi\)</div>
+        <div class="svg-wrap">
+          <svg width="200" height="220" viewBox="0 0 200 220">
+            <!-- root action node -->
+            <circle cx="100" cy="22" r="10" class="node-action"/>
+            <text x="100" y="27" text-anchor="middle" fill="#c96a28" font-size="9">(s,a)</text>
+
+            <!-- successor states -->
+            <circle cx="55"  cy="90" r="13" class="node-state"/>
+            <circle cx="145" cy="90" r="13" class="node-state"/>
+
+            <!-- lines root → states -->
+            <line x1="100" y1="32" x2="59"  y2="78" class="backup-line" marker-end="url(#arr-bk)"/>
+            <line x1="100" y1="32" x2="141" y2="78" class="backup-line" marker-end="url(#arr-bk)"/>
+
+            <!-- p label -->
+            <text x="72" y="60" fill="#7a7890" font-size="9">p(s',r|s,a)</text>
+            <text x="55"  y="96" text-anchor="middle" fill="#8080a8" font-size="9">s'</text>
+            <text x="145" y="96" text-anchor="middle" fill="#8080a8" font-size="9">s'</text>
+
+            <!-- next action nodes under left state -->
+            <circle cx="30"  cy="165" r="7" class="node-action"/>
+            <circle cx="60"  cy="165" r="7" class="node-action"/>
+            <circle cx="90"  cy="165" r="7" class="node-action"/>
+            <!-- next action nodes under right state -->
+            <circle cx="130" cy="165" r="7" class="node-action"/>
+            <circle cx="168" cy="165" r="7" class="node-action"/>
+
+            <!-- lines left state → actions -->
+            <line x1="55" y1="103" x2="32"  y2="158" class="backup-line"/>
+            <line x1="55" y1="103" x2="60"  y2="158" class="backup-line"/>
+            <line x1="55" y1="103" x2="88"  y2="158" class="backup-line"/>
+            <!-- lines right state → actions -->
+            <line x1="145" y1="103" x2="132" y2="158" class="backup-line"/>
+            <line x1="145" y1="103" x2="167" y2="158" class="backup-line"/>
+
+            <!-- π label -->
+            <text x="55" y="148" text-anchor="middle" fill="#7a7890" font-size="9">π(a'|s')</text>
+
+            <!-- Legend -->
+            <circle cx="22" cy="205" r="8" class="node-state"/>
+            <text x="34" y="209" fill="#7a7890" font-size="9">= Zustand</text>
+            <circle cx="105" cy="205" r="6" class="node-action"/>
+            <text x="115" y="209" fill="#7a7890" font-size="9">= Aktion</text>
+          </svg>
+        </div>
+      </div>
+
+      <div class="bellman-explain">
+        <p>
+          Hier startet das Diagramm bei einem Zustands-Aktions-Paar \((s,a)\). Zuerst bestimmt
+          die Umgebung den Folge­zustand \(s'\), dann wählt die Policy \(\pi\) die nächste
+          Aktion \(a'\).
+        </p>
+        <p>
+          <b>Zusammenhang zwischen \(v_\pi\) und \(q_\pi\):</b>
+          \[v_\pi(s) = \sum_a \pi(a|s)\, q_\pi(s,a)\]
+          \[q_\pi(s,a) = \sum_{s',r} p(s',r|s,a)\bigl[r + \gamma\, v_\pi(s')\bigr]\]
+        </p>
+        <div class="intuition-box">
+          <strong>Intuition:</strong> Der Q-Wert bewertet konkrete Aktionen. Ein Agent der \(q_\pi\)
+          kennt, kann greedy handeln: wähle die Aktion mit dem höchsten Q-Wert.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Optimal Value Functions -->
+  <div class="card">
+    <div class="card-title">Optimale Wertfunktionen &amp; Bellman-Optimalitätsgleichungen</div>
+
+    <p>
+      Eine Policy \(\pi\) ist <b>besser oder gleich</b> \(\pi'\), wenn
+      \(v_\pi(s) \geq v_{\pi'}(s)\) für alle \(s \in \mathcal{S}\). Es existiert immer mindestens
+      eine <b>optimale Policy</b> \(\pi^*\). Die zugehörigen optimalen Wertfunktionen:
+    </p>
+
+    <div class="two-col">
+      <div class="formula-box">
+        \[
+          v_*(s) = \max_\pi v_\pi(s) = \max_a q_*(s,a)
+        \]
+      </div>
+      <div class="formula-box">
+        \[
+          q_*(s,a) = \max_\pi q_\pi(s,a)
+        \]
+      </div>
+    </div>
+
+    <p>Die <b>Bellman-Optimalitätsgleichungen</b> liefern ein nichtlineares Gleichungssystem:</p>
+
+    <div class="formula-box">
+      \[
+        v_*(s) = \max_a \sum_{s',r} p(s',r|s,a)\bigl[r + \gamma\, v_*(s')\bigr]
+      \]
+    </div>
+
+    <div class="formula-box">
+      \[
+        q_*(s,a) = \sum_{s',r} p(s',r|s,a)\Bigl[r + \gamma \max_{a'} q_*(s',a')\Bigr]
+      \]
+    </div>
+
+    <div class="two-col" style="margin-top: 4px;">
+      <!-- Optimal backup v* -->
+      <div>
+        <div class="card-title" style="font-size:0.68rem; margin-bottom:8px">Backup-Diagramm für \(v_*\)</div>
+        <div class="svg-wrap">
+          <svg width="200" height="200" viewBox="0 0 200 200">
+            <!-- root state (optimal — thicker border) -->
+            <circle cx="100" cy="22" r="14" class="node-optimal-state"/>
+            <text x="100" y="27" text-anchor="middle" fill="#c96a28" font-size="11">s</text>
+
+            <!-- action nodes -->
+            <circle cx="55"  cy="85" r="8" class="node-optimal-action"/>
+            <circle cx="100" cy="85" r="8" class="node-optimal-action"/>
+            <circle cx="145" cy="85" r="8" class="node-optimal-action"/>
+
+            <!-- max arc -->
+            <path d="M42,85 Q100,68 158,85" fill="none" stroke="#c96a28" stroke-width="1.5"
+                  stroke-dasharray="4 3" opacity="0.6"/>
+            <text x="100" y="67" text-anchor="middle" fill="#c96a28" font-size="9">max</text>
+
+            <!-- lines root → actions -->
+            <line x1="100" y1="36" x2="57"  y2="78" class="backup-line-accent"/>
+            <line x1="100" y1="36" x2="100" y2="77" class="backup-line-accent"/>
+            <line x1="100" y1="36" x2="143" y2="78" class="backup-line-accent"/>
+
+            <!-- successor states under middle action only (for clarity) -->
+            <circle cx="75"  cy="160" r="12" class="node-optimal-state"/>
+            <circle cx="120" cy="160" r="12" class="node-optimal-state"/>
+
+            <line x1="100" y1="93" x2="77"  y2="148" class="backup-line" marker-end="url(#arr-bk)"/>
+            <line x1="100" y1="93" x2="118" y2="148" class="backup-line" marker-end="url(#arr-bk)"/>
+            <text x="96" y="130" fill="#7a7890" font-size="9" text-anchor="middle">p(s',r|s,a)</text>
+
+            <text x="75"  y="165" text-anchor="middle" fill="#8080a8" font-size="9">s'</text>
+            <text x="120" y="165" text-anchor="middle" fill="#8080a8" font-size="9">s'</text>
+            <text x="97" y="188" text-anchor="middle" fill="#7a7890" font-size="9">r + γ v*(s')</text>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Optimal backup q* -->
+      <div>
+        <div class="card-title" style="font-size:0.68rem; margin-bottom:8px">Backup-Diagramm für \(q_*\)</div>
+        <div class="svg-wrap">
+          <svg width="200" height="200" viewBox="0 0 200 200">
+            <!-- root action (optimal) -->
+            <circle cx="100" cy="20" r="10" class="node-optimal-action"/>
+            <text x="100" y="25" text-anchor="middle" fill="#c96a28" font-size="9">(s,a)</text>
+
+            <!-- successor states -->
+            <circle cx="65"  cy="85" r="13" class="node-optimal-state"/>
+            <circle cx="140" cy="85" r="13" class="node-optimal-state"/>
+
+            <line x1="100" y1="30" x2="68"  y2="73" class="backup-line" marker-end="url(#arr-bk)"/>
+            <line x1="100" y1="30" x2="137" y2="73" class="backup-line" marker-end="url(#arr-bk)"/>
+            <text x="100" y="56" text-anchor="middle" fill="#7a7890" font-size="9">p(s',r|s,a)</text>
+
+            <!-- next action nodes (optimal) under right state -->
+            <circle cx="120" cy="158" r="7" class="node-optimal-action"/>
+            <circle cx="155" cy="158" r="7" class="node-optimal-action"/>
+
+            <!-- max arc -->
+            <path d="M108,158 Q138,145 162,158" fill="none" stroke="#c96a28" stroke-width="1.5"
+                  stroke-dasharray="4 3" opacity="0.6"/>
+            <text x="138" y="143" text-anchor="middle" fill="#c96a28" font-size="9">max</text>
+
+            <line x1="140" y1="98" x2="122" y2="152" class="backup-line-accent"/>
+            <line x1="140" y1="98" x2="154" y2="152" class="backup-line-accent"/>
+
+            <!-- one action under left state -->
+            <circle cx="65" cy="158" r="7" class="node-optimal-action"/>
+            <line x1="65"  y1="98" x2="65"  y2="152" class="backup-line"/>
+
+            <text x="100" y="188" text-anchor="middle" fill="#7a7890" font-size="9">max über a' = greedy</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="bellman-explain" style="margin-top:6px">
+      <p>
+        In den optimalen Backup-Diagrammen wird der \(\pi(a|s)\)-Erwartungswert durch ein
+        <b style="color:var(--accent)">max</b> ersetzt — der Agent wählt greedy die beste Aktion.
+        Die Bellman-Optimalitätsgleichung hat eine eindeutige Lösung für endliche MDPs.
+      </p>
+    </div>
+
+    <!-- Connection & Summary -->
+    <div class="intuition-box" style="margin-top:4px">
+      <strong>Zusammenfassung der Zusammenhänge:</strong><br>
+      \(v_*(s) = \max_a q_*(s,a)\) &nbsp;—&nbsp;
+      Zustandswert = bester Q-Wert<br>
+      \(q_*(s,a) = r + \gamma \sum_{s'} p(s'|s,a)\, v_*(s')\) &nbsp;—&nbsp;
+      Q-Wert = Reward + diskontierter Folgewert<br>
+      Die optimale Policy: \(\pi^*(s) = \arg\max_a q_*(s,a)\) — wähle die Aktion mit höchstem Q-Wert
+    </div>
+  </div>
+
+  <!-- Practical Note -->
+  <div class="card">
+    <div class="card-title">Von der Theorie zur Praxis</div>
+    <div class="two-col">
+      <div>
+        <p>
+          <b>Direkte Lösung</b> der Bellman-Gleichungen erfordert das Modell \(p(s',r|s,a)\) und
+          ist nur für kleine MDPs praktikabel (z.B. Policy Iteration, Value Iteration).
+        </p>
+        <div class="formula-box" style="margin-top:8px; font-size:0.78rem">
+          Bellman-Update (Value Iteration):<br>
+          \[v_{k+1}(s) \leftarrow \max_a \sum_{s',r} p(s',r|s,a)\bigl[r + \gamma\, v_k(s')\bigr]\]
+        </div>
+      </div>
+      <div>
+        <p>
+          <b>Modellfreie Methoden</b> (Q-Learning, SARSA, Policy Gradients) approximieren
+          \(q_*\) oder \(\pi^*\) direkt aus Erfahrung ohne das Modell zu kennen — fundamental
+          für reale Anwendungen.
+        </p>
+        <div class="formula-box" style="margin-top:8px; font-size:0.78rem">
+          Q-Learning (TD-Update):<br>
+          \[Q(s,a) \leftarrow Q(s,a) + \alpha\bigl[r + \gamma\max_{a'} Q(s',a') - Q(s,a)\bigr]\]
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end tab-bellman -->
+
+</div><!-- end .main -->
+
+<p class="src-note">// Quelle: Foliensatz 06 — Reinforcement Learning (ML SS2026) · Sutton &amp; Barto, Introduction to Reinforcement Learning, Ch. 1–3</p>
+
+<script>
+  // ── Tab switching ─────────────────────────────────
+  const tabBtns   = document.querySelectorAll('.tab-btn');
+  const tabPanels = document.querySelectorAll('.tab-panel');
+
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.tab;
+
+      tabBtns.forEach(b => b.classList.remove('active'));
+      tabPanels.forEach(p => p.classList.remove('active'));
+
+      btn.classList.add('active');
+      document.getElementById('tab-' + target).classList.add('active');
+
+      // Re-render MathJax after tab switch
+      if (window.MathJax && MathJax.typesetPromise) {
+        MathJax.typesetPromise();
+      }
+    });
+  });
+
+  // ── Gamma slider + bar chart ──────────────────────
+  const gammaSlider = document.getElementById('gamma-slider');
+  const gammaVal    = document.getElementById('gamma-val');
+  const gammaChart  = document.getElementById('gamma-chart');
+  const N_BARS      = 15;
+
+  function buildBars() {
+    gammaChart.innerHTML = '';
+    for (let k = 0; k < N_BARS; k++) {
+      const bar = document.createElement('div');
+      bar.className = 'gamma-bar' + (k === 0 ? ' gamma-bar-0' : '');
+      bar.style.opacity = k === 0 ? '1' : (0.75 - k * 0.012).toFixed(2);
+      gammaChart.appendChild(bar);
+    }
+  }
+
+  function updateChart(gamma) {
+    const bars = gammaChart.querySelectorAll('.gamma-bar');
+    const maxVal = 1; // γ^0 = 1 always
+    bars.forEach((bar, k) => {
+      const val = Math.pow(gamma, k);
+      const pct = (val / maxVal) * 100;
+      bar.style.height = pct + '%';
+      bar.title = `k=${k}: γ^k = ${val.toFixed(3)}`;
+    });
+  }
+
+  gammaSlider.addEventListener('input', () => {
+    const g = parseFloat(gammaSlider.value);
+    gammaVal.textContent = g.toFixed(2);
+    updateChart(g);
+  });
+
+  buildBars();
+  updateChart(0.9);
+</script>
+</body>
+</html>

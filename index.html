@@ -1,892 +1,929 @@
 <!DOCTYPE html>
-<html class="staticrypt-html">
-    <head>
-        <meta charset="utf-8" />
-        <title>Protected Page</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Machine Learning — Lernnotebook</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        <!-- do not cache this page -->
-        <meta http-equiv="cache-control" content="max-age=0" />
-        <meta http-equiv="cache-control" content="no-cache" />
-        <meta http-equiv="expires" content="0" />
-        <meta http-equiv="expires" content="Tue, 01 Jan 1980 1:00:00 GMT" />
-        <meta http-equiv="pragma" content="no-cache" />
+  :root {
+    --bg:       #0f0f11;
+    --surface:  #17171a;
+    --surface2: #1e1e22;
+    --border:   rgba(255,255,255,0.07);
+    --border2:  rgba(255,255,255,0.13);
+    --text:     #e8e6e0;
+    --muted:    #6a6866;
+    --mono:     'DM Mono', monospace;
+    --sans:     'DM Sans', sans-serif;
 
-        <style>
-            .staticrypt-hr {
-                margin-top: 20px;
-                margin-bottom: 20px;
-                border: 0;
-                border-top: 1px solid #eee;
-            }
+    --grundlagen:    #4ecdc4;
+    --supervised:    #2970c4;
+    --unsupervised:  #7c5cbf;
+    --reinforcement: #c96a28;
+    --deep:          #167a5a;
+    --weitere:       #a0522d;
+    --examples:      #c9488e;
+  }
 
-            .staticrypt-page {
-                width: 360px;
-                padding: 8% 0 0;
-                margin: auto;
-                box-sizing: border-box;
-            }
+  html { scroll-behavior: smooth; }
 
-            .staticrypt-form {
-                position: relative;
-                z-index: 1;
-                background: #ffffff;
-                max-width: 360px;
-                margin: 0 auto 100px;
-                padding: 45px;
-                text-align: center;
-                box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.2), 0 5px 5px 0 rgba(0, 0, 0, 0.24);
-            }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
 
-            .staticrypt-form input[type="password"],
-            input[type="text"] {
-                background: inherit;
-                border: 0;
-                box-sizing: border-box; /* This ensures padding is included in the total width */
-                font-size: 14px;
-                outline: 0;
-                padding: 15px 30px 15px 15px; /* Adjust the padding to ensure there is space for the icon */
-                width: 100%;
-            }
+  /* ── top bar ─────────────────────────────────────────── */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 18px 40px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    background: rgba(15,15,17,0.92);
+    backdrop-filter: blur(8px);
+    z-index: 100;
+  }
+  header .logo {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+  header .logo span { color: var(--text); }
 
-            .staticrypt-password-container {
-                position: relative;
-                outline: 0;
-                background: #f2f2f2;
-                width: 100%;
-                border: 0;
-                margin: 0 0 15px;
-                box-sizing: border-box;
-            }
+  /* ── hero ────────────────────────────────────────────── */
+  .hero {
+    padding: 80px 40px 60px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  .hero h1 {
+    font-size: clamp(28px, 4vw, 42px);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 14px;
+  }
+  .hero p {
+    color: var(--muted);
+    font-size: 15px;
+    max-width: 560px;
+  }
 
-            .staticrypt-toggle-password-visibility {
-                cursor: pointer;
-                height: 20px;
-                opacity: 60%;
-                padding: 13px;
-                position: absolute;
-                right: 0;
-                top: 50%;
-                transform: translateY(-50%);
-                width: 20px;
-            }
+  /* ── section layout ──────────────────────────────────── */
+  main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 40px 120px;
+    display: flex;
+    flex-direction: column;
+    gap: 64px;
+  }
 
-            .staticrypt-form .staticrypt-decrypt-button {
-                text-transform: uppercase;
-                outline: 0;
-                background: #4CAF50;
-                width: 100%;
-                border: 0;
-                padding: 15px;
-                color: #ffffff;
-                font-size: 14px;
-                cursor: pointer;
-            }
+  .category { display: flex; flex-direction: column; gap: 0; }
 
-            .staticrypt-form .staticrypt-decrypt-button:hover,
-            .staticrypt-form .staticrypt-decrypt-button:active,
-            .staticrypt-form .staticrypt-decrypt-button:focus {
-                background: #4CAF50;
-                filter: brightness(92%);
-            }
+  .cat-header {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .cat-tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid currentColor;
+    opacity: 0.5;
+  }
+  .cat-header h2 {
+    font-size: 20px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+  .cat-header .anchor {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-decoration: none;
+    margin-left: auto;
+  }
+  .cat-header .anchor:hover { color: var(--text); }
 
-            .staticrypt-html {
-                height: 100%;
-            }
+  .cat-body {
+    color: #b0aea8;
+    font-size: 14px;
+    line-height: 1.75;
+    margin-bottom: 28px;
+    max-width: 660px;
+  }
+  .cat-body p + p { margin-top: 10px; }
 
-            .staticrypt-body {
-                height: 100%;
-                margin: 0;
-            }
+  .placeholder {
+    border: 1px dashed var(--border2);
+    border-radius: 8px;
+    padding: 18px 20px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 28px;
+  }
 
-            .staticrypt-content {
-                height: 100%;
-                margin-bottom: 1em;
-                background: #76B852;
-                font-family: "Arial", sans-serif;
-                -webkit-font-smoothing: antialiased;
-                -moz-osx-font-smoothing: grayscale;
-            }
+  /* ── algorithm card grid ─────────────────────────────── */
+  .algo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+  }
 
-            .staticrypt-instructions {
-                margin-top: -1em;
-                margin-bottom: 1em;
-            }
+  .algo-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    text-decoration: none;
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+  }
+  .algo-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: currentColor;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .algo-card:hover {
+    background: var(--surface2);
+    border-color: var(--border2);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .algo-card:hover::before { opacity: 1; }
 
-            .staticrypt-title {
-                font-size: 1.5em;
-            }
+  .algo-card .card-label { font-size: 14px; font-weight: 500; }
+  .algo-card .card-desc  { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .algo-card .card-badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: currentColor;
+    opacity: 0.55;
+    margin-top: auto;
+    padding-top: 10px;
+  }
 
-            label.staticrypt-remember {
-                display: flex;
-                align-items: center;
-                margin-bottom: 1em;
-            }
+  .algo-card.empty {
+    opacity: 0.35;
+    pointer-events: none;
+    border-style: dashed;
+  }
 
-            .staticrypt-remember input[type="checkbox"] {
-                transform: scale(1.5);
-                margin-right: 1em;
-            }
+  /* ── slides row ──────────────────────────────────────── */
+  .slides-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 18px;
+  }
+  .slide-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    cursor: pointer;
+    text-decoration: none;
+    transition: border-color 0.12s, color 0.12s, background 0.12s;
+  }
+  .slide-chip:hover {
+    border-color: var(--border2);
+    color: var(--text);
+    background: var(--surface2);
+  }
+  .slide-chip .chip-icon { font-size: 12px; opacity: 0.6; }
 
-            .hidden {
-                display: none !important;
-            }
+  /* open-in-new icon for non-modal cards */
+  .card-ext-icon {
+    position: absolute;
+    top: 14px; right: 14px;
+    opacity: 0;
+    transition: opacity 0.15s;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .algo-card:hover .card-ext-icon { opacity: 1; }
 
-            .staticrypt-spinner-container {
-                height: 100%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
+  /* ── modal overlay ───────────────────────────────────── */
+  #modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15,15,17,0.72);
+    backdrop-filter: blur(6px);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+  }
+  #modal-overlay.open { display: flex; }
 
-            .staticrypt-spinner {
-                display: inline-block;
-                width: 2rem;
-                height: 2rem;
-                vertical-align: text-bottom;
-                border: 0.25em solid gray;
-                border-right-color: transparent;
-                border-radius: 50%;
-                -webkit-animation: spinner-border 0.75s linear infinite;
-                animation: spinner-border 0.75s linear infinite;
-                animation-duration: 0.75s;
-                animation-timing-function: linear;
-                animation-delay: 0s;
-                animation-iteration-count: infinite;
-                animation-direction: normal;
-                animation-fill-mode: none;
-                animation-play-state: running;
-                animation-name: spinner-border;
-            }
+  #modal-box {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 14px;
+    box-shadow: 0 8px 48px rgba(0,0,0,0.12);
+    width: 100%;
+    max-width: 1160px;
+    height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
 
-            @keyframes spinner-border {
-                100% {
-                    transform: rotate(360deg);
-                }
-            }
+  #modal-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  #modal-title {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
-            @media screen and (-webkit-min-device-pixel-ratio: 0) {
-                .staticrypt-form input[type="password"],
-                input[type="text"] {
-                    font-size: 16px;
-                }
-            }
-        </style>
-    </head>
+  .modal-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: border-color 0.12s, color 0.12s;
+  }
+  .modal-btn:hover { border-color: var(--border2); color: var(--text); }
 
-    <body class="staticrypt-body">
-        <div id="staticrypt_loading" class="staticrypt-spinner-container">
-            <div class="staticrypt-spinner"></div>
+  #modal-iframe {
+    flex: 1;
+    border: none;
+    width: 100%;
+    background: var(--bg);
+  }
+
+  /* ── sidebar nav ─────────────────────────────────────── */
+  @media (min-width: 1200px) {
+    .layout { display: flex; max-width: 1140px; margin: 0 auto; }
+    aside {
+      width: 190px;
+      flex-shrink: 0;
+      padding: 32px 0 0 40px;
+      position: sticky;
+      top: 64px;
+      align-self: flex-start;
+    }
+    aside nav { display: flex; flex-direction: column; gap: 6px; }
+    aside a {
+      font-size: 12px;
+      color: var(--muted);
+      text-decoration: none;
+      padding: 3px 0 3px 10px;
+      border-left: 2px solid var(--border);
+      transition: color 0.12s, border-color 0.12s;
+    }
+    aside a:hover { color: var(--text); border-color: var(--border2); }
+    main { max-width: 860px; padding-right: 40px; }
+  }
+
+  @media (max-width: 600px) {
+    header, .hero, main { padding-left: 20px; padding-right: 20px; }
+    .hero { padding-top: 48px; }
+    #modal-overlay { padding: 0; }
+    #modal-box { border-radius: 0; height: 100vh; max-width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">ML/<span>Notebook</span></div>
+</header>
+
+<!-- ── Modal ────────────────────────────────────────────── -->
+<div id="modal-overlay" role="dialog" aria-modal="true">
+  <div id="modal-box">
+    <div id="modal-bar">
+      <span id="modal-title">—</span>
+      <a id="modal-open-btn" class="modal-btn" href="#" target="_blank">↗ öffnen</a>
+      <button class="modal-btn" id="modal-close-btn">✕ schließen</button>
+    </div>
+    <iframe id="modal-iframe" src="" title="Visualisierung"></iframe>
+  </div>
+</div>
+
+<div class="layout">
+  <aside>
+    <nav>
+      <a href="#grundlagen">Grundlagen</a>
+      <a href="#supervised">Supervised</a>
+      <a href="#unsupervised">Unsupervised</a>
+      <a href="#reinforcement">Reinforcement</a>
+      <a href="#deep-learning">Deep Learning</a>
+      <a href="#weitere">Weitere Themen</a>
+      <a href="#examples">Examples</a>
+    </nav>
+  </aside>
+
+  <div style="flex:1; min-width:0;">
+    <div class="hero">
+      <h1>Machine Learning</h1>
+      <p>Persönliche Lernunterlage — Konzepte, Algorithmen und interaktive Visualisierungen Schritt für Schritt aufgebaut.</p>
+    </div>
+
+    <main>
+
+      <!-- ── GRUNDLAGEN ───────────────────────────────── -->
+      <section class="category" id="grundlagen">
+        <div class="cat-header">
+          <span class="cat-tag" style="color:var(--grundlagen)">00</span>
+          <h2>Grundlagen &amp; Konzepte</h2>
+          <a class="anchor" href="#grundlagen">#grundlagen</a>
+        </div>
+        <div class="cat-body">
+          <p>
+            Algorithmische Bausteine, die quer durch alle ML-Kategorien verwendet werden —
+            Optimierungsverfahren, Fehlermaße und mathematische Werkzeuge.
+          </p>
+        </div>
+        <div class="algo-grid">
+          <div class="algo-card" style="color:var(--grundlagen)"
+               data-src="supervised/gradient-descent.html"
+               data-title="Gradient Descent">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">Gradient Descent</span>
+            <span class="card-desc">Iterative Parameteroptimierung entlang des negativen Gradienten.</span>
+            <span class="card-badge">// interaktiv</span>
+          </div>
+          <div class="algo-card" style="color:var(--grundlagen)"
+               data-src="grundlagen/overfitting.html"
+               data-title="Overfitting bei Polynomen">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">Overfitting</span>
+            <span class="card-desc">Wie Polynome hoher Ordnung Trainingsdaten auswendig lernen.</span>
+            <span class="card-badge">// interaktiv</span>
+          </div>
+          <div class="algo-card" style="color:var(--grundlagen)"
+               data-src="grundlagen/eigenwerte.html"
+               data-title="Eigenwerte & Eigenvektoren">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">Eigenwerte</span>
+            <span class="card-desc">Richtungen, die eine Matrix nur streckt statt dreht — Basis der PCA.</span>
+            <span class="card-badge">// interaktiv</span>
+          </div>
+          <div class="algo-card" style="color:var(--grundlagen)"
+               data-src="grundlagen/kovarianzmatrix.html"
+               data-title="Kovarianz & Kovarianzmatrix">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">Kovarianzmatrix</span>
+            <span class="card-desc">Paarweise Streuung aller Merkmale — das Herzstück von PCA.</span>
+            <span class="card-badge">// interaktiv</span>
+          </div>
+          <div class="algo-card" style="color:var(--grundlagen)"
+               data-src="deep-learning/backpropagation.html"
+               data-title="Backpropagation">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">Backpropagation</span>
+            <span class="card-desc">Effiziente Gradientenberechnung durch Kettenregel — Computational Graph, Jacobians, Komplexitätsvergleich.</span>
+            <span class="card-badge">// interaktiv</span>
+          </div>
+          <div class="algo-card" style="color:var(--grundlagen)"
+               data-src="grundlagen/kreuzvalidierung.html"
+               data-title="Kreuzvalidierung — k-fold, LOO, Train/Val/Test">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">Kreuzvalidierung</span>
+            <span class="card-desc">k-fold CV, Leave-One-Out, Train/Val/Test-Split, Data Leakage — interaktiver Fold-Animator.</span>
+            <span class="card-badge">// interaktiv</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── SUPERVISED LEARNING ───────────────────────── -->
+      <section class="category" id="supervised">
+        <div class="cat-header supervised">
+          <span class="cat-tag">01</span>
+          <h2>Supervised Learning</h2>
+          <a class="anchor" href="#supervised">#supervised</a>
+        </div>
+        <div class="cat-body">
+          <p>
+            Beim überwachten Lernen wird das Modell auf einem beschrifteten Datensatz trainiert —
+            jedes Trainingsbeispiel besteht aus einem Input <em>x</em> und dem gewünschten Output <em>y</em>.
+            Ziel ist es, eine Funktion <em>f : x → y</em> zu lernen, die auf neuen Daten generalisiert.
+          </p>
+        </div>
+        <div class="slides-row">
+          <span class="slide-chip"
+                data-src="slides/01-Predicting Numeric ValuesMarch10.pdf"
+                data-title="01 — Predicting Numeric Values">
+            <span class="chip-icon">📄</span> Predicting Numeric Values
+          </span>
+          <span class="slide-chip"
+                data-src="slides/02-Predicting Numeric Values.pdf"
+                data-title="02 — Predicting Numeric Values (v2)">
+            <span class="chip-icon">📄</span> Predicting Numeric Values (v2)
+          </span>
+          <span class="slide-chip"
+                data-src="slides/02-NaiveBayesCoveringAlgorithmsWS2022.pdf"
+                data-title="02 — Naive Bayes & Covering Algorithms">
+            <span class="chip-icon">📄</span> Naive Bayes &amp; Covering
+          </span>
+          <span class="slide-chip"
+                data-src="slides/05 - KnnDecisionTreesEvaluationRandomForest.pdf"
+                data-title="05 — KNN, Decision Trees, Random Forest">
+            <span class="chip-icon">📄</span> KNN / Decision Trees / RF
+          </span>
         </div>
 
-        <div id="staticrypt_content" class="staticrypt-content hidden">
-            <div class="staticrypt-page">
-                <div class="staticrypt-form">
-                    <div class="staticrypt-instructions">
-                        <p class="staticrypt-title">Protected Page</p>
-                        <p></p>
-                    </div>
+        <div class="algo-grid">
+          <div class="algo-card" style="color:var(--supervised)"
+               data-src="supervised/lineare-regression.html"
+               data-title="Lineare Regression">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">Lineare Regression</span>
+            <span class="card-desc">Kontinuierliche Ausgabe durch eine lineare Hypothese.</span>
+            <span class="card-badge">// interaktiv</span>
+          </div>
+          <div class="algo-card" style="color:var(--supervised)"
+               data-src="supervised/ridge-regression.html"
+               data-title="Ridge Regression">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">Ridge Regression</span>
+            <span class="card-desc">L2-Regularisierung gegen Overfitting bei Polynomen.</span>
+            <span class="card-badge">// interaktiv</span>
+          </div>
+          <div class="algo-card" style="color:var(--supervised)"
+               data-src="supervised/lasso-regression.html"
+               data-title="Lasso Regression">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">Lasso Regression</span>
+            <span class="card-desc">L1-Regularisierung mit automatischer Feature-Selektion.</span>
+            <span class="card-badge">// interaktiv</span>
+          </div>
+          <div class="algo-card" style="color:var(--supervised)"
+               data-src="supervised/normalengleichung.html"
+               data-title="Normalengleichung — Analytische Lösung">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">Normalengleichung</span>
+            <span class="card-desc">Analytische Lösung w = (XᵀX)⁻¹Xᵀy — Schritt-für-Schritt Matrixberechnung.</span>
+            <span class="card-badge">// interaktiv</span>
+          </div>
+          <div class="algo-card" style="color:var(--supervised)"
+               data-src="supervised/polynomielle-regression.html"
+               data-title="Polynomielle Regression">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">Polynomielle Regression</span>
+            <span class="card-desc">Grad-Slider von 1–8: Underfitting, gute Anpassung und Overfitting live sehen.</span>
+            <span class="card-badge">// interaktiv</span>
+          </div>
+          <div class="algo-card" style="color:var(--supervised)"
+               data-src="supervised/knn.html"
+               data-title="k-Nearest Neighbours (k-NN)">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">k-NN</span>
+            <span class="card-desc">Lazy Learner — Klassifikation via k nächste Nachbarn, Distanzfunktionen, Entscheidungsgrenze.</span>
+            <span class="card-badge">// interaktiv</span>
+          </div>
+          <div class="algo-card" style="color:var(--supervised)"
+               data-src="supervised/naive-bayes-covering.html"
+               data-title="Naive Bayes &amp; Covering Algorithms">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">Naive Bayes &amp; Covering</span>
+            <span class="card-desc">Probabilistische Klassifikation und regelbasiertes Lernen mit p/t-Ratio.</span>
+            <span class="card-badge">// interaktiv</span>
+          </div>
+          <div class="algo-card" style="color:var(--supervised)"
+               data-src="supervised/decision-trees.html"
+               data-title="Decision Trees">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">Decision Trees</span>
+            <span class="card-desc">Rekursive Splits, Error Rate / Information Gain / Gini, Partitionierung &amp; Baumstruktur.</span>
+            <span class="card-badge">// interaktiv</span>
+          </div>
+          <div class="algo-card" style="color:var(--supervised)"
+               data-src="supervised/random-forest.html"
+               data-title="Random Forests">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">Random Forests</span>
+            <span class="card-desc">Bagging-Ensemble — Bootstrap, Feature-Subsampling, Majority Voting, OOB-Schätzung.</span>
+            <span class="card-badge">// interaktiv</span>
+          </div>
+          <div class="algo-card supervised empty" style="color:var(--supervised)">
+            <span class="card-label">SVM</span>
+            <span class="card-desc">Maximale Margin-Hyperebene im Feature-Raum.</span>
+            <span class="card-badge">// bald</span>
+          </div>
+        </div>
+      </section>
 
-                    <hr class="staticrypt-hr" />
-
-                    <form id="staticrypt-form" action="#" method="post">
-                        <div class="staticrypt-password-container">
-                            <input
-                                id="staticrypt-password"
-                                type="password"
-                                name="password"
-                                placeholder="Password"
-                                autofocus
-                            />
-
-                            <img
-                                class="staticrypt-toggle-password-visibility"
-                                alt="Show password"
-                                title="Show password"
-                                src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NDAgNTEyIj48IS0tIUZvbnQgQXdlc29tZSBGcmVlIDYuNS4yIGJ5IEBmb250YXdlc29tZSAtIGh0dHBzOi8vZm9udGF3ZXNvbWUuY29tIExpY2Vuc2UgLSBodHRwczovL2ZvbnRhd2Vzb21lLmNvbS9saWNlbnNlL2ZyZWUgQ29weXJpZ2h0IDIwMjQgRm9udGljb25zLCBJbmMuLS0+PHBhdGggZD0iTTM4LjggNS4xQzI4LjQtMy4xIDEzLjMtMS4yIDUuMSA5LjJTLTEuMiAzNC43IDkuMiA0Mi45bDU5MiA0NjRjMTAuNCA4LjIgMjUuNSA2LjMgMzMuNy00LjFzNi4zLTI1LjUtNC4xLTMzLjdMNTI1LjYgMzg2LjdjMzkuNi00MC42IDY2LjQtODYuMSA3OS45LTExOC40YzMuMy03LjkgMy4zLTE2LjcgMC0yNC42Yy0xNC45LTM1LjctNDYuMi04Ny43LTkzLTEzMS4xQzQ2NS41IDY4LjggNDAwLjggMzIgMzIwIDMyYy02OC4yIDAtMTI1IDI2LjMtMTY5LjMgNjAuOEwzOC44IDUuMXpNMjIzLjEgMTQ5LjVDMjQ4LjYgMTI2LjIgMjgyLjcgMTEyIDMyMCAxMTJjNzkuNSAwIDE0NCA2NC41IDE0NCAxNDRjMCAyNC45LTYuMyA0OC4zLTE3LjQgNjguN0w0MDggMjk0LjVjOC40LTE5LjMgMTAuNi00MS40IDQuOC02My4zYy0xMS4xLTQxLjUtNDcuOC02OS40LTg4LjYtNzEuMWMtNS44LS4yLTkuMiA2LjEtNy40IDExLjdjMi4xIDYuNCAzLjMgMTMuMiAzLjMgMjAuM2MwIDEwLjItMi40IDE5LjgtNi42IDI4LjNsLTkwLjMtNzAuOHpNMzczIDM4OS45Yy0xNi40IDYuNS0zNC4zIDEwLjEtNTMgMTAuMWMtNzkuNSAwLTE0NC02NC41LTE0NC0xNDRjMC02LjkgLjUtMTMuNiAxLjQtMjAuMkw4My4xIDE2MS41QzYwLjMgMTkxLjIgNDQgMjIwLjggMzQuNSAyNDMuN2MtMy4zIDcuOS0zLjMgMTYuNyAwIDI0LjZjMTQuOSAzNS43IDQ2LjIgODcuNyA5MyAxMzEuMUMxNzQuNSA0NDMuMiAyMzkuMiA0ODAgMzIwIDQ4MGM0Ny44IDAgODkuOS0xMi45IDEyNi4yLTMyLjVMMzczIDM4OS45eiIvPjwvc3ZnPg=="
-                            />
-                        </div>
-
-                        <label id="staticrypt-remember-label" class="staticrypt-remember hidden">
-                            <input id="staticrypt-remember" type="checkbox" name="remember" />
-                            Remember me
-                        </label>
-
-                        <input type="submit" class="staticrypt-decrypt-button" value="DECRYPT" />
-                    </form>
-                </div>
-            </div>
+      <!-- ── UNSUPERVISED LEARNING ─────────────────────── -->
+      <section class="category" id="unsupervised">
+        <div class="cat-header unsupervised">
+          <span class="cat-tag">02</span>
+          <h2>Unsupervised Learning</h2>
+          <a class="anchor" href="#unsupervised">#unsupervised</a>
+        </div>
+        <div class="cat-body">
+          <p>
+            Hier gibt es kein Label <em>y</em>. Das Modell sucht selbständig nach Mustern, Strukturen
+            oder Kompressionen im Datensatz — etwa Cluster, Dimensionsreduktionen oder Dichteschätzungen.
+          </p>
+        </div>
+        <div class="slides-row">
+          <span class="slide-chip"
+                data-src="slides/04 - unsupervised_learning.pdf"
+                data-title="04 — Unsupervised Learning">
+            <span class="chip-icon">📄</span> Unsupervised Learning
+          </span>
         </div>
 
-        <script>
-            // these variables will be filled when generating the file - the template format is 'variable_name'
-            const staticryptInitiator = ((function(){
-  const exports = {};
-  const cryptoEngine = ((function(){
-  const exports = {};
-  const { subtle } = crypto;
+        <div class="algo-grid">
+          <div class="algo-card" style="color:var(--unsupervised)"
+               data-src="unsupervized/lloyd-algorithmus.html"
+               data-title="Lloyd-Algorithmus — K-Means Clustering">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">Lloyd-Algorithmus</span>
+            <span class="card-desc">K-Means Clustering — Zielfunktion, Voronoi-Zellen, Mini-Batch, K-means++.</span>
+            <span class="card-badge">// interaktiv</span>
+          </div>
+          <div class="algo-card" style="color:var(--unsupervised)"
+               data-src="unsupervized/pca_visualisierung.html"
+               data-title="PCA — Schritt für Schritt">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">PCA</span>
+            <span class="card-desc">Principal Component Analysis — Eigenvektoren, Kovarianzform, erklärte Varianz.</span>
+            <span class="card-badge">// visualisierung</span>
+          </div>
+          <div class="algo-card" style="color:var(--unsupervised)"
+               data-src="unsupervized/gmm-em.html"
+               data-title="GMM & EM-Algorithmus">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">GMM &amp; EM</span>
+            <span class="card-desc">Gaussian Mixture Model — probabilistisches Clustering mit weichen Zuweisungen.</span>
+            <span class="card-badge">// interaktiv</span>
+          </div>
+          <div class="algo-card" style="color:var(--unsupervised)"
+               data-src="unsupervized/ssl-deep.html"
+               data-title="Deep Self-Supervised Learning">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">Deep SSL</span>
+            <span class="card-desc">Autoencoder, VAE, SimCLR, CLIP, VICReg, Barlow Twins, GPT-Vorhersage.</span>
+            <span class="card-badge">// referenz</span>
+          </div>
+        </div>
+      </section>
 
-const IV_BITS = 16 * 8;
-const HEX_BITS = 4;
-const ENCRYPTION_ALGO = "AES-CBC";
+      <!-- ── REINFORCEMENT LEARNING ────────────────────── -->
+      <section class="category" id="reinforcement">
+        <div class="cat-header reinforcement">
+          <span class="cat-tag">03</span>
+          <h2>Reinforcement Learning</h2>
+          <a class="anchor" href="#reinforcement">#reinforcement</a>
+        </div>
+        <div class="cat-body">
+          <p>
+            Ein Agent lernt durch Interaktion mit einer Umgebung. Er erhält nach jeder Aktion eine
+            Belohnung (Reward) und optimiert seine Policy, um den kumulierten zukünftigen Reward zu maximieren.
+          </p>
+          <p>
+            Kernkonzepte: Policy π, Wertfunktion V(s), Aktionswertfunktion Q(s,a),
+            Bellman-Gleichungen, Exploration vs. Exploitation, Temporal Difference Learning.
+          </p>
+        </div>
+        <div class="slides-row">
+          <span class="slide-chip"
+                data-src="slides/06 - ReinforcementLearningApril28.pdf"
+                data-title="06 — Reinforcement Learning">
+            <span class="chip-icon">📄</span> Reinforcement Learning
+          </span>
+        </div>
 
-/**
- * Translates between utf8 encoded hexadecimal strings
- * and Uint8Array bytes.
- */
-const HexEncoder = {
-    /**
-     * hex string -> bytes
-     * @param {string} hexString
-     * @returns {Uint8Array}
-     */
-    parse: function (hexString) {
-        if (hexString.length % 2 !== 0) throw "Invalid hexString";
-        const arrayBuffer = new Uint8Array(hexString.length / 2);
+        <div class="algo-grid">
+          <div class="algo-card" style="color:var(--reinforcement)"
+               data-src="reinforcement/mdp-grundlagen.html"
+               data-title="MDP — Grundlagen">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">MDP Grundlagen</span>
+            <span class="card-desc">Agent-Environment-Loop, Policy, Wertfunktionen, Bellman-Gleichungen, Recycling-Robot.</span>
+            <span class="card-badge">// referenz + interaktiv</span>
+          </div>
+          <div class="algo-card" style="color:var(--reinforcement)"
+               data-src="reinforcement/k-armed-bandit.html"
+               data-title="k-Armed Bandit — Exploration vs. Exploitation">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">k-Armed Bandit</span>
+            <span class="card-desc">Greedy, ε-greedy, UCB und optimistische Initialwerte — Exploration-Exploitation live simuliert.</span>
+            <span class="card-badge">// interaktiv</span>
+          </div>
+          <div class="algo-card" style="color:var(--reinforcement)"
+               data-src="reinforcement/q-learning-gridworld.html"
+               data-title="Q-Learning &amp; SARSA — Grid World">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">Q-Learning &amp; SARSA</span>
+            <span class="card-desc">TD-Learning in einer Grid World — Q-Tabelle wächst live, Policy emergiert aus Episoden.</span>
+            <span class="card-badge">// interaktiv</span>
+          </div>
+          <div class="algo-card" style="color:var(--reinforcement)"
+               data-src="reinforcement/actor-critic.html"
+               data-title="Policy Gradient, REINFORCE &amp; Actor-Critic">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">Actor-Critic &amp; REINFORCE</span>
+            <span class="card-desc">TD-Loss, K-step Bellman, Log-Derivative Trick, Advantage-Funktion — animierter AC-Loop.</span>
+            <span class="card-badge">// interaktiv</span>
+          </div>
+        </div>
+      </section>
 
-        for (let i = 0; i < hexString.length; i += 2) {
-            const byteValue = parseInt(hexString.substring(i, i + 2), 16);
-            if (isNaN(byteValue)) {
-                throw "Invalid hexString";
-            }
-            arrayBuffer[i / 2] = byteValue;
-        }
-        return arrayBuffer;
-    },
+      <!-- ── DEEP LEARNING ─────────────────────────────── -->
+      <section class="category" id="deep-learning">
+        <div class="cat-header deep">
+          <span class="cat-tag">04</span>
+          <h2>Deep Learning</h2>
+          <a class="anchor" href="#deep-learning">#deep-learning</a>
+        </div>
+        <div class="cat-body">
+          <p>
+            Tiefe neuronale Netze mit vielen Schichten lernen hierarchische Repräsentationen.
+            Grundlage: Backpropagation als Produkt von Jacobians, kombiniert mit Gradientenabstieg.
+          </p>
+          <p>
+            Sequenzmodelle — Conv1D, RNN, LSTM, Transformer — unterscheiden sich in
+            rezeptivem Feld, Parallelisierbarkeit und Nicht-Linearität.
+          </p>
+        </div>
+        <div class="slides-row">
+          <span class="slide-chip"
+                data-src="slides/03-ML2026S_deep_learning_1.pdf"
+                data-title="03 — Deep Learning I">
+            <span class="chip-icon">📄</span> Deep Learning I
+          </span>
+          <span class="slide-chip"
+                data-src="slides/08 - rnn_and_transformers.pdf"
+                data-title="08 — RNN &amp; Transformers">
+            <span class="chip-icon">📄</span> RNN &amp; Transformers
+          </span>
+        </div>
 
-    /**
-     * bytes -> hex string
-     * @param {Uint8Array} bytes
-     * @returns {string}
-     */
-    stringify: function (bytes) {
-        const hexBytes = [];
+        <div class="algo-grid">
+          <div class="algo-card" style="color:var(--deep)"
+               data-src="deep-learning/mlp-netz.html"
+               data-title="MLP — Forward Pass &amp; Loss Functions">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">MLP &amp; Loss Functions</span>
+            <span class="card-desc">Netzarchitektur, Forward Pass, MSE vs. Softmax + Cross-Entropy — mit interaktivem Logit-Demo.</span>
+            <span class="card-badge">// interaktiv</span>
+          </div>
+          <div class="algo-card" style="color:var(--deep)"
+               data-src="deep-learning/backpropagation.html"
+               data-title="Backpropagation">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">Backpropagation</span>
+            <span class="card-desc">Computational Graph, Chain Rule, Jacobians — Forward/Backward animiert, Komplexitäts- und Speichervergleich.</span>
+            <span class="card-badge">// interaktiv</span>
+          </div>
+          <div class="algo-card" style="color:var(--deep)"
+               data-src="deep-learning/training-stabilisierung.html"
+               data-title="Training Stabilization">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">Training Stabilization</span>
+            <span class="card-desc">Weight Init (He), ResNet Skip Connections, Batch/Layer/RMS Norm, Dropout — mit Varianz-Propagation Demo.</span>
+            <span class="card-badge">// interaktiv</span>
+          </div>
+          <div class="algo-card" style="color:var(--deep)"
+               data-src="deep-learning/rnn.html"
+               data-title="Recurrent Neural Networks &amp; LSTM">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">RNN &amp; LSTM</span>
+            <span class="card-desc">Rekurrente Netze, Vanishing/Exploding Gradients, LSTM-Gates — unrolled animiert.</span>
+            <span class="card-badge">// interaktiv</span>
+          </div>
+          <div class="algo-card" style="color:var(--deep)"
+               data-src="deep-learning/transformer.html"
+               data-title="Transformer &amp; Attention">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">Transformer &amp; Attention</span>
+            <span class="card-desc">Self-Attention, Multi-Head, Masking, Transformer-Backbone, Positional Encoding, Cross-Attention.</span>
+            <span class="card-badge">// interaktiv</span>
+          </div>
+          <div class="algo-card" style="color:var(--deep)"
+               data-src="deep-learning/conv1d.html"
+               data-title="Conv1D &amp; TCN — Convolutional Networks für Sequenzen">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">Conv1D &amp; TCN</span>
+            <span class="card-desc">Sliding Kernel, Padding (none/same/causal), Rezeptives Feld, Stride &amp; Dilation, TCN-Backbone mit Dilation 2ˡ.</span>
+            <span class="card-badge">// interaktiv</span>
+          </div>
+          <div class="algo-card" style="color:var(--deep)"
+               data-src="deep-learning/conv2d.html"
+               data-title="Conv2D — Convolutional Networks für Bilder">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">Conv2D &amp; CNN</span>
+            <span class="card-desc">Gleitender 2D-Kernel, Bildfilter (Kante/Sobel/Blur/Sharpen), Padding &amp; Stride, Pooling, Feature Maps &amp; Parameterzahl.</span>
+            <span class="card-badge">// interaktiv</span>
+          </div>
+        </div>
+      </section>
 
-        for (let i = 0; i < bytes.length; ++i) {
-            let byteString = bytes[i].toString(16);
-            if (byteString.length < 2) {
-                byteString = "0" + byteString;
-            }
-            hexBytes.push(byteString);
-        }
-        return hexBytes.join("");
-    },
-};
+      <!-- ── WEITERE THEMEN ────────────────────────────── -->
+      <section class="category" id="weitere">
+        <div class="cat-header weitere">
+          <span class="cat-tag">05</span>
+          <h2>Weitere Themen</h2>
+          <a class="anchor" href="#weitere">#weitere</a>
+        </div>
+        <div class="cat-body">
+          <p>
+            Themen jenseits der klassischen ML-Kategorien — Meta-Learning, automatisierte
+            Modellselektion, Ressourceneffizienz sowie große Sprachmodelle und Coding Agents.
+          </p>
+        </div>
+        <div class="slides-row">
+          <span class="slide-chip"
+                data-src="slides/07 - MetalearningAutoML.pdf"
+                data-title="07 — Meta-Learning &amp; AutoML">
+            <span class="chip-icon">📄</span> Meta-Learning &amp; AutoML
+          </span>
+          <span class="slide-chip"
+                data-src="slides/09 - resource_efficient_deep_learning_v2.pdf"
+                data-title="09 — Resource Efficient Deep Learning">
+            <span class="chip-icon">📄</span> Resource Efficient Deep Learning
+          </span>
+          <span class="slide-chip"
+                data-src="slides/10 - language_models_to_coding_agents.pdf"
+                data-title="10 — Language Models to Coding Agents">
+            <span class="chip-icon">📄</span> LLMs &amp; Coding Agents
+          </span>
+        </div>
+        <div class="algo-grid">
+          <div class="algo-card" style="color:var(--weitere)"
+               data-src="weitere-themen/metalearning-automl.html"
+               data-title="MetaLearning &amp; AutoML">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">MetaLearning &amp; AutoML</span>
+            <span class="card-desc">No Free Lunch, Rice-Framework, Meta-Features, Grid vs. Random Search, SMBO, Bayesian Optimization, SMAC, Auto-Sklearn.</span>
+            <span class="card-badge">// interaktiv</span>
+          </div>
+          <div class="algo-card" style="color:var(--weitere)"
+               data-src="weitere-themen/llm-agents.html"
+               data-title="LLMs &amp; Coding Agents">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">LLMs &amp; Coding Agents</span>
+            <span class="card-desc">Tokenisierung, Pre-Training, SFT, RLHF/GRPO, DPO, Function Calling, MCP (JSON-RPC 2.0).</span>
+            <span class="card-badge">// interaktiv</span>
+          </div>
+          <div class="algo-card" style="color:var(--weitere)"
+               data-src="weitere-themen/ressourcen-effizienz.html"
+               data-title="Resource Efficient Deep Learning">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">Ressourceneffizienz</span>
+            <span class="card-desc">KI-Hardware, Quantisierung (int4/int8/bfloat16), PTQ/QAT, Transformer-Archetypen.</span>
+            <span class="card-badge">// interaktiv</span>
+          </div>
+        </div>
+      </section>
 
-/**
- * Translates between utf8 strings and Uint8Array bytes.
- */
-const UTF8Encoder = {
-    parse: function (str) {
-        return new TextEncoder().encode(str);
-    },
+      <!-- ── EXAMPLES ─────────────────────────────────── -->
+      <section class="category" id="examples">
+        <div class="cat-header">
+          <span class="cat-tag" style="color:var(--examples)">EX</span>
+          <h2>Examples &amp; Ausarbeitungen</h2>
+          <a class="anchor" href="#examples">#examples</a>
+        </div>
+        <div class="cat-body">
+          <p>
+            Vollständige End-to-End-Ausarbeitungen von Übungsaufgaben — mit Herleitung,
+            Visualisierungen und numerischen Beispielen Schritt für Schritt aufgebaut.
+          </p>
+        </div>
+        <div class="slides-row">
+          <span class="slide-chip"
+                data-src="slides/EX1 - Logistic Regression On MNIST.pdf"
+                data-title="EX1 — Logistic Regression On MNIST (Original)">
+            <span class="chip-icon">📄</span> EX1 — Originalausarbeitung
+          </span>
+          <span class="slide-chip"
+                data-src="slides/EX3 - ML_2026S_assignement3_intro_lecture.pdf"
+                data-title="EX3 — Assignment 3 Intro">
+            <span class="chip-icon">📄</span> EX3 — Assignment 3 Intro
+          </span>
+          <span class="slide-chip"
+                data-src="slides/EX4 - LLM agents-1.pdf"
+                data-title="EX4 — Assignment 4: LLM Agents (GSM8k)">
+            <span class="chip-icon">📄</span> EX4 — LLM Agents (GSM8k)
+          </span>
+        </div>
+        <div class="algo-grid">
+          <div class="algo-card" style="color:var(--examples)"
+               data-src="examples/logistic-regression-mnist.html"
+               data-title="EX1 — Logistic Regression on MNIST">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">Logistic Regression on MNIST</span>
+            <span class="card-desc">End-to-End: Forward Pass, Cross-Entropy Loss, Chain-Rule-Herleitung aller Gradienten, numerisches Beispiel.</span>
+            <span class="card-badge">// ausarbeitung</span>
+          </div>
+        </div>
+      </section>
 
-    stringify: function (bytes) {
-        return new TextDecoder().decode(bytes);
-    },
-};
+    </main>
+  </div>
+</div>
 
-/**
- * Salt and encrypt a msg with a password.
- */
-async function encrypt(msg, hashedPassword) {
-    // Must be 16 bytes, unpredictable, and preferably cryptographically random. However, it need not be secret.
-    // https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/encrypt#parameters
-    const iv = crypto.getRandomValues(new Uint8Array(IV_BITS / 8));
+<script>
+  const overlay   = document.getElementById('modal-overlay');
+  const iframe    = document.getElementById('modal-iframe');
+  const titleEl   = document.getElementById('modal-title');
+  const openBtn   = document.getElementById('modal-open-btn');
+  const closeBtn  = document.getElementById('modal-close-btn');
 
-    const key = await subtle.importKey("raw", HexEncoder.parse(hashedPassword), ENCRYPTION_ALGO, false, ["encrypt"]);
+  function openModal(src, title) {
+    iframe.src    = src;
+    titleEl.textContent = title;
+    openBtn.href  = src;
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
 
-    const encrypted = await subtle.encrypt(
-        {
-            name: ENCRYPTION_ALGO,
-            iv: iv,
-        },
-        key,
-        UTF8Encoder.parse(msg)
-    );
+  function closeModal() {
+    overlay.classList.remove('open');
+    iframe.src = '';
+    document.body.style.overflow = '';
+  }
 
-    // iv will be 32 hex characters, we prepend it to the ciphertext for use in decryption
-    return HexEncoder.stringify(iv) + HexEncoder.stringify(new Uint8Array(encrypted));
-}
-exports.encrypt = encrypt;
+  // card clicks
+  document.querySelectorAll('.algo-card[data-src]').forEach(card => {
+    card.addEventListener('click', () => {
+      openModal(card.dataset.src, card.dataset.title);
+    });
+  });
 
-/**
- * Decrypt a salted msg using a password.
- *
- * @param {string} encryptedMsg
- * @param {string} hashedPassword
- * @returns {Promise<string>}
- */
-async function decrypt(encryptedMsg, hashedPassword) {
-    const ivLength = IV_BITS / HEX_BITS;
-    const iv = HexEncoder.parse(encryptedMsg.substring(0, ivLength));
-    const encrypted = encryptedMsg.substring(ivLength);
+  // slide chip clicks
+  document.querySelectorAll('.slide-chip[data-src]').forEach(chip => {
+    chip.addEventListener('click', () => {
+      openModal(chip.dataset.src, chip.dataset.title);
+    });
+  });
 
-    const key = await subtle.importKey("raw", HexEncoder.parse(hashedPassword), ENCRYPTION_ALGO, false, ["decrypt"]);
-
-    const outBuffer = await subtle.decrypt(
-        {
-            name: ENCRYPTION_ALGO,
-            iv: iv,
-        },
-        key,
-        HexEncoder.parse(encrypted)
-    );
-
-    return UTF8Encoder.stringify(new Uint8Array(outBuffer));
-}
-exports.decrypt = decrypt;
-
-/**
- * Salt and hash the password so it can be stored in localStorage without opening a password reuse vulnerability.
- *
- * @param {string} password
- * @param {string} salt
- * @returns {Promise<string>}
- */
-async function hashPassword(password, salt) {
-    // we hash the password in multiple steps, each adding more iterations. This is because we used to allow less
-    // iterations, so for backward compatibility reasons, we need to support going from that to more iterations.
-    let hashedPassword = await hashLegacyRound(password, salt);
-
-    hashedPassword = await hashSecondRound(hashedPassword, salt);
-
-    return hashThirdRound(hashedPassword, salt);
-}
-exports.hashPassword = hashPassword;
-
-/**
- * This hashes the password with 1k iterations. This is a low number, we need this function to support backwards
- * compatibility.
- *
- * @param {string} password
- * @param {string} salt
- * @returns {Promise<string>}
- */
-function hashLegacyRound(password, salt) {
-    return pbkdf2(password, salt, 1000, "SHA-1");
-}
-exports.hashLegacyRound = hashLegacyRound;
-
-/**
- * Add a second round of iterations. This is because we used to use 1k, so for backwards compatibility with
- * remember-me/autodecrypt links, we need to support going from that to more iterations.
- *
- * @param hashedPassword
- * @param salt
- * @returns {Promise<string>}
- */
-function hashSecondRound(hashedPassword, salt) {
-    return pbkdf2(hashedPassword, salt, 14000, "SHA-256");
-}
-exports.hashSecondRound = hashSecondRound;
-
-/**
- * Add a third round of iterations to bring total number to 600k. This is because we used to use 1k, then 15k, so for
- * backwards compatibility with remember-me/autodecrypt links, we need to support going from that to more iterations.
- *
- * @param hashedPassword
- * @param salt
- * @returns {Promise<string>}
- */
-function hashThirdRound(hashedPassword, salt) {
-    return pbkdf2(hashedPassword, salt, 585000, "SHA-256");
-}
-exports.hashThirdRound = hashThirdRound;
-
-/**
- * Salt and hash the password so it can be stored in localStorage without opening a password reuse vulnerability.
- *
- * @param {string} password
- * @param {string} salt
- * @param {int} iterations
- * @param {string} hashAlgorithm
- * @returns {Promise<string>}
- */
-async function pbkdf2(password, salt, iterations, hashAlgorithm) {
-    const key = await subtle.importKey("raw", UTF8Encoder.parse(password), "PBKDF2", false, ["deriveBits"]);
-
-    const keyBytes = await subtle.deriveBits(
-        {
-            name: "PBKDF2",
-            hash: hashAlgorithm,
-            iterations,
-            salt: UTF8Encoder.parse(salt),
-        },
-        key,
-        256
-    );
-
-    return HexEncoder.stringify(new Uint8Array(keyBytes));
-}
-
-function generateRandomSalt() {
-    const bytes = crypto.getRandomValues(new Uint8Array(128 / 8));
-
-    return HexEncoder.stringify(new Uint8Array(bytes));
-}
-exports.generateRandomSalt = generateRandomSalt;
-
-async function signMessage(hashedPassword, message) {
-    const key = await subtle.importKey(
-        "raw",
-        HexEncoder.parse(hashedPassword),
-        {
-            name: "HMAC",
-            hash: "SHA-256",
-        },
-        false,
-        ["sign"]
-    );
-    const signature = await subtle.sign("HMAC", key, UTF8Encoder.parse(message));
-
-    return HexEncoder.stringify(new Uint8Array(signature));
-}
-exports.signMessage = signMessage;
-
-function getRandomAlphanum() {
-    const possibleCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-
-    let byteArray;
-    let parsedInt;
-
-    // Keep generating new random bytes until we get a value that falls
-    // within a range that can be evenly divided by possibleCharacters.length
-    do {
-        byteArray = crypto.getRandomValues(new Uint8Array(1));
-        // extract the lowest byte to get an int from 0 to 255 (probably unnecessary, since we're only generating 1 byte)
-        parsedInt = byteArray[0] & 0xff;
-    } while (parsedInt >= 256 - (256 % possibleCharacters.length));
-
-    // Take the modulo of the parsed integer to get a random number between 0 and totalLength - 1
-    const randomIndex = parsedInt % possibleCharacters.length;
-
-    return possibleCharacters[randomIndex];
-}
-
-/**
- * Generate a random string of a given length.
- *
- * @param {int} length
- * @returns {string}
- */
-function generateRandomString(length) {
-    let randomString = "";
-
-    for (let i = 0; i < length; i++) {
-        randomString += getRandomAlphanum();
+  // cross-iframe navigation (postMessage from visualizations)
+  window.addEventListener('message', e => {
+    if (e.data && e.data.type === 'open-card') {
+      openModal(e.data.src, e.data.title);
     }
-
-    return randomString;
-}
-exports.generateRandomString = generateRandomString;
-
-  return exports;
-})());
-const codec = ((function(){
-  const exports = {};
-  /**
- * Initialize the codec with the provided cryptoEngine - this return functions to encode and decode messages.
- *
- * @param cryptoEngine - the engine to use for encryption / decryption
- */
-function init(cryptoEngine) {
-    const exports = {};
-
-    /**
-     * Top-level function for encoding a message.
-     * Includes password hashing, encryption, and signing.
-     *
-     * @param {string} msg
-     * @param {string} password
-     * @param {string} salt
-     *
-     * @returns {string} The encoded text
-     */
-    async function encode(msg, password, salt) {
-        const hashedPassword = await cryptoEngine.hashPassword(password, salt);
-
-        const encrypted = await cryptoEngine.encrypt(msg, hashedPassword);
-
-        // we use the hashed password in the HMAC because this is effectively what will be used a password (so we can store
-        // it in localStorage safely, we don't use the clear text password)
-        const hmac = await cryptoEngine.signMessage(hashedPassword, encrypted);
-
-        return hmac + encrypted;
-    }
-    exports.encode = encode;
-
-    /**
-     * Encode using a password that has already been hashed. This is useful to encode multiple messages in a row, that way
-     * we don't need to hash the password multiple times.
-     *
-     * @param {string} msg
-     * @param {string} hashedPassword
-     *
-     * @returns {string} The encoded text
-     */
-    async function encodeWithHashedPassword(msg, hashedPassword) {
-        const encrypted = await cryptoEngine.encrypt(msg, hashedPassword);
-
-        // we use the hashed password in the HMAC because this is effectively what will be used a password (so we can store
-        // it in localStorage safely, we don't use the clear text password)
-        const hmac = await cryptoEngine.signMessage(hashedPassword, encrypted);
-
-        return hmac + encrypted;
-    }
-    exports.encodeWithHashedPassword = encodeWithHashedPassword;
-
-    /**
-     * Top-level function for decoding a message.
-     * Includes signature check and decryption.
-     *
-     * @param {string} signedMsg
-     * @param {string} hashedPassword
-     * @param {string} salt
-     * @param {int} backwardCompatibleAttempt
-     * @param {string} originalPassword
-     *
-     * @returns {Object} {success: true, decoded: string} | {success: false, message: string}
-     */
-    async function decode(signedMsg, hashedPassword, salt, backwardCompatibleAttempt = 0, originalPassword = "") {
-        const encryptedHMAC = signedMsg.substring(0, 64);
-        const encryptedMsg = signedMsg.substring(64);
-        const decryptedHMAC = await cryptoEngine.signMessage(hashedPassword, encryptedMsg);
-
-        if (decryptedHMAC !== encryptedHMAC) {
-            // we have been raising the number of iterations in the hashing algorithm multiple times, so to support the old
-            // remember-me/autodecrypt links we need to try bringing the old hashes up to speed.
-            originalPassword = originalPassword || hashedPassword;
-            if (backwardCompatibleAttempt === 0) {
-                const updatedHashedPassword = await cryptoEngine.hashThirdRound(originalPassword, salt);
-
-                return decode(signedMsg, updatedHashedPassword, salt, backwardCompatibleAttempt + 1, originalPassword);
-            }
-            if (backwardCompatibleAttempt === 1) {
-                let updatedHashedPassword = await cryptoEngine.hashSecondRound(originalPassword, salt);
-                updatedHashedPassword = await cryptoEngine.hashThirdRound(updatedHashedPassword, salt);
-
-                return decode(signedMsg, updatedHashedPassword, salt, backwardCompatibleAttempt + 1, originalPassword);
-            }
-
-            return { success: false, message: "Signature mismatch" };
-        }
-
-        return {
-            success: true,
-            decoded: await cryptoEngine.decrypt(encryptedMsg, hashedPassword),
-        };
-    }
-    exports.decode = decode;
-
-    return exports;
-}
-exports.init = init;
-
-  return exports;
-})());
-const decode = codec.init(cryptoEngine).decode;
-
-/**
- * Initialize the staticrypt module, that exposes functions callbable by the password_template.
- *
- * @param {{
- *  staticryptEncryptedMsgUniqueVariableName: string,
- *  isRememberEnabled: boolean,
- *  rememberDurationInDays: number,
- *  staticryptSaltUniqueVariableName: string,
- * }} staticryptConfig - object of data that is stored on the password_template at encryption time.
- *
- * @param {{
- *  rememberExpirationKey: string,
- *  rememberPassphraseKey: string,
- *  replaceHtmlCallback: function,
- *  clearLocalStorageCallback: function,
- * }} templateConfig - object of data that can be configured by a custom password_template.
- */
-function init(staticryptConfig, templateConfig) {
-    const exports = {};
-
-    /**
-     * Decrypt our encrypted page, replace the whole HTML.
-     *
-     * @param {string} hashedPassword
-     * @returns {Promise<boolean>}
-     */
-    async function decryptAndReplaceHtml(hashedPassword) {
-        const { staticryptEncryptedMsgUniqueVariableName, staticryptSaltUniqueVariableName } = staticryptConfig;
-        const { replaceHtmlCallback } = templateConfig;
-
-        const result = await decode(
-            staticryptEncryptedMsgUniqueVariableName,
-            hashedPassword,
-            staticryptSaltUniqueVariableName
-        );
-        if (!result.success) {
-            return false;
-        }
-        const plainHTML = result.decoded;
-
-        // if the user configured a callback call it, otherwise just replace the whole HTML
-        if (typeof replaceHtmlCallback === "function") {
-            replaceHtmlCallback(plainHTML);
-        } else {
-            document.write(plainHTML);
-            document.close();
-        }
-
-        return true;
-    }
-
-    /**
-     * Attempt to decrypt the page and replace the whole HTML.
-     *
-     * @param {string} password
-     * @param {boolean} isRememberChecked
-     *
-     * @returns {Promise<{isSuccessful: boolean, hashedPassword?: string}>} - we return an object, so that if we want to
-     *   expose more information in the future we can do it without breaking the password_template
-     */
-    async function handleDecryptionOfPage(password, isRememberChecked) {
-        const { staticryptSaltUniqueVariableName } = staticryptConfig;
-
-        // decrypt and replace the whole page
-        const hashedPassword = await cryptoEngine.hashPassword(password, staticryptSaltUniqueVariableName);
-        return handleDecryptionOfPageFromHash(hashedPassword, isRememberChecked);
-    }
-    exports.handleDecryptionOfPage = handleDecryptionOfPage;
-
-    async function handleDecryptionOfPageFromHash(hashedPassword, isRememberChecked) {
-        const { isRememberEnabled, rememberDurationInDays } = staticryptConfig;
-        const { rememberExpirationKey, rememberPassphraseKey } = templateConfig;
-
-        const isDecryptionSuccessful = await decryptAndReplaceHtml(hashedPassword);
-
-        if (!isDecryptionSuccessful) {
-            return {
-                isSuccessful: false,
-                hashedPassword,
-            };
-        }
-
-        // remember the hashedPassword and set its expiration if necessary
-        if (isRememberEnabled && isRememberChecked) {
-            window.localStorage.setItem(rememberPassphraseKey, hashedPassword);
-
-            // set the expiration if the duration isn't 0 (meaning no expiration)
-            if (rememberDurationInDays > 0) {
-                window.localStorage.setItem(
-                    rememberExpirationKey,
-                    (new Date().getTime() + rememberDurationInDays * 24 * 60 * 60 * 1000).toString()
-                );
-            }
-        }
-
-        return {
-            isSuccessful: true,
-            hashedPassword,
-        };
-    }
-    exports.handleDecryptionOfPageFromHash = handleDecryptionOfPageFromHash;
-
-    /**
-     * Clear localstorage from staticrypt related values
-     */
-    function clearLocalStorage() {
-        const { clearLocalStorageCallback, rememberExpirationKey, rememberPassphraseKey } = templateConfig;
-
-        if (typeof clearLocalStorageCallback === "function") {
-            clearLocalStorageCallback();
-        } else {
-            localStorage.removeItem(rememberPassphraseKey);
-            localStorage.removeItem(rememberExpirationKey);
-        }
-    }
-
-    async function handleDecryptOnLoad() {
-        let isSuccessful = await decryptOnLoadFromUrl();
-
-        if (!isSuccessful) {
-            isSuccessful = await decryptOnLoadFromRememberMe();
-        }
-
-        return { isSuccessful };
-    }
-    exports.handleDecryptOnLoad = handleDecryptOnLoad;
-
-    /**
-     * Clear storage if we are logging out
-     *
-     * @returns {boolean} - whether we logged out
-     */
-    function logoutIfNeeded() {
-        const logoutKey = "staticrypt_logout";
-
-        // handle logout through query param
-        const queryParams = new URLSearchParams(window.location.search);
-        if (queryParams.has(logoutKey)) {
-            clearLocalStorage();
-            return true;
-        }
-
-        // handle logout through URL fragment
-        const hash = window.location.hash.substring(1);
-        if (hash.includes(logoutKey)) {
-            clearLocalStorage();
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * To be called on load: check if we want to try to decrypt and replace the HTML with the decrypted content, and
-     * try to do it if needed.
-     *
-     * @returns {Promise<boolean>} true if we derypted and replaced the whole page, false otherwise
-     */
-    async function decryptOnLoadFromRememberMe() {
-        const { rememberDurationInDays } = staticryptConfig;
-        const { rememberExpirationKey, rememberPassphraseKey } = templateConfig;
-
-        // if we are login out, terminate
-        if (logoutIfNeeded()) {
-            return false;
-        }
-
-        // if there is expiration configured, check if we're not beyond the expiration
-        if (rememberDurationInDays && rememberDurationInDays > 0) {
-            const expiration = localStorage.getItem(rememberExpirationKey),
-                isExpired = expiration && new Date().getTime() > parseInt(expiration);
-
-            if (isExpired) {
-                clearLocalStorage();
-                return false;
-            }
-        }
-
-        const hashedPassword = localStorage.getItem(rememberPassphraseKey);
-
-        if (hashedPassword) {
-            // try to decrypt
-            const isDecryptionSuccessful = await decryptAndReplaceHtml(hashedPassword);
-
-            // if the decryption is unsuccessful the password might be wrong - silently clear the saved data and let
-            // the user fill the password form again
-            if (!isDecryptionSuccessful) {
-                clearLocalStorage();
-                return false;
-            }
-
-            return true;
-        }
-
-        return false;
-    }
-
-    async function decryptOnLoadFromUrl() {
-        const passwordKey = "staticrypt_pwd";
-        const rememberMeKey = "remember_me";
-
-        // try to get the password from the query param (for backward compatibility - we now want to avoid this method,
-        // since it sends the hashed password to the server which isn't needed)
-        const queryParams = new URLSearchParams(window.location.search);
-        const hashedPasswordQuery = queryParams.get(passwordKey);
-        const rememberMeQuery = queryParams.get(rememberMeKey);
-
-        const urlFragment = window.location.hash.substring(1);
-        // get the password from the url fragment
-        const hashedPasswordRegexMatch = urlFragment.match(new RegExp(passwordKey + "=([^&]*)"));
-        const hashedPasswordFragment = hashedPasswordRegexMatch ? hashedPasswordRegexMatch[1] : null;
-        const rememberMeFragment = urlFragment.includes(rememberMeKey);
-
-        const hashedPassword = hashedPasswordFragment || hashedPasswordQuery;
-        const rememberMe = rememberMeFragment || rememberMeQuery;
-
-        if (hashedPassword) {
-            return handleDecryptionOfPageFromHash(hashedPassword, rememberMe);
-        }
-
-        return false;
-    }
-
-    return exports;
-}
-exports.init = init;
-
-  return exports;
-})());
-            const templateError = "Bad password!",
-                templateToggleAltShow = "Show password",
-                templateToggleAltHide = "Hide password",
-                isRememberEnabled = true,
-                staticryptConfig = {"staticryptEncryptedMsgUniqueVariableName":"d1355a201fec5243c8bd11e56708c9efee4fe326e592b48a189865ac6991b73c87ba1e1ed9196a43d472d73ac81961c686b6513d671ad0f5c7ed34a00bd2c691a1c01be0d707cbac030da98dac5772e34d5ede812fbf108a0566f7d0fa5ffc5feaecda5747c4344d5d4a8623e66eeaa69494758c3ff7a7df906c92bc0d2426b54b13f59dc9c2ab068444f58e465b90aebc4eae1d4823d21f6fe718d9b7f57231fa0086b875be11a696216319ee9153c65902afb06259a2af922bd40cd6161fcebf5bd12f2e68ab292116a8686c4283866720c4070acc82a07bdfd5a06d6d4defdd3f35356a83889faf946353842f531358b02fd0b14ed98d09635f89f1d0df53521f218b49a017052fc3b38c5a4f697e3ac685bef68d5ddf417c447dab793ba2ca64da9da447c8adc6f2574659df6af59be88eeb1097aca62766d4f05e352a1cbb902a502e3b79d1f3958ead4b140aa106b24944bedf8b5fb443c23949eec7b759c586d6cc63a802575ac2955cef4060f898a0eeb5854afa71abcdc300b44a67d378bc823d00bad7b6c3204fc8b4e0ea215988e7a1008eadac40dd2d7461b3961bb8a73a3cf2111461796b0265f4c282986a238cbde10bdf5eb14f5d45ebc0211c35bd436f52d78795a54389ac81f584dfb8b5d4b4d19ebba37ff00624715ef9deaacbbd7a5d004f73cbdfb44d2f646771d828dab8a70c06ecf37dca2f2cf45d12bc34a1129403d6d16d5e0dc877160bc3e1d17e8c095289184cbe76693a5b167b16279b2d5696e944969574f579e451e91a5092e8864aada408ffd2aa9eb3d9e6587b03c045ea14d9bf33f8d3a2eb4f76aa4e296fff45bd16ecdb6f679cda917f01c5e3615fd83ff9b8bab03341c9a64016a3da2889f99fcc54834dea9c6aac385a5119437c116031f6f3382820ae24a1f38dc2cbdc832d086a4296d550b83a4fb036b5e58a57cd4f05814e7219849b801751e9c24d8a69af52279c4e82406143214460aa0f77343036aced0168427b4f4ad130f3b15d117405d7919e311cdd062f2900ab3a181f0b6361f424c5f078fda6987c591a2600c14950940e75ab762acdacd6e8981dffa92505839d947d480e440631031dc263e2c70dfd70a838304fae6ca6460afef313ff72f783af63864e84ea7b442587f1b5c1965c6167021beb38dd49513d801a48684979a39076b050885cbb99536cc2d102853f6e23f2f3dfba1f5fb1406c0a060dca6968c67dfa7c091350c07f05d547d9901ba0c509592aad2e6f0b6a9ff150be888976960a2150e7234e2d3c1bd11c08bda32814151d2c26a54b53d4deab9850d57a8268304d18462aef6690df76e1ab3da4d101a4dbff2783ed74792699e74f938e7ef3d8673de23b785bdcb611637693fd4f5ff4a92a7a53b875adc56e5dddb71bfefe1157c6516665b48763f3f0bf015373d4c701b4c3b838bc70874272602c9d7f4d7b071916f853d5d42b7df043761e4d7900364d108249c94cc39ebf1c08fd8b0cf5014b942509b87120c5236c1962f4786b560179ef776bd9de94d12bc91d07b8f0e8a7a5769e73a6089c5ddff07172845ab6d6eecddcff25cfcccd5af0f3e7005dd6e2b624d6f04216f130f7a7fd5b68cf844ccc802664bca2049013fb38480f00e8d78806c758d595baa146acfc2c1a47604bf2567249f08de865cbbb80a74d2524ff782b65d112cbdb7dad09353a904dbea5b59536a0692fc6abbd7aa83198d296f331ce4cebed7bb49648d0a37c1a9505d4fcb36a7f44928f322a9e500d66404fd3e135d8ee4b0e04e298ff9e47161cdb67fe27ac1d44d90ef2a70d053d8b224260f770799e83be398cf00759e1bf43cd0c1ae92403ced777444bfc24179f23ecf9139d0954c7759c8694ad3d6a6ce898c8a3d0bf17e7869ddf476f5bcc0c910e346b543a650d47291a216ecf5c9e9bea6de34675a580ec92d48ba56f67b2f8bd631f75933f1c6117ba7bd6cc4de713ed052d266b31d464595f038c2ea6a8cc6850aa57b22ecdc33596dd3b9e887f775c6f009011ecd395cc20a7441d5099cd6c15b902f232b9dc2cd493c583e2abe8e76b8556a5581926629ff14d78d396c00203d01626098a74762497745990e5d40878032d8e19ec2f6cba97ed5a407693c4d5348e145ce20b24412be2369accbf17c1911b099d762aa463c83e1d9178797940684cd47b94a25ba557bbf88efaa4cf0b9d6a2e68fb15009a8ea9a54a212ca19ee7f23a71b33351237acded83ca8603e75a1e3be7a1765328b186c4e24c15cb6d4437f9ba9727649d514994018e195b2f21c0d91549bf52ab28271b2102ac66e123223b8cbddf022ea839364653476ff9cde47f3e821df24a4633d3190fe808e9d1e14ec18fc43b8d244538df49e8ec30282571d8276c9cefb2f90bb16de4c1881a314cfb4b15eb5d1742b549ec798818834567abaade938e192c2112c18256d10482558c778254fecbb27b08a57f9df7bb4e69c6c1d186d700332564efd3221c529c8351f9cba14483d8711fb2a4a0d0d0278c829bdba6b14c9fb3a9c254954d1ac7ba9cff18e50712d66bfbb9d06ae072d8640ee2030de235958623939df8c4c36ac9b75db4324e719118e5b754452627f1bbde20093498ed9c9a9717a9a21556b10aaf7c615f532fba1f4fff778ff117e6dba6078e04cc4e3f698d4b793886f8f476a3c000154cef1f94110d3161d75b00e43012f2c72c5150737fe890b6d48801cf97ea494b3342550e811ff4552ae1296c4381f09fa89e445f0d75ecb98ba459ebf7f7ddbe338f7881cf8a2134b822b247505b9bf4971f0d8e3c366b2a08747531f0bae4cbee88d8d55c21cd980c6c87236dc286c56c14bc67eb0217f4163764e9bc97b7cc029ac2f7268cd133d7ffaa44495951f32d56eab13c08c722822cd93edf72b24a52c06ae9babee297a89a0b0c6d2fd8ccb455bec39d8651fc4f66f3bcba4ddff72609e29fcca31278c727550520f78ed3d76167237fe06542f2b5ef7df3fcf3f510f9fca42c0d3ce40c53498729c6c08c4603f941b457032683693a21086647a7150b79c2f77861296416ff232e8183ac0578cbf4f8e065c1816b9bf311b52bf4c0153748cd436b42d1b854caf959a24eab2ddaac64a4796d23e857a3b884835d82b9ac5d6b43f989298bbcfec126445e2ab0005b80998f78f937ae702d0f3e0546c19a9aa465f03225776f566616621ba595dd031f5f32700f38de7100689beb408e8c00108935a960577234dab5ba45780763a24bd24401c8844779e60b54db2b99bd76158302245597a5d67216af452f8e319ea2ea71fb9daad8ea420ac43f9375068039a78a5f111db6ef5cadf030cf4c9d3a8a1323cfdd030414bf9df6cbd6ba50fe504d655a3891382f075db41e8ea866fb7e22fe746fd7694cbfa5a6270baac518362d7cca0b29a747e4c3e8238bbb1f4cc9c21e06e119db3aa96f4298bd8df071e0462b39270d07885aa46fd58a26f5111494152ffbdf1b9987e06c7328da9b4cf1898ff510c41b27e7727555fd119d97d74968c3c77ea909787a4495b9bb60a308504e9f55a86809283ba31d7d0d61cf249d7377ee1cdd2a89b8a4409dda4f287ecf29011de639f51551822966401388e8717fa7f0bf5a01aa26cf4e51fc4cea4332a7be27f55b62ff047c4df9eb748bf49049676c8cb6a286af526a03b3c895cf93ecdf0ffb81743b1b8d3684472cf1eac7e004caea736417cb118d965700b63052d2a739f08690dbfab114a1f6d3fe55c3ebea3ec2b2e9d85f31258a61428295f76ca7ae37635bfeecfe626938482bb8cba92757648ff055fadbf313e3b95b62b081b769db7ba24a67d843321fd0c158841f9521e0b6ac1e74b2eae4dcfa77486745fac4c61d06f09b4b6daeb762267ba15133865454cc94253b443154a0aae2ee10c383d3ca8e665d970bf139243700c59cf40ae70bf3fbf0fc6067afc25fad7b91000b87aeb27179d2608c9f005e2d1842a47b494c1cfbb63c25dd2ca0cf8480d84aa1f582c0bce8604f65071dc48806ec96a338611c3c67b648d6d4e8898331cab1d4a416ba79854e3735e19498f2d4be5dcf256618b8b32447588c2059b745c1ea9e1d82bbdd0502029a1756216989f0d4c3e04b35204aea4e7dc99ee54042f92fd2d02f85ef89c05c63bdede5c1ae2ebfecc44efd60be007d9fbf25b10379fb9bf85a7deb32d3bff874dad3e74b6875f8e2725ff7748f070a2e761fea606354710a72d8884a4fc42b5f1401fe5d772816976120a02ea61b1a03b71a8e34f4d27a7fdf4ef14eb624e41aa25b5855f36c5c117ae626eeb250a18a8694e3a19c742241295cfc99f326d33c24571ec510df68f813387cc3a95b640ac973c53a8fe42f718fc4f0e0a28c8b9d9ed299373cdd9dd057a8e4c1d51d50341f221c0213bc1f57551ad92755febf4e94fb22883e07fe7e8489ccf7886462e3b7c14ec8f40e708705e33738655f2870385be39601a9c046b7666d418eb810d9c07ae2190b44df4f5b677779265dc74b808b3662736282f726381bbfe750cb64c07a9a5988e17b1642f1350568731ae8048c237c96db5998cf4b107496bd3e89fd3885e61727bb66d58748be5fddd0a00961881fd6a4e4fe81e16e288fecc518bb9715d3ab966398ce235048e950becdacbbba8c0e0853bbe429820192dfb1591e1677ebbaa5f58c302160ba39de413e77daa378a281f5d690ab47cf918ba2bdba06d3c93af543dd8bf38d08af62949d2cd480da94636040425fac7abd781d4fd27ad3b4065603de168ad16dd766c22f4f232b7e4218567a6613bf077bd93b134fd6a15a7206257611a81b23f762338a627d48d7ea65d09e67e7f69bb240db39c95c6f3534afa049d2181f2180411772686bbf7ade17c2bb1ea16756dc5312bf4d1487904f59aa9714e77cbf4c16ec55c6283773346d1084a9e4326f796f61b01123ce3cf0cf8864559b8f276ce9643417b1918c0bbc9a682810a5b27acf24081b8c70020ae992d5b97e08ce48a9b3359749306e6fa00f3b2ae38d40a2983e3d7df58cd59f3254fdeb0b4d045673666ef4e4bd1de2a8e29bec7eb51ae750bdc8d628fb8137edd56d2b09765460887569151b53b8ea2173e42838fb743bbc4fea177d7b65beac0c3e753ef57c8273ce127f9ff7eb9d8e200554d67dd101596879b545028b4dcb75c12f45b065b1d437c490e7926680dd773b522a060abc5d6faf16c05508ad4bf47b086c9f5efa5e91d0cc543c484ab9db54eb78918f65e4dab9ad81970c0e216cec1e3ca16ac2587fa936bbcd7d12b8a8da1c5f0fabd341ef9f26445a3f0da93e2d97bb5a2093b9371840b68363ff41a883a14561de711ab3feb9db6c984e603c5a6c3b5a430613635325e2c143c4282f0f43654238e95f13f93779e38bc35353224a9f428f39dd734c62efb137a04738eb11abf304e549de63999455e55d372a1f3ab6f1eafff888eae0fd85322393f536c71210958f494cc79c843c93d87d9f42b66ae73dbcf8328fbecd35625cd1c3ee5c348057ff30fe7fcc85efe14c8328926fb4bc19daa4d3f095b10e441179351bf02a90dc5bf3fe421f636243bb9c401d9a525f231aa2dbe405bce2306aeb9e5fb0975a712d125ac7039642ca09f804a123738085011b8226991fb32283749bb1e9d430b23c760155f54372769071cd1e537eda7c7b68f65be0c63b706007188c518bd6cade15bdf10a7b5ed84ea05307c5c2f1fc32980d913a5aa101767d49a8d027e1d8ff93c472cedd58172e2901916285cd1070328f515866bdc12895208d32004cd3d38c992033fdabc3e7f8d2e65f5250213b8d276e1a346ef82e9a9590a4c4366715c9cc566f142f866b9f899b8e0fbf2dbd9b9437ff7092020933b332a9dbdee082b328d3057160abbb9a1f860e1e7382a7e4b1009086a00e95cd8622ff4772462303b3bfd4bd9c4436d0cecb682fae023c1c5bb7fd31c20cb74df1020ab710b45835966e2ddce6ed0265461eb404e94397816f2dae208a8a5a2ba506456d2df7c876ccd2a3d86b3d0127446ec25d18555c462dc0abd0a99a9761035e6a2a5384326d8c59647b51c19d4a168258acc085004bb389ec7c4f4da9993f73d072e51a0cf0ce9294dc4841162fd7dfe4d0dfe6f730dd1251f53fc37465bca8b28a38b737b52e913b2e0b63b2c23d675e045ee5913524243c4c0d301c2fa97edd0c8787b0b414d53514ea29ba0e8952aae279b06ff7fbff3aedd3900c8d5233fb892d9fdf438a0b3427ce0c9cccc08c3de43379d81238e0078fef0bdcfe2cd0aad378aa6e2c82c88805b9aef935dcdabe0e28ba148725a4c979739abeb05f4d6a27beaf474c5bcad442815affa8342052d062abf6ea8ba1c646d2d4955094fd34fe2f5ac426fa4aab7a20f58fa73fd44ce71cfc5e8852d86314c5457b1aea0472fbb1dee399d5fa89aedca62fba03ad5bb588146e97e8fa3da27f6082c10b4b09cf11a408db5f08ea07e81a26140e53cfd51f784a7196842e31802e0326aedb52d422be555996f05d96a00b6d18d9513fb181d79a61d14643edb588f41b830858477126d03f7df34e51691a4bb2945d9838d6ca5def8efd6f2a68a45afa70dccb5043c017c51152c90f8836417ae12c34233937e99c489109b71e40993d7bdfc842116bb2013a66565ea4dfb84943d7cf425c1d0939e16ee3390c46f43c634cb4eb40065bd645c797324317f3a3d5b87c7ca08441282e8532254e5b394f4d6826c01f0347a9600276953a8e488342b58cde7d6fac5af907cdd207e78c451a3055853413949c5dca8966d0e6f083e504868d82ed744e3b08f7298a1195c75efea33797ce8db723f0b0eaabf0f18d708f58a8ad102955f2d14915bd19760fd08f90f311e47187be7732c0521edbe9d595c1407a22fe661fa24ea1ed3cd92145a374860de67f00cc784d9b3b266d7b20fe825a6d50cdf23e340f538bd98d1e243d9ffe0e71dc0832fbcb36c64f1cc2ff198e7bdf5a38fb2080adf14f5dafc9a93d700be2201c01bc72d24b440639dd617f52a5ea43bea0e41fb1fe8b693e42e430f518f7b78b6cc447b3732227def02e58aae68f1d408f93264277a4d3c55afd2ccc2233559c3ece61f5a16766f64b21f037e1ac2aa5b74198b25f786d12ec6de9c61f972ef1f9d3bbc4f72ee934b08963cdaf26a87d9467b64a18612fd638b518554b9d0f7ac07cdad1a89fa023054b8dc89fffb2f41202c2bac52d7981b81b4d32d14bb2e48f5abbaf4b43dedcde2e00cdd60d62632288a7fad753f51e5b72451f7829eb84dd8ced997a74989f39495886ee0675d8dbae7e17017929f101bffeef24d18242635cacc57e767275453fd6151dffbf305513c59524fbc51bcd354f23a84e96ed9bda8fbd54e38837f159198353e3a5b9498aae181c42e044c49a394655f03847ea018c3c950ea5d918e3014618b50e763e1153839ef2d8e723a8ff0682667ab211c63b5d49e1f5ec19c7f9cd4813d84d298b5093c5a74ec3483814ee99d7e9f431dc256791d28ad99007e3776144aee91e86f0775f9f488fa41ddbeed073651b265f3c11d2e3fb5e636aaf602f65cf5386584667964ce0551892c8457a06497d18f9a440d55d8c5b6a79894264420fe11862b8bc5db0a707d6241597ae0a3a79f82c60a9a3f2b786e2531b8f2da7eb976d4f73f16d3887eb2dcd1f70d1f733b04380618f9b13415741938e2035034c9bbaaec003b602cdc1852b8e2210c6eaf26f272d8c21f6c7840872530ae2eb92d7d3e82c0223c377e2d0a5f2bf91f2ef39a7cb7db924274d3678481da302df99a20c2b7ba8c42ef69bbdd9e0d981031391484449a75aab452aec683f6de8d9681eac5a48c710de9575473e55ccdc9379aaf735013e016617c349716b9500d3e537d4c28e472b5d64851c66afe4b759be27c997322eb4d4c39d83e1fcd81ea2b9b0c3eb18baf5c76279b9e07bd7c3fbf6e6af2d2faaf9c474bf7edd19faa4f14cfd1e68ef8c6af7ae76d64d8ef833d3164f706c2e9008a48f53d98bbe1e1a5efb425dc0c74d208912dd89271b592fa3d84a6c0ce3f8c926547324349afccd2002c0ed01c8bb17d7146df6d438640b1517f107aeeed33dc0b5ed5bc644cd644c738a7b7179b90ac73ae3593f908134ff96f2cf49049676529d617f5dc41dee40fd23bb1c86a213f380c097c65764551e0c40fd2bd2a662940b05c17cae5310dae67da96fdad68e0232f5752a154de82ca74815cfe3cd258306517d70519e4a3b784c9597fdd74347d9f2ffd231c90e7d7b58bbe326326b6269d4972c95ead7c6387c1c45d0c320643398171e57b37b7070181662a04a3e17c0445cfbc491e2958fed3d8bbcbd5660abbcada86af695d5f554bd008394f42b0170471986d3f3ff6e1a22176c3e51521fb0d8f4ffdf239c4ac763bb681c47fe73abe14d86b6c38cfafaf342f2855701f5a34cabbac9888e9e5a303b9a19aa866048963e3bc0a3c4f8d1e8554148732669819a738d92830f3420291ac99909c42b0a6013e67166618c4094f92af391cf9959a25c24946e306abcce6ca113ca93b625ad09b32d22343ff7b6df54575d64e4411bafe853da60c1083fdbb157d7f5bcbbb9f63f084126b025eff6b6a46097923f8c2e5b157cb46932023307bf1a49799ae4cd22101714f3f3488a9a7afcfeb8c89f4b7cea1ad3df203fad19d1e9344734229ce30ddb93948a1ccf19471a2f9855f512161775f1ff8b367dae6ad7ec16712cd1e11b118266cb012518c37cb0065d330814ea41d93d53599b29ff8195a745f4af56e0f037b77ebd7c90c802da2fe13d3cda77e0e2f606901bb977858aaa883c844c28c3c971cfdaa951d50c5d741d5fd8f13bbe4aa9cf44e2491532615550aa3a977820f125b827b62f3a5a73da6478a101ff321ba677a43598f3aadd04d0fb3d68cd9f97d90bf35bfec2a2c360a51fd857aa1edb5516b64fedde9cf908b7f55ad2037e095fa39c2b5baa2c26d31c04509990bf8a6ff93006ecadc17c12e21983fc37a6d05a84d317c7d4099b4927cb10b1e502ac26bd0909a8393c629026249a453efcd8fe9bfe4db3efd28797d6cd08d54ccdad75aac088a8cfcf276df54a1f7487fe43e4e9a3f25e077b83357a115a924b5fc34345dd7df4672972511d90e89c15b78127fb30a2f89cb09fc9a3e771cd0cc2b9128fa485d82034433c107b7c1e874c1544894ef3cd09159093782fa38537e0af8a62a2c7c5b014ded53bd41ac470d3e11848c6a2e6ca954f530386575b8c7e3d0496c2a748f5d1fcc894445df5181cad172c3412807cb990ccf7cfcbb4fa717b0feb535747b4ee7171d96b3c1543d3f314097d3245d481e24bb8a91c1f8a032ef62f21990164943bf8c832df84f5572fbb5077d6626c0a28d093c795015cea2fde5fef88ad971d75dd97793bcc66f9496deab279ab2bb130bb2f1f1616eeef0c2ae869f69e9904965258eb4d3316aafaa23eee0e20250007df494106609e4f29d25d1e58fb861a048617f29db119c8d35e36f6649ac66886d2def105c59da3d2f401c9fd8107445df7b91827f262283d3343530dd90740de01bae600e7b767181eefa8baae8c7bab9e3ec4cb45d3b0de397926916cb3b108dcd8f2b3a02e8d25ae2006af1d827cbf61fe34f1e843725ff3df60fe0431c744c462ff266ad60180e82e315786572ff65cdbc25dd62f334d175ddaaf1c2ea979f46c343fdd3b01fa09ccb5f2f2d3e4803ea4fe08ab94b462240273ef748934f13f87b0ac9705c3d9c0d32f10af0db9d652c229e291bc29b53ed00c139ab0655fcb7059b66a334bdbf8dbe0275a67dcce138cce0f4be5c1a43041488b6a306c343b337398c14edc271b84ab3d36d6c682d7c2f2910db2ae404a59a7caa20b56a402e7a24201dc0efcd5890ac571f599df3cbd831a17a2b08d886184ddb0c6433543dd76b54ba734e02f724f093b36dacffe82666278e4ecf3adb63231d8e61353c24e15b3a5b625073dd01b115b7094ffe6562105bf281c5330ecefe098ae3045b3d0fcd43c16be27e61ecf01787fbd9be57b5294d06e970be3571afcf92f0243c96952c70dbdf2a93c6b809eb6b68778b96c0e7f6c830d5f36eb205e2c6367809c381cb6b7b4c7905fde049a0a08454c07bbfdb99e862b917b58a5b762f343eb3d3362dca4b0bfa0580df20e06cfc616a5b1c31add79b7953076c946d7cf2ed2b8b945e499546b88c39053376990688fb839dc07a766f167b3fe4985d06510ac0702b9a4dcb6a4e1be815dfedb49b58a6b60af53238e611798967636084a2bf4f9c42d29540ed61022c8a37704b3d9f4d522cf5e55abf2181a7c5f3738a6925f171c4a3af7710e474007afca99f35acec705228f85eb4fc2a2a07f442bf0b1d68b854034fb600dc4a0071e4312cfb70b1a24c5f23f64b265a67054986901e501c253c64571b1c323e796862cf49f3e3f26c8de96f8e0fdb7a1e7d63243cd916bce8595449ba66d166c62e6e1d09a6c18f0570160505ab77839193c087229ae50080a4cc6f1bf6d59ef742840dd2712628353b0f2f78764134c330e6b5dece7d4391e139df6eb93dafc73399c75963ccc02dbd2343481ed10b57893f374130650bc85b6c84c13d0cbe28392c52552d9348f33f3c341f99a512172e3b42b74a7732e4566d93113683501f2040165768ff3bb85447ce6603eaf699bd19c742f40593a881cf9fd733b9eb763b67acba9fcc235e2326b48ebcec8688c613523dba6c208b4272dcf88561db5ac91a46695f661e0f7ece6cbf8928ab5e9c249697940c7617593d99542c00ca50c0940143906c70822af34f1bf50b2f62190d5e7f252ef335b748953ab39ea68641e8a9a94a9cf82f465fd6d4d90eb91d021be24dc96ac40d79f2c204dcc19471f4fc9ce5ac36a1b530986d42ec841fe53007a8e0645568eaec9dd06bd28f598ce528d30959c1e0e771f661315e32d0ee93989734c32850693f2ef760ae531f5389e9cc23374ae6f9e23ff746ddd916ef0f76ec4d661369edb7402ce4ba57b917c7ab644fe048d8c24e89c45f601f85170c01ed3157a866ccc3ddc93c8365aa2453878621b57b7194e06408fe27b239e1f5d04432afa5f2b3226965c639f6c4624662c7e8b1db98f009c16dfa89442cd265179353feb5b8190928166b4229f6138dad91214e0ccb579ec5a33061c375fc25d8529d44f26caf4b15f341feaca614e2a3251aae09724091febada7c91787a9ce8cfac3da91b4b7cf906e080c80463ef1c65eeb886b57fec54fe930155a1a613fe3d932707c49af7495f221095e47dd4aa784f9a6a68b72b5ce1ad80fcfae0c75b77a0f0e85d22f666408cc0b6a880dbfbb856584694cc344d0b46678aac9b471dee7bf909c4d50d466a63ef5ad40c5f590391b26e5d5dfe4044e27c09f72231fbc9f2af61e75cd38aefb0cc441ddd3d64e4dde6b3141bf3b602a257a04fa83a2fb50ca2954b491818d5a12b1b9a2c5d68dc06a2160e17217b428d90ddd213b7a4fbd746510911c4e4dbfb5b21c4b928a6018ae08ffe30e64edf9977586ccf809fde490244a39342bdbbd260b359d7a76762a64ba52feb9e7a9723da927a024a1e3c0c13832e6f0d3c68a9f52f271bf04525eb36b726f53d2429039841d4f6a4766f5210b334144080324fb92df1b2b490b510b94d82c28a1b102a7d5d8438963de69247e38c581a5603dcd54da6fe1331bd98d4a5b8b52f50889b2541ee1b1a9e8cf2751324a6a0609fc367955092eaacc2844e456af0b47acf76a6db0d4ce06ef6096671c9f1241bad086eae7869cb01a846df950f717d64317c113309d83de3329a37f073c9b10705f99378eb16aeddc5b2ad5d9023aff2d","isRememberEnabled":true,"rememberDurationInDays":0,"staticryptSaltUniqueVariableName":"6351ba9ac9336f21ee4eea4e7b3bd866"};
-
-            // you can edit these values to customize some of the behavior of StatiCrypt
-            const templateConfig = {
-                rememberExpirationKey: "staticrypt_expiration",
-                rememberPassphraseKey: "staticrypt_passphrase",
-                replaceHtmlCallback: null,
-                clearLocalStorageCallback: null,
-            };
-
-            // init the staticrypt engine
-            const staticrypt = staticryptInitiator.init(staticryptConfig, templateConfig);
-
-            // try to automatically decrypt on load if there is a saved password
-            window.onload = async function () {
-                const { isSuccessful } = await staticrypt.handleDecryptOnLoad();
-
-                // if we didn't decrypt anything on load, show the password prompt. Otherwise the content has already been
-                // replaced, no need to do anything
-                if (!isSuccessful) {
-                    // hide loading screen
-                    document.getElementById("staticrypt_loading").classList.add("hidden");
-                    document.getElementById("staticrypt_content").classList.remove("hidden");
-                    document.getElementById("staticrypt-password").focus();
-
-                    // show the remember me checkbox
-                    if (isRememberEnabled) {
-                        document.getElementById("staticrypt-remember-label").classList.remove("hidden");
-                    }
-                }
-            };
-
-            // toggle password visibility
-            const toggleIcon = document.querySelector(".staticrypt-toggle-password-visibility");
-            // these two icons are coming from FontAwesome
-            const imgSrcEyeClosed =
-                "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NDAgNTEyIj48IS0tIUZvbnQgQXdlc29tZSBGcmVlIDYuNS4yIGJ5IEBmb250YXdlc29tZSAtIGh0dHBzOi8vZm9udGF3ZXNvbWUuY29tIExpY2Vuc2UgLSBodHRwczovL2ZvbnRhd2Vzb21lLmNvbS9saWNlbnNlL2ZyZWUgQ29weXJpZ2h0IDIwMjQgRm9udGljb25zLCBJbmMuLS0+PHBhdGggZD0iTTM4LjggNS4xQzI4LjQtMy4xIDEzLjMtMS4yIDUuMSA5LjJTLTEuMiAzNC43IDkuMiA0Mi45bDU5MiA0NjRjMTAuNCA4LjIgMjUuNSA2LjMgMzMuNy00LjFzNi4zLTI1LjUtNC4xLTMzLjdMNTI1LjYgMzg2LjdjMzkuNi00MC42IDY2LjQtODYuMSA3OS45LTExOC40YzMuMy03LjkgMy4zLTE2LjcgMC0yNC42Yy0xNC45LTM1LjctNDYuMi04Ny43LTkzLTEzMS4xQzQ2NS41IDY4LjggNDAwLjggMzIgMzIwIDMyYy02OC4yIDAtMTI1IDI2LjMtMTY5LjMgNjAuOEwzOC44IDUuMXpNMjIzLjEgMTQ5LjVDMjQ4LjYgMTI2LjIgMjgyLjcgMTEyIDMyMCAxMTJjNzkuNSAwIDE0NCA2NC41IDE0NCAxNDRjMCAyNC45LTYuMyA0OC4zLTE3LjQgNjguN0w0MDggMjk0LjVjOC40LTE5LjMgMTAuNi00MS40IDQuOC02My4zYy0xMS4xLTQxLjUtNDcuOC02OS40LTg4LjYtNzEuMWMtNS44LS4yLTkuMiA2LjEtNy40IDExLjdjMi4xIDYuNCAzLjMgMTMuMiAzLjMgMjAuM2MwIDEwLjItMi40IDE5LjgtNi42IDI4LjNsLTkwLjMtNzAuOHpNMzczIDM4OS45Yy0xNi40IDYuNS0zNC4zIDEwLjEtNTMgMTAuMWMtNzkuNSAwLTE0NC02NC41LTE0NC0xNDRjMC02LjkgLjUtMTMuNiAxLjQtMjAuMkw4My4xIDE2MS41QzYwLjMgMTkxLjIgNDQgMjIwLjggMzQuNSAyNDMuN2MtMy4zIDcuOS0zLjMgMTYuNyAwIDI0LjZjMTQuOSAzNS43IDQ2LjIgODcuNyA5MyAxMzEuMUMxNzQuNSA0NDMuMiAyMzkuMiA0ODAgMzIwIDQ4MGM0Ny44IDAgODkuOS0xMi45IDEyNi4yLTMyLjVMMzczIDM4OS45eiIvPjwvc3ZnPg==";
-            const imgSrcEyeOpened =
-                "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1NzYgNTEyIj48IS0tIUZvbnQgQXdlc29tZSBGcmVlIDYuNS4yIGJ5IEBmb250YXdlc29tZSAtIGh0dHBzOi8vZm9udGF3ZXNvbWUuY29tIExpY2Vuc2UgLSBodHRwczovL2ZvbnRhd2Vzb21lLmNvbS9saWNlbnNlL2ZyZWUgQ29weXJpZ2h0IDIwMjQgRm9udGljb25zLCBJbmMuLS0+PHBhdGggZD0iTTI4OCAzMmMtODAuOCAwLTE0NS41IDM2LjgtMTkyLjYgODAuNkM0OC42IDE1NiAxNy4zIDIwOCAyLjUgMjQzLjdjLTMuMyA3LjktMy4zIDE2LjcgMCAyNC42QzE3LjMgMzA0IDQ4LjYgMzU2IDk1LjQgMzk5LjRDMTQyLjUgNDQzLjIgMjA3LjIgNDgwIDI4OCA0ODBzMTQ1LjUtMzYuOCAxOTIuNi04MC42YzQ2LjgtNDMuNSA3OC4xLTk1LjQgOTMtMTMxLjFjMy4zLTcuOSAzLjMtMTYuNyAwLTI0LjZjLTE0LjktMzUuNy00Ni4yLTg3LjctOTMtMTMxLjFDNDMzLjUgNjguOCAzNjguOCAzMiAyODggMzJ6TTE0NCAyNTZhMTQ0IDE0NCAwIDEgMSAyODggMCAxNDQgMTQ0IDAgMSAxIC0yODggMHptMTQ0LTY0YzAgMzUuMy0yOC43IDY0LTY0IDY0Yy03LjEgMC0xMy45LTEuMi0yMC4zLTMuM2MtNS41LTEuOC0xMS45IDEuNi0xMS43IDcuNGMuMyA2LjkgMS4zIDEzLjggMy4yIDIwLjdjMTMuNyA1MS4yIDY2LjQgODEuNiAxMTcuNiA2Ny45czgxLjYtNjYuNCA2Ny45LTExNy42Yy0xMS4xLTQxLjUtNDcuOC02OS40LTg4LjYtNzEuMWMtNS44LS4yLTkuMiA2LjEtNy40IDExLjdjMi4xIDYuNCAzLjMgMTMuMiAzLjMgMjAuM3oiLz48L3N2Zz4=";
-            toggleIcon.addEventListener("click", function () {
-                const passwordInput = document.getElementById("staticrypt-password");
-                if (passwordInput.type === "password") {
-                    passwordInput.type = "text";
-                    toggleIcon.src = imgSrcEyeOpened;
-                    toggleIcon.alt = templateToggleAltHide;
-                    toggleIcon.title = templateToggleAltHide;
-                } else {
-                    passwordInput.type = "password";
-                    toggleIcon.src = imgSrcEyeClosed;
-                    toggleIcon.alt = templateToggleAltShow;
-                    toggleIcon.title = templateToggleAltShow;
-                }
-            });
-
-            // handle password form submission
-            document.getElementById("staticrypt-form").addEventListener("submit", async function (e) {
-                e.preventDefault();
-
-                const password = document.getElementById("staticrypt-password").value,
-                    isRememberChecked = document.getElementById("staticrypt-remember").checked;
-
-                const { isSuccessful } = await staticrypt.handleDecryptionOfPage(password, isRememberChecked);
-
-                if (!isSuccessful) {
-                    alert(templateError);
-                }
-            });
-        </script>
-    </body>
+  });
+
+  // close button
+  closeBtn.addEventListener('click', closeModal);
+
+  // click outside modal box
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) closeModal();
+  });
+
+  // Escape key
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModal();
+  });
+</script>
+</body>
 </html>

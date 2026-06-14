@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conv2d — Convolutional Networks für Bilder</title>
+<script>
+  MathJax = {
+    tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+    options: { skipHtmlTags: ['script','noscript','style','textarea'] }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0e11;
+    --bg2: #16161b;
+    --bg3: #1e1e26;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.13);
+    --text: #e8e6f0;
+    --muted: #7a7890;
+    --accent: #167a5a;
+    --accent-dim: rgba(22,122,90,0.15);
+    --orange: #c96a28;
+    --orange-dim: rgba(201,106,40,0.15);
+    --warn: #c4a020;
+    --warn-dim: rgba(196,160,32,0.18);
+    --danger: #ff6b6b;
+  }
+
+  mjx-container { color: var(--text) !important; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem 3rem;
+  }
+
+  header {
+    width: 100%;
+    max-width: 900px;
+    margin-bottom: 1.75rem;
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  h1 {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.05rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+  }
+
+  .subtitle {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .main {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.4rem 1.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+
+  .card-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.76rem;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .card p {
+    font-size: 0.85rem;
+    line-height: 1.75;
+    color: #b8b6c8;
+  }
+
+  .card p b { color: var(--text); font-weight: 500; }
+
+  /* Formula box */
+  .formula-box {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 0.9rem 1.2rem;
+    font-size: 0.88rem;
+    line-height: 1.8;
+    overflow-x: auto;
+  }
+
+  /* Param row */
+  .param-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .param-chip {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+  .param-chip span { color: var(--text); }
+
+  /* Controls / Buttons */
+  .controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  button, .btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 6px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--border2);
+    background: var(--bg3);
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    letter-spacing: 0.02em;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+  }
+  button:hover, .btn:hover { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+  button.btn-active, .btn.btn-active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+  button:active, .btn:active { transform: scale(0.97); }
+  button:disabled { opacity: 0.35; cursor: default; }
+
+  /* Slider */
+  .slider-row {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .slider-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 160px;
+  }
+
+  .slider-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .slider-label span { color: var(--text); font-weight: 500; }
+
+  input[type=range] {
+    width: 100%;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
+  /* Step info box */
+  .step-info {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 0.65rem 1rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--muted);
+    min-height: 2.4rem;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+  .step-info span { color: var(--accent); font-weight: 500; }
+
+  /* 2D matrix grids */
+  .conv-stage {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.1rem 1.2rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.6rem;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mat-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .mat-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+
+  .mat-grid {
+    display: grid;
+    gap: 3px;
+  }
+
+  .mcell {
+    width: 34px;
+    height: 34px;
+    border-radius: 5px;
+    border: 1px solid var(--border2);
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--muted);
+    transition: background 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.18s, opacity 0.18s;
+  }
+
+  .mcell.active {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 8px rgba(22,122,90,0.3);
+  }
+
+  .mcell.center {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 500;
+    box-shadow: 0 0 12px rgba(22,122,90,0.5);
+  }
+
+  .mcell.out-active {
+    background: var(--orange-dim);
+    border-color: var(--orange);
+    color: var(--orange);
+    box-shadow: 0 0 8px rgba(201,106,40,0.3);
+  }
+
+  .mcell.out-done {
+    background: rgba(201,106,40,0.06);
+    border-color: rgba(201,106,40,0.25);
+    color: rgba(201,106,40,0.6);
+  }
+
+  .mcell.out-pending { opacity: 0.32; }
+
+  .mcell.pad { background: var(--warn-dim); border-color: var(--warn); color: var(--warn); opacity: 0.85; }
+
+  .arrow-glyph {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.4rem;
+    color: var(--muted);
+    padding: 0 0.2rem;
+  }
+
+  /* Kernel mini grid (weights) */
+  .kgrid {
+    display: grid;
+    grid-template-columns: repeat(3, 30px);
+    gap: 3px;
+  }
+  .kgrid .mcell { width: 30px; height: 30px; font-size: 0.6rem; }
+
+  /* Canvas image filter stage */
+  .img-stage {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.4rem;
+    justify-content: center;
+    align-items: center;
+  }
+  .img-col { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+  canvas.imgcv {
+    width: 176px;
+    height: 176px;
+    image-rendering: pixelated;
+    border-radius: 8px;
+    border: 1px solid var(--border2);
+    background: var(--bg);
+  }
+
+  /* Comparison table */
+  .cmp-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+  }
+  .cmp-table th {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    font-weight: 500;
+    color: var(--muted);
+    text-align: left;
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border2);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: var(--accent-dim);
+  }
+  .cmp-table th:first-child { color: var(--accent); }
+  .cmp-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: middle;
+    font-size: 0.8rem;
+  }
+  .cmp-table tr:last-child td { border-bottom: none; }
+  .cmp-table td:first-child {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+  .cmp-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .yes { color: #6bcb77; font-weight: 500; }
+  .no  { color: #ff6b6b; font-weight: 500; }
+  .partial { color: #ffd93d; font-weight: 500; }
+
+  /* Note box */
+  .note-box {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 1rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .note-box b { color: var(--text); font-weight: 500; }
+  .note-box code { color: var(--accent); }
+
+  /* Feature map stack */
+  .fmap-wrap { display: flex; flex-wrap: wrap; gap: 1.6rem; justify-content: center; align-items: center; }
+
+  /* Source note */
+  .src-note {
+    width: 100%;
+    max-width: 900px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>conv2d.img</h1>
+  <span class="subtitle">// Convolutional Networks für Bilder · Foliensatz 03</span>
+</header>
+
+<div class="main">
+
+  <!-- ══════════════════════════════════════════════════════
+       SECTION 1 — Conv2d Definition (animierter Kernel)
+  ═══════════════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-title">01 — Conv2d Definition</div>
+
+    <p>
+      Eine <b>zweidimensionale Faltung (Conv2d)</b> schiebt einen gelernten <b>Kernel</b>
+      (Filter) über ein 2D-Eingangsbild und berechnet an jeder Position das Skalarprodukt
+      aus Kernel und überlapptem Bildausschnitt. Für Eingabe \(\mathbf{X} \in \mathbb{R}^{H \times W \times C}\)
+      und Kernel \(\mathbf{K} \in \mathbb{R}^{k_h \times k_w \times C}\) entsteht eine
+      <b>Feature Map</b> \(\mathbf{Y} \in \mathbb{R}^{(H-k_h+1) \times (W-k_w+1)}\).
+    </p>
+
+    <div class="formula-box">
+      \[
+        Y_{i,j} = \sum_{c=1}^{C} \sum_{u=0}^{k_h-1} \sum_{v=0}^{k_w-1}
+          X_{\,i+u,\; j+v,\; c}\; K_{u,v,c}
+      \]
+    </div>
+
+    <div class="param-row">
+      <div class="param-chip"><span>k_h × k_w</span> — Kernelgröße</div>
+      <div class="param-chip"><span>C</span> — Eingangskanäle</div>
+      <div class="param-chip"><span>S</span> — Stride</div>
+      <div class="param-chip"><span>P</span> — Padding</div>
+    </div>
+
+    <div class="card-title" style="margin-top:0.3rem;">Interaktiv: Gleitender Kernel (6×6 → 3×3 Kernel → 4×4)</div>
+
+    <div class="conv-stage">
+      <div class="mat-block">
+        <div class="mat-label">Eingabe X &nbsp;(6×6)</div>
+        <div class="mat-grid" id="conv-input" style="grid-template-columns:repeat(6,34px);"></div>
+      </div>
+      <div class="arrow-glyph">⊛</div>
+      <div class="mat-block">
+        <div class="mat-label">Kernel K &nbsp;(3×3)</div>
+        <div class="kgrid" id="conv-kernel"></div>
+      </div>
+      <div class="arrow-glyph">→</div>
+      <div class="mat-block">
+        <div class="mat-label">Feature Map Y &nbsp;(4×4)</div>
+        <div class="mat-grid" id="conv-output" style="grid-template-columns:repeat(4,34px);"></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="c-prev" onclick="convStep(-1)">&#8592; Zurück</button>
+      <button id="c-next" onclick="convStep(+1)">Weiter &#8594;</button>
+      <button onclick="convReset()">Reset</button>
+      <span style="font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--muted);margin-left:4px;">
+        Position: <span id="c-pos" style="color:var(--accent);font-weight:500;">(1,1)</span>
+      </span>
+    </div>
+
+    <div class="step-info" id="conv-info">
+      Berechnung: <span id="conv-formula">Y₁,₁ = Σ K ⊙ X[1:3, 1:3]</span>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       SECTION 2 — Filter / Kernel-Interpretationen
+  ═══════════════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-title">02 — Filter / Kernel-Interpretationen</div>
+
+    <p>
+      Klassische Bildfilter sind nichts anderes als feste 3×3-Kernel. In einem CNN werden diese
+      Kernel hingegen <b>aus Daten gelernt</b> — frühe Schichten lernen oft kantenähnliche Filter,
+      tiefere Schichten kombinieren sie zu komplexeren Mustern.
+    </p>
+
+    <div class="controls">
+      <button id="f-edge" class="btn-active" onclick="setFilter('edge')">Kantenerkennung</button>
+      <button id="f-sobelx" onclick="setFilter('sobelx')">Sobel-X</button>
+      <button id="f-blur" onclick="setFilter('blur')">Weichzeichnen</button>
+      <button id="f-sharpen" onclick="setFilter('sharpen')">Schärfen</button>
+    </div>
+
+    <div class="img-stage">
+      <div class="img-col">
+        <div class="mat-label">Eingabe</div>
+        <canvas class="imgcv" id="cv-in"></canvas>
+      </div>
+      <div class="mat-block">
+        <div class="mat-label">Kernel</div>
+        <div class="kgrid" id="filter-kernel"></div>
+      </div>
+      <div class="img-col">
+        <div class="mat-label">Ausgabe</div>
+        <canvas class="imgcv" id="cv-out"></canvas>
+      </div>
+    </div>
+
+    <p id="filter-desc"></p>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       SECTION 3 — Padding, Stride & Ausgabegröße
+  ═══════════════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-title">03 — Padding, Stride &amp; Ausgabegröße</div>
+
+    <p>
+      Ohne Padding schrumpft das Bild bei jeder Faltung. Mit <b>Padding P</b> (Nullrand) bleibt die
+      Größe erhalten; <b>Stride S</b> springt mehrere Pixel und reduziert die Auflösung.
+    </p>
+
+    <div class="formula-box">
+      \[
+        O = \left\lfloor \frac{W - k + 2P}{S} \right\rfloor + 1
+      \]
+    </div>
+
+    <div class="slider-row">
+      <div class="slider-group">
+        <div class="slider-label">Eingabe W<span id="o-w-val">7</span></div>
+        <input type="range" id="o-w" min="5" max="12" value="7" oninput="updateOut()">
+      </div>
+      <div class="slider-group">
+        <div class="slider-label">Kernel k<span id="o-k-val">3</span></div>
+        <input type="range" id="o-k" min="1" max="5" step="2" value="3" oninput="updateOut()">
+      </div>
+      <div class="slider-group">
+        <div class="slider-label">Padding P<span id="o-p-val">0</span></div>
+        <input type="range" id="o-p" min="0" max="3" value="0" oninput="updateOut()">
+      </div>
+      <div class="slider-group">
+        <div class="slider-label">Stride S<span id="o-s-val">1</span></div>
+        <input type="range" id="o-s" min="1" max="3" value="1" oninput="updateOut()">
+      </div>
+    </div>
+
+    <div class="step-info" id="o-info"></div>
+
+    <div class="conv-stage">
+      <div class="mat-block">
+        <div class="mat-label" id="o-in-label">Eingabe (+ Padding gelb)</div>
+        <div class="mat-grid" id="o-input"></div>
+      </div>
+      <div class="arrow-glyph">→</div>
+      <div class="mat-block">
+        <div class="mat-label" id="o-out-label">Ausgabe</div>
+        <div class="mat-grid" id="o-output"></div>
+      </div>
+    </div>
+
+    <div class="note-box">
+      <b>„Same“-Padding:</b> mit \(P=\lfloor k/2 \rfloor\) und \(S=1\) bleibt \(O = W\) — die räumliche
+      Auflösung wird über die Schicht hinweg exakt erhalten.
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       SECTION 4 — Pooling
+  ═══════════════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-title">04 — Pooling (Downsampling)</div>
+
+    <p>
+      <b>Pooling</b> fasst räumliche 2×2-Nachbarschaften zusammen und halbiert so die Auflösung.
+      Das reduziert Rechenaufwand und macht das Netz robuster gegen kleine Verschiebungen
+      (<b>Translationsinvarianz</b>). Pooling hat <b>keine lernbaren Parameter</b>.
+    </p>
+
+    <div class="controls">
+      <button id="p-max" class="btn-active" onclick="setPool('max')">Max-Pooling</button>
+      <button id="p-avg" onclick="setPool('avg')">Average-Pooling</button>
+    </div>
+
+    <div class="conv-stage">
+      <div class="mat-block">
+        <div class="mat-label">Eingabe (4×4)</div>
+        <div class="mat-grid" id="pool-input" style="grid-template-columns:repeat(4,34px);"></div>
+      </div>
+      <div class="arrow-glyph">→</div>
+      <div class="mat-block">
+        <div class="mat-label">Ausgabe (2×2), 2×2 Fenster, S=2</div>
+        <div class="mat-grid" id="pool-output" style="grid-template-columns:repeat(2,34px);"></div>
+      </div>
+    </div>
+
+    <div class="step-info" id="pool-info">Max-Pooling: pro 2×2-Block wird das Maximum gewählt.</div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       SECTION 5 — Kanäle, Feature Maps & Parameter
+  ═══════════════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-title">05 — Kanäle, Feature Maps &amp; Parameter</div>
+
+    <p>
+      Eine Conv2d-Schicht lernt \(C_{out}\) Filter, die <b>alle Eingangskanäle</b> gemeinsam abtasten.
+      Jeder Filter erzeugt eine Feature Map. Entscheidend: die Parameterzahl hängt <b>nicht</b> von
+      der Bildgröße ab (Weight Sharing) — anders als bei einer voll verbundenen Schicht.
+    </p>
+
+    <div class="formula-box">
+      \[
+        \#\text{Parameter} = (k_h \cdot k_w \cdot C_{in} + 1)\; C_{out}
+      \]
+    </div>
+
+    <div class="slider-row">
+      <div class="slider-group">
+        <div class="slider-label">Kernel k<span id="pp-k-val">3</span></div>
+        <input type="range" id="pp-k" min="1" max="7" step="2" value="3" oninput="updateParams()">
+      </div>
+      <div class="slider-group">
+        <div class="slider-label">C_in<span id="pp-cin-val">3</span></div>
+        <input type="range" id="pp-cin" min="1" max="64" value="3" oninput="updateParams()">
+      </div>
+      <div class="slider-group">
+        <div class="slider-label">C_out<span id="pp-cout-val">16</span></div>
+        <input type="range" id="pp-cout" min="1" max="128" value="16" oninput="updateParams()">
+      </div>
+    </div>
+
+    <div class="step-info" id="pp-info"></div>
+
+    <div class="fmap-wrap">
+      <svg id="fmap-svg" viewBox="0 0 460 220" width="440" height="210" style="overflow:visible;">
+        <!-- Input volume (C_in stacked) -->
+        <g id="fmap-in"></g>
+        <text x="62" y="200" font-size="10" fill="#7a7890" text-anchor="middle" font-family="DM Mono, monospace">Eingabe H×W×C_in</text>
+        <!-- arrow -->
+        <line x1="150" y1="105" x2="210" y2="105" stroke="rgba(255,255,255,0.25)" stroke-width="1.5" marker-end="url(#arr2)"/>
+        <text x="180" y="96" font-size="9" fill="#167a5a" text-anchor="middle" font-family="DM Mono, monospace">C_out Filter</text>
+        <!-- Output volume (C_out stacked) -->
+        <g id="fmap-out"></g>
+        <text x="340" y="200" font-size="10" fill="#7a7890" text-anchor="middle" font-family="DM Mono, monospace">Feature Maps H'×W'×C_out</text>
+        <defs>
+          <marker id="arr2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="rgba(255,255,255,0.3)"/>
+          </marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="note-box">
+      <b>Weight Sharing:</b> derselbe Filter wird über alle Bildpositionen wiederverwendet. Eine
+      voll verbundene Schicht auf ein 224×224×3-Bild bräuchte Millionen Gewichte pro Neuron —
+      ein 3×3-Conv-Filter über 3 Kanäle nur <code>3·3·3+1 = 28</code>.
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       Vergleich Conv1d vs. Conv2d
+  ═══════════════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-title">Vergleich — Conv1d · Conv2d</div>
+
+    <table class="cmp-table">
+      <thead>
+        <tr>
+          <th>Eigenschaft</th>
+          <th>Conv1d</th>
+          <th>Conv2d</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Eingabe</td>
+          <td>Sequenz T×D</td>
+          <td>Bild H×W×C</td>
+        </tr>
+        <tr>
+          <td>Kernel gleitet über</td>
+          <td>1 Achse (Zeit)</td>
+          <td>2 Achsen (Höhe, Breite)</td>
+        </tr>
+        <tr>
+          <td>Parameter / Filter</td>
+          <td>k · C_in</td>
+          <td>k_h · k_w · C_in</td>
+        </tr>
+        <tr>
+          <td>Weight Sharing</td>
+          <td class="yes">&#10003; ja</td>
+          <td class="yes">&#10003; ja</td>
+        </tr>
+        <tr>
+          <td>Translationsinvarianz</td>
+          <td>zeitlich</td>
+          <td>räumlich (2D)</td>
+        </tr>
+        <tr>
+          <td>Typische Anwendung</td>
+          <td>Audio, Zeitreihen</td>
+          <td>Bilder, Video-Frames</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div><!-- .main -->
+
+<p class="src-note">// Quelle: Foliensatz 03 — Deep Learning I (ML SS2026)</p>
+
+<script>
+/* ══════════════════════════════════════════════════════
+   SECTION 1 — Gleitender 2D-Kernel
+══════════════════════════════════════════════════════ */
+const IN = 6, KS = 3, OUT = IN - KS + 1; // 6, 3, 4
+let cr = 0, cc = 0; // current output row/col (0-indexed)
+
+// Random-ish but fixed input values (single channel, 0..9)
+const inputVals = [];
+(function(){
+  let seed = 42;
+  const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+  for (let i = 0; i < IN*IN; i++) inputVals.push(Math.floor(rnd()*10));
+})();
+// Simple edge-ish kernel for display
+const kerVals = [0,-1,0, -1,5,-1, 0,-1,0];
+
+function buildConv() {
+  const inG = document.getElementById('conv-input');
+  inG.innerHTML = '';
+  for (let i = 0; i < IN*IN; i++) {
+    const c = document.createElement('div');
+    c.className = 'mcell'; c.id = 'ci-' + i;
+    c.textContent = inputVals[i];
+    inG.appendChild(c);
+  }
+  const kG = document.getElementById('conv-kernel');
+  kG.innerHTML = '';
+  for (let i = 0; i < KS*KS; i++) {
+    const c = document.createElement('div');
+    c.className = 'mcell center';
+    c.textContent = kerVals[i];
+    kG.appendChild(c);
+  }
+  const outG = document.getElementById('conv-output');
+  outG.innerHTML = '';
+  for (let i = 0; i < OUT*OUT; i++) {
+    const c = document.createElement('div');
+    c.className = 'mcell out-pending'; c.id = 'co-' + i;
+    outG.appendChild(c);
+  }
+}
+
+function renderConv() {
+  // reset input highlight
+  for (let i = 0; i < IN*IN; i++)
+    document.getElementById('ci-' + i).className = 'mcell';
+
+  // highlight window
+  let sum = 0;
+  for (let u = 0; u < KS; u++) {
+    for (let v = 0; v < KS; v++) {
+      const ri = cr + u, ci = cc + v;
+      const idx = ri * IN + ci;
+      const el = document.getElementById('ci-' + idx);
+      el.classList.add(u === 1 && v === 1 ? 'center' : 'active');
+      sum += inputVals[idx] * kerVals[u*KS + v];
+    }
+  }
+
+  // output cells
+  const curOut = cr * OUT + cc;
+  for (let i = 0; i < OUT*OUT; i++) {
+    const el = document.getElementById('co-' + i);
+    el.className = 'mcell';
+    if (i < curOut) { el.classList.add('out-done'); }
+    else if (i === curOut) { el.classList.add('out-active'); el.textContent = sum; }
+    else { el.classList.add('out-pending'); el.textContent = ''; }
+  }
+
+  document.getElementById('c-pos').textContent = '(' + (cr+1) + ',' + (cc+1) + ')';
+  document.getElementById('conv-formula').innerHTML =
+    'Y<sub>' + (cr+1) + ',' + (cc+1) + '</sub> = Σ K ⊙ X[' + (cr+1) + ':' + (cr+KS) + ', ' +
+    (cc+1) + ':' + (cc+KS) + '] = <b style="color:var(--orange)">' + sum + '</b>';
+
+  document.getElementById('c-prev').disabled = (curOut === 0);
+  document.getElementById('c-next').disabled = (curOut === OUT*OUT - 1);
+}
+
+function convStep(dir) {
+  let pos = cr * OUT + cc + dir;
+  pos = Math.max(0, Math.min(OUT*OUT - 1, pos));
+  cr = Math.floor(pos / OUT); cc = pos % OUT;
+  renderConv();
+}
+function convReset() { cr = 0; cc = 0; renderConv(); }
+
+buildConv();
+renderConv();
+
+/* ══════════════════════════════════════════════════════
+   SECTION 2 — Filter auf ein Bild anwenden
+══════════════════════════════════════════════════════ */
+const N = 24; // image resolution
+const baseImg = new Float32Array(N*N);
+(function makeImage(){
+  // a soft disk + a diagonal bar -> nice edges
+  const cx = 9, cy = 11, r = 6;
+  for (let y = 0; y < N; y++) {
+    for (let x = 0; x < N; x++) {
+      let v = 0.15;
+      const d = Math.hypot(x - cx, y - cy);
+      if (d < r) v = 0.85 - 0.4 * (d / r);
+      // diagonal bright bar
+      if (Math.abs((x) - (y) - 4) < 1.5) v = Math.max(v, 0.9);
+      baseImg[y*N + x] = v;
+    }
+  }
+})();
+
+const filters = {
+  edge:    { k: [0,-1,0, -1,4,-1, 0,-1,0], norm: false, off: 0.0,
+             desc: '<b>Laplace-Kantenfilter:</b> die Summe der Gewichte ist 0 — homogene Flächen werden zu 0, nur Helligkeitssprünge (Kanten) bleiben sichtbar.' },
+  sobelx:  { k: [-1,0,1, -2,0,2, -1,0,1], norm: false, off: 0.5,
+             desc: '<b>Sobel-X:</b> approximiert die horizontale Ableitung ∂/∂x. Vertikale Kanten werden hervorgehoben, ein Offset von 0.5 macht negative Werte sichtbar.' },
+  blur:    { k: [1,2,1, 2,4,2, 1,2,1], norm: true, off: 0.0,
+             desc: '<b>Gauß-Weichzeichner:</b> gewichteter Mittelwert (Summe = 16, normiert). Hochfrequente Details werden gedämpft, das Bild wirkt glatter.' },
+  sharpen: { k: [0,-1,0, -1,5,-1, 0,-1,0], norm: false, off: 0.0,
+             desc: '<b>Schärfungsfilter:</b> Original plus Laplace-Anteil (Summe = 1). Kanten werden verstärkt, der Kontrast steigt.' },
+};
+let curFilter = 'edge';
+
+function setFilter(name) {
+  curFilter = name;
+  ['edge','sobelx','blur','sharpen'].forEach(m =>
+    document.getElementById('f-' + m).classList.toggle('btn-active', m === name));
+  renderFilterKernel();
+  drawImages();
+  document.getElementById('filter-desc').innerHTML = filters[name].desc;
+}
+
+function renderFilterKernel() {
+  const f = filters[curFilter];
+  const g = document.getElementById('filter-kernel');
+  g.innerHTML = '';
+  const div = f.norm ? f.k.reduce((a,b)=>a+b,0) : 1;
+  for (let i = 0; i < 9; i++) {
+    const c = document.createElement('div');
+    c.className = 'mcell center';
+    const val = f.norm ? (f.k[i]/div) : f.k[i];
+    c.textContent = f.norm ? val.toFixed(2).replace(/0$/,'') : val;
+    c.style.fontSize = '0.52rem';
+    g.appendChild(c);
+  }
+}
+
+function convolve(img, k, norm, off) {
+  const out = new Float32Array(N*N);
+  const div = norm ? k.reduce((a,b)=>a+b,0) : 1;
+  for (let y = 0; y < N; y++) {
+    for (let x = 0; x < N; x++) {
+      let s = 0;
+      for (let u = -1; u <= 1; u++) {
+        for (let v = -1; v <= 1; v++) {
+          const yy = Math.min(N-1, Math.max(0, y+u));
+          const xx = Math.min(N-1, Math.max(0, x+v));
+          s += img[yy*N + xx] * k[(u+1)*3 + (v+1)];
+        }
+      }
+      out[y*N + x] = s / div + off;
+    }
+  }
+  return out;
+}
+
+function paint(canvasId, data) {
+  const cv = document.getElementById(canvasId);
+  const px = 8; cv.width = N*px; cv.height = N*px;
+  const ctx = cv.getContext('2d');
+  for (let y = 0; y < N; y++) {
+    for (let x = 0; x < N; x++) {
+      let v = data[y*N + x];
+      v = Math.min(1, Math.max(0, v));
+      const g = Math.round(v * 255);
+      ctx.fillStyle = 'rgb(' + g + ',' + g + ',' + g + ')';
+      ctx.fillRect(x*px, y*px, px, px);
+    }
+  }
+}
+
+function drawImages() {
+  const f = filters[curFilter];
+  paint('cv-in', baseImg);
+  paint('cv-out', convolve(baseImg, f.k, f.norm, f.off));
+}
+
+setFilter('edge');
+
+/* ══════════════════════════════════════════════════════
+   SECTION 3 — Ausgabegröße
+══════════════════════════════════════════════════════ */
+function updateOut() {
+  const W = +document.getElementById('o-w').value;
+  const k = +document.getElementById('o-k').value;
+  const P = +document.getElementById('o-p').value;
+  const S = +document.getElementById('o-s').value;
+  document.getElementById('o-w-val').textContent = W;
+  document.getElementById('o-k-val').textContent = k;
+  document.getElementById('o-p-val').textContent = P;
+  document.getElementById('o-s-val').textContent = S;
+
+  const O = Math.floor((W - k + 2*P) / S) + 1;
+  const valid = O >= 1;
+
+  document.getElementById('o-info').innerHTML =
+    'O = ⌊(' + W + ' − ' + k + ' + 2·' + P + ') / ' + S + '⌋ + 1 = <span>' +
+    (valid ? O : 'ungültig') + '</span>' + (valid ? ' × ' + O : '');
+
+  // input grid with padding ring
+  const inG = document.getElementById('o-input');
+  const Wp = W + 2*P;
+  const cell = Wp > 11 ? 18 : 24;
+  inG.style.gridTemplateColumns = 'repeat(' + Wp + ',' + cell + 'px)';
+  inG.innerHTML = '';
+  for (let y = 0; y < Wp; y++) {
+    for (let x = 0; x < Wp; x++) {
+      const c = document.createElement('div');
+      const isPad = (x < P || x >= P+W || y < P || y >= P+W);
+      c.className = 'mcell' + (isPad ? ' pad' : '');
+      c.style.width = cell + 'px'; c.style.height = cell + 'px';
+      inG.appendChild(c);
+    }
+  }
+  document.getElementById('o-in-label').textContent =
+    'Eingabe ' + W + '×' + W + (P>0 ? ' (+ Padding gelb)' : '');
+
+  // output grid
+  const outG = document.getElementById('o-output');
+  outG.innerHTML = '';
+  if (valid) {
+    const oc = O > 11 ? 18 : 24;
+    outG.style.gridTemplateColumns = 'repeat(' + O + ',' + oc + 'px)';
+    for (let i = 0; i < O*O; i++) {
+      const c = document.createElement('div');
+      c.className = 'mcell out-done';
+      c.style.width = oc + 'px'; c.style.height = oc + 'px';
+      outG.appendChild(c);
+    }
+  }
+  document.getElementById('o-out-label').textContent = valid ? ('Ausgabe ' + O + '×' + O) : 'Ausgabe —';
+}
+updateOut();
+
+/* ══════════════════════════════════════════════════════
+   SECTION 4 — Pooling
+══════════════════════════════════════════════════════ */
+const poolVals = [3,1,2,4, 5,6,1,2, 1,2,7,3, 4,1,2,8];
+let poolMode = 'max';
+
+function setPool(mode) {
+  poolMode = mode;
+  document.getElementById('p-max').classList.toggle('btn-active', mode === 'max');
+  document.getElementById('p-avg').classList.toggle('btn-active', mode === 'avg');
+  renderPool();
+}
+
+function renderPool() {
+  const inG = document.getElementById('pool-input');
+  inG.innerHTML = '';
+  // color groups in 2x2 blocks
+  const groupColor = ['active','out-active','out-done','center'];
+  for (let y = 0; y < 4; y++) {
+    for (let x = 0; x < 4; x++) {
+      const c = document.createElement('div');
+      const block = (y<2?0:2) + (x<2?0:1);
+      c.className = 'mcell ' + groupColor[block];
+      c.style.opacity = '0.55';
+      c.textContent = poolVals[y*4 + x];
+      inG.appendChild(c);
+    }
+  }
+  const outG = document.getElementById('pool-output');
+  outG.innerHTML = '';
+  for (let by = 0; by < 2; by++) {
+    for (let bx = 0; bx < 2; bx++) {
+      const vals = [
+        poolVals[(by*2)*4 + bx*2], poolVals[(by*2)*4 + bx*2+1],
+        poolVals[(by*2+1)*4 + bx*2], poolVals[(by*2+1)*4 + bx*2+1]
+      ];
+      const block = by*2 + bx;
+      const c = document.createElement('div');
+      c.className = 'mcell ' + groupColor[block];
+      const v = poolMode === 'max' ? Math.max(...vals) : (vals.reduce((a,b)=>a+b,0)/4);
+      c.textContent = poolMode === 'max' ? v : v.toFixed(1);
+      outG.appendChild(c);
+    }
+  }
+  document.getElementById('pool-info').textContent = poolMode === 'max'
+    ? 'Max-Pooling: pro 2×2-Block wird das Maximum gewählt.'
+    : 'Average-Pooling: pro 2×2-Block wird der Mittelwert gebildet.';
+}
+renderPool();
+
+/* ══════════════════════════════════════════════════════
+   SECTION 5 — Parameter & Feature-Map-Volumen
+══════════════════════════════════════════════════════ */
+function updateParams() {
+  const k = +document.getElementById('pp-k').value;
+  const cin = +document.getElementById('pp-cin').value;
+  const cout = +document.getElementById('pp-cout').value;
+  document.getElementById('pp-k-val').textContent = k;
+  document.getElementById('pp-cin-val').textContent = cin;
+  document.getElementById('pp-cout-val').textContent = cout;
+  const params = (k*k*cin + 1) * cout;
+  document.getElementById('pp-info').innerHTML =
+    '#Parameter = (' + k + '·' + k + '·' + cin + ' + 1)·' + cout +
+    ' = <span>' + params.toLocaleString('de-DE') + '</span>';
+  drawFmap(cin, cout);
+}
+
+function drawFmap(cin, cout) {
+  const inG = document.getElementById('fmap-in');
+  const outG = document.getElementById('fmap-out');
+  inG.innerHTML = ''; outG.innerHTML = '';
+  const stack = (g, n, baseX, baseY, w, h, color, stroke) => {
+    const shown = Math.min(n, 8);
+    const dx = 7, dy = 5;
+    for (let i = shown - 1; i >= 0; i--) {
+      const r = document.createElementNS('http://www.w3.org/2000/svg','rect');
+      r.setAttribute('x', baseX + i*dx);
+      r.setAttribute('y', baseY - i*dy);
+      r.setAttribute('width', w); r.setAttribute('height', h);
+      r.setAttribute('rx', 4);
+      r.setAttribute('fill', color);
+      r.setAttribute('stroke', stroke);
+      r.setAttribute('stroke-width', '1.2');
+      g.appendChild(r);
+    }
+  };
+  stack(inG, cin, 20, 110, 60, 60, 'rgba(41,112,196,0.18)', 'rgba(120,160,230,0.7)');
+  stack(outG, cout, 290, 110, 60, 60, 'rgba(22,122,90,0.18)', '#167a5a');
+}
+updateParams();
+</script>
+</body>
+</html>

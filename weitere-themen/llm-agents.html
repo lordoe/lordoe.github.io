@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLM Agents — Von Language Models zu Coding Agents</title>
+<script>
+  MathJax = {
+    tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+    options: { skipHtmlTags: ['script','noscript','style','textarea'] }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f0f11;
+    --surface: #17171a;
+    --surface2: #1e1e22;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8e6e0;
+    --muted: #6a6866;
+    --accent: #a0522d;
+    --accent-dim: rgba(160,82,45,0.15);
+    --c1: #a0522d;
+    --c1l: rgba(160,82,45,0.15);
+    --c2: #4e9a8c;
+    --c2l: rgba(78,154,140,0.15);
+    --c3: #7b8dc8;
+    --c3l: rgba(123,141,200,0.15);
+    --c4: #c8965a;
+    --c4l: rgba(200,150,90,0.15);
+    --c5: #8fa86a;
+    --c5l: rgba(143,168,106,0.15);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem 3rem;
+  }
+
+  header {
+    width: 100%;
+    max-width: 860px;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  h1 {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.05rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+  }
+
+  .subtitle {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .main {
+    width: 100%;
+    max-width: 860px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .card h2 {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .card p {
+    font-size: 0.82rem;
+    line-height: 1.65;
+    color: var(--muted);
+  }
+  .card p b { color: var(--text); font-weight: 500; }
+
+  mjx-container { color: var(--text) !important; }
+
+  .formula-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    color: var(--text);
+    overflow-x: auto;
+    text-align: center;
+  }
+  .formula-box mjx-container { color: var(--text) !important; }
+
+  .section-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 0.1rem 0;
+  }
+
+  .src-note {
+    font-size: 0.7rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    border-top: 1px solid var(--border);
+    padding-top: 0.75rem;
+  }
+
+  .chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .chip {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid;
+    letter-spacing: 0.03em;
+  }
+  .chip-brown  { color: var(--c1); border-color: var(--c1); background: var(--c1l); }
+  .chip-teal   { color: var(--c2); border-color: var(--c2); background: var(--c2l); }
+  .chip-blue   { color: var(--c3); border-color: var(--c3); background: var(--c3l); }
+  .chip-orange { color: var(--c4); border-color: var(--c4); background: var(--c4l); }
+  .chip-green  { color: var(--c5); border-color: var(--c5); background: var(--c5l); }
+
+  .steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .step {
+    display: grid;
+    grid-template-columns: 1.6rem 1fr;
+    gap: 0.5rem 0.75rem;
+    align-items: start;
+  }
+
+  .step-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    padding-top: 0.1rem;
+  }
+
+  .step-body { display: flex; flex-direction: column; gap: 0.35rem; }
+
+  .step-title {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .step-desc {
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+  .step-desc b { color: var(--text); font-weight: 500; }
+
+  .flow-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .flow-node {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.3rem 0.75rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text);
+    text-align: center;
+  }
+  .flow-node.accent-brown  { border-color: var(--c1); color: var(--c1); }
+  .flow-node.accent-teal   { border-color: var(--c2); color: var(--c2); }
+  .flow-node.accent-blue   { border-color: var(--c3); color: var(--c3); }
+  .flow-node.accent-orange { border-color: var(--c4); color: var(--c4); }
+  .flow-node.accent-green  { border-color: var(--c5); color: var(--c5); }
+
+  .flow-arrow {
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .cake-diagram {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+
+  .cake-layer {
+    padding: 0.75rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .cake-layer-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+  }
+
+  .cake-layer-desc {
+    font-size: 0.75rem;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  .cake-layer.rl {
+    background: rgba(160,82,45,0.18);
+    border-bottom: 1px solid var(--border);
+  }
+  .cake-layer.rl .cake-layer-title { color: var(--c1); }
+
+  .cake-layer.sft {
+    background: rgba(78,154,140,0.13);
+    border-bottom: 1px solid var(--border);
+  }
+  .cake-layer.sft .cake-layer-title { color: var(--c2); }
+
+  .cake-layer.pretrain {
+    background: rgba(123,141,200,0.12);
+  }
+  .cake-layer.pretrain .cake-layer-title { color: var(--c3); }
+
+  .scaling-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: center;
+  }
+
+  .scaling-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .scaling-controls label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .scaling-controls input[type=range] {
+    -webkit-appearance: none;
+    height: 3px;
+    background: var(--border2);
+    border-radius: 2px;
+    width: 160px;
+    cursor: pointer;
+    outline: none;
+  }
+  .scaling-controls input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+  }
+
+  #compute-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    min-width: 60px;
+  }
+
+  #loss-display {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+  }
+  #loss-display span { color: var(--text); }
+
+  canvas#scaling-canvas {
+    border-radius: 8px;
+    display: block;
+  }
+
+  .tokenizer-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .tokenizer-input-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  #tok-input {
+    flex: 1;
+    min-width: 200px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 0.4rem 0.75rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--text);
+    outline: none;
+    resize: vertical;
+    min-height: 64px;
+    line-height: 1.5;
+  }
+  #tok-input:focus { border-color: var(--accent); }
+
+  .tok-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    padding: 0.4rem 0.9rem;
+    border-radius: 6px;
+    border: 1px solid var(--accent);
+    background: var(--accent-dim);
+    color: var(--accent);
+    cursor: pointer;
+    transition: background 0.15s;
+    white-space: nowrap;
+  }
+  .tok-btn:hover { background: rgba(160,82,45,0.28); }
+
+  .model-toggle {
+    display: flex;
+    gap: 4px;
+  }
+
+  .model-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .model-btn.active {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+    color: var(--accent);
+  }
+
+  #tok-output {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.6rem 0.75rem;
+    min-height: 48px;
+    font-size: 0.8rem;
+    line-height: 1.8;
+    word-break: break-all;
+  }
+
+  #tok-stats {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+  }
+  #tok-stats span { color: var(--text); }
+
+  .tok-span {
+    display: inline-block;
+    border-radius: 3px;
+    padding: 1px 2px;
+    margin: 1px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    white-space: pre;
+    cursor: default;
+  }
+
+  .grpo-diagram {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .grpo-question {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    padding: 6px 18px;
+    border-radius: 6px;
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--muted);
+  }
+
+  .grpo-samples {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .grpo-sample {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .grpo-output {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    padding: 4px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--c4);
+    background: var(--c4l);
+    color: var(--c4);
+  }
+
+  .grpo-reward {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--muted);
+  }
+  .grpo-reward.high { color: var(--c5); }
+  .grpo-reward.low  { color: #c06060; }
+
+  .grpo-arrow-down {
+    font-size: 1.1rem;
+    color: var(--muted);
+    margin: 2px 0;
+  }
+
+  .agent-diagram {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+
+  .agent-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .agent-node {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    padding: 8px 18px;
+    border-radius: 8px;
+    border: 1px solid;
+    text-align: center;
+    white-space: nowrap;
+  }
+  .agent-node.llm   { border-color: var(--c1); color: var(--c1); background: var(--c1l); min-width: 100px; }
+  .agent-node.tool  { border-color: var(--c2); color: var(--c2); background: var(--c2l); }
+  .agent-node.io    { border-color: var(--border2); color: var(--muted); background: var(--surface2); }
+
+  .agent-arrow-v {
+    width: 2px;
+    height: 20px;
+    background: var(--border2);
+    margin: 0 auto;
+  }
+
+  .agent-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--muted);
+  }
+
+  .agent-side-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--muted);
+    padding: 2px 6px;
+    white-space: nowrap;
+  }
+
+  .mcp-json {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 1rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    line-height: 1.6;
+    color: var(--muted);
+    overflow-x: auto;
+  }
+  .mcp-json .key   { color: var(--c3); }
+  .mcp-json .val   { color: var(--c4); }
+  .mcp-json .str   { color: var(--c5); }
+  .mcp-json .num   { color: var(--c4); }
+
+  .two-col {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+  .two-col > * { flex: 1; min-width: 220px; }
+
+  .info-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .info-box-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+  }
+
+  .info-box-desc {
+    font-size: 0.76rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .info-box-desc b { color: var(--text); font-weight: 500; }
+
+  .token-colors {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .inline-code {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 5px;
+    color: var(--c4);
+  }
+
+  .seq-diagram {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .seq-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 60px;
+    flex: 1;
+  }
+
+  .seq-box {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    padding: 4px 6px;
+    text-align: center;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    width: 100%;
+    color: var(--text);
+    line-height: 1.3;
+  }
+
+  .seq-box.head    { background: var(--surface); color: var(--muted); font-size: 0.6rem; border-bottom: none; }
+  .seq-box.input   { border-color: var(--c3); color: var(--c3); }
+  .seq-box.predict { border-color: var(--c1); color: var(--c1); background: var(--c1l); }
+  .seq-arrow       { font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>llm-agents.arch</h1>
+  <span class="subtitle">// Von Language Models zu Coding Agents</span>
+</header>
+
+<div class="main">
+
+  <div class="card">
+    <h2>01 — Tokenisierung: Alles ist Text</h2>
+
+    <p>
+      Ein LLM verarbeitet keine Zeichen, sondern <b>Token-IDs</b> —
+      Ganzzahlen aus einem festen Vokabular.
+      Byte-Pair Encoding (BPE) baut dieses Vokabular bottom-up auf:
+      häufige Zeichenpaare werden iterativ zusammengefasst.
+    </p>
+
+    <div class="two-col">
+      <div class="info-box">
+        <span class="info-box-title" style="color:var(--c1)">GPT-2</span>
+        <span class="info-box-desc">Vokabular: <b>~50 000</b> BPE-Tokens<br>Token-Count Beispieltext: <b>70</b></span>
+      </div>
+      <div class="info-box">
+        <span class="info-box-title" style="color:var(--c2)">GPT-4o</span>
+        <span class="info-box-desc">Vokabular: <b>~200 000</b> BPE-Tokens<br>Token-Count Beispieltext: <b>54</b> (effizienter)</span>
+      </div>
+    </div>
+
+    <p>
+      <b>Code ist nur weiterer Text.</b>
+      Ein HTML-Snippet wie <span class="inline-code">&lt;div id="main"&gt;</span> wird genauso tokenisiert
+      wie natürliche Sprache — der Transformer unterscheidet nicht zwischen beiden.
+      <b>Bilder</b> werden durch einen visuellen Encoder in eine Sequenz von Bild-Tokens übersetzt,
+      bevor sie an das LLM übergeben werden (z.B. "The cat sat on the mat" → 464, 3797, 3332, ...).
+    </p>
+
+    <hr class="section-divider">
+
+    <div class="tokenizer-wrap">
+      <div class="tokenizer-input-row">
+        <div style="display:flex;flex-direction:column;gap:0.4rem;flex:1;min-width:200px;">
+          <div class="model-toggle">
+            <button class="model-btn active" id="btn-gpt2" onclick="setModel('gpt2')">GPT-2</button>
+            <button class="model-btn" id="btn-gpt4o" onclick="setModel('gpt4o')">GPT-4o</button>
+          </div>
+          <textarea id="tok-input" placeholder="Text eingeben…">Here is a text with numbers. If we try to do calculations we need to be very careful don't you think? What is the results of this operation: 21 * 100 = 2100</textarea>
+        </div>
+        <button class="tok-btn" onclick="tokenize()">Tokenisieren</button>
+      </div>
+
+      <div id="tok-output"><span style="color:var(--muted);font-size:0.75rem;font-family:'DM Mono',monospace;">// Klick auf "Tokenisieren"</span></div>
+
+      <div id="tok-stats"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>02 — Der LLM-Training-Stack</h2>
+
+    <p>
+      Das Training moderner LLMs schichtet drei Lernparadigmen übereinander —
+      der Foliensatz beschreibt es als <b>"Kuchen"</b>: das Unsupervised Pre-Training ist
+      die Masse, Supervised Fine-Tuning ist die Glasur, Reinforcement Learning ist die Kirsche.
+    </p>
+
+    <div class="cake-diagram">
+      <div class="cake-layer rl">
+        <span class="cake-layer-title">Reinforcement Learning (die Kirsche)</span>
+        <span class="cake-layer-desc">Human Feedback (RLHF) oder verifizierbare Rewards (RLVR) — verfeinert das Verhalten</span>
+      </div>
+      <div class="cake-layer sft">
+        <span class="cake-layer-title">Supervised Fine-Tuning (die Glasur)</span>
+        <span class="cake-layer-desc">Lernen aus annotierten Beispielen — Chat-Format, Instruktions-Folgsamkeit</span>
+      </div>
+      <div class="cake-layer pretrain">
+        <span class="cake-layer-title">Unsupervised Pre-Training (die Masse)</span>
+        <span class="cake-layer-desc">Next-Token-Prediction auf dem Web — die große Datenmenge</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>03 — Next-Token-Prediction Loss</h2>
+
+    <div class="chip-row" style="margin-bottom:0.25rem">
+      <span class="chip chip-brown">Unsupervised Pre-Training</span>
+      <span class="chip chip-teal">Supervised Fine-Tuning</span>
+      <span class="chip chip-blue">Maximum Likelihood</span>
+    </div>
+
+    <p>
+      Der Transformer mit <b>Causal Masking</b> erhält die bisherige Sequenz
+      \(x_0, x_1, \ldots, x_{k-1}\) und gibt eine Wahrscheinlichkeitsverteilung
+      über das nächste Token \(x_k\) aus.
+    </p>
+
+    <div class="flow-row" style="justify-content:center;gap:0.4rem;margin-bottom:0.25rem;">
+      <div class="flow-node">x₀</div>
+      <div class="flow-node">x₁</div>
+      <div class="flow-node" style="color:var(--muted)">…</div>
+      <div class="flow-node">x_{k-1}</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-node accent-blue" style="padding:0.4rem 1rem;">Transformer<br><span style="font-size:0.62rem">(causal masking)</span></div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-node accent-brown">p_θ(x_k | x_{k-1},…,x_0)</div>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <span class="step-num">01</span>
+        <div class="step-body">
+          <span class="step-title">Next-Token-Prediction Loss</span>
+          <div class="formula-box">
+            \[
+              \mathcal{L}(\theta) = -\sum_k \log p_\theta(x_k \mid x_{k-1}, \ldots, x_0)
+              \quad \text{(maximum likelihood)}
+            \]
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">02</span>
+        <div class="step-body">
+          <span class="step-title">Äquivalenz zur Cross-Entropie</span>
+          <div class="formula-box">
+            \[
+              \mathcal{L}(\theta) = \sum_k \mathrm{CE}(\mathrm{logits}_\theta,\; x_k)
+            \]
+          </div>
+          <span class="step-desc">
+            Next-Token-Prediction ist ein <b>Klassifikationsproblem</b>:
+            das Netz wählt aus dem Vokabular das wahrscheinlichste nächste Token.
+            Dieser Verlust gilt für <b>Pre-Training und SFT</b> gleichermaßen —
+            beim Chat-Training werden nur die Antwort-Token zum Verlust beigetragen.
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <hr class="section-divider">
+
+    <p style="font-size:0.75rem;color:var(--muted);">
+      <b style="color:var(--text)">Supervised Fine-Tuning (SFT)</b> für einen Chat-Bot:
+      Die Eingabe enthält Spezial-Tokens wie
+      <span class="inline-code">&lt;|im_start|&gt;system</span>,
+      <span class="inline-code">&lt;|im_start|&gt;user</span>,
+      <span class="inline-code">&lt;|im_start|&gt;assistant</span>.
+      Der Verlust wird nur über die Antwort-Token des Assistenten berechnet.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>04 — Scaling Laws (Kaplan et al. 2020)</h2>
+
+    <div class="chip-row" style="margin-bottom:0.25rem">
+      <span class="chip chip-brown">Kaplan 2020</span>
+      <span class="chip chip-blue">Power Law</span>
+    </div>
+
+    <p>
+      Die Leistung von LLMs folgt <b>Potenzgesetzen</b> in Bezug auf
+      Compute, Datensatzgröße und Parameteranzahl —
+      und zwar unabhängig voneinander, solange der jeweils andere Faktor nicht zur Engstelle wird.
+    </p>
+
+    <div class="steps">
+      <div class="step">
+        <span class="step-num">01</span>
+        <div class="step-body">
+          <span class="step-title">Compute-Skalierungsgesetz</span>
+          <div class="formula-box">
+            \[
+              L = \left(\frac{C_{100}}{2.3 \cdot 10^5}\right)^{-0.050}
+            \]
+          </div>
+          <span class="step-desc">
+            L: Test Loss, \(C_{100}\): Compute in PF-days.
+          </span>
+        </div>
+      </div>
+      <div class="step">
+        <span class="step-num">02</span>
+        <div class="step-body">
+          <span class="step-title">Dataset-Skalierungsgesetz</span>
+          <div class="formula-box">
+            \[
+              L = \left(\frac{D}{5.4 \cdot 10^{13}}\right)^{-0.095}
+            \]
+          </div>
+          <span class="step-desc">D: Tokens im Datensatz.</span>
+        </div>
+      </div>
+      <div class="step">
+        <span class="step-num">03</span>
+        <div class="step-body">
+          <span class="step-title">Parameter-Skalierungsgesetz</span>
+          <div class="formula-box">
+            \[
+              L = \left(\frac{N}{8.8 \cdot 10^{13}}\right)^{-0.076}
+            \]
+          </div>
+          <span class="step-desc">N: Anzahl der nicht-Embedding-Parameter.</span>
+        </div>
+      </div>
+    </div>
+
+    <hr class="section-divider">
+
+    <div class="scaling-wrap">
+      <div class="scaling-controls">
+        <label>
+          Compute (PF-days, log)
+          <input type="range" id="compute-slider" min="-4" max="1" step="0.05" value="-2">
+          <span id="compute-val">10⁻²</span>
+        </label>
+        <span id="loss-display">L = <span id="loss-val">–</span></span>
+      </div>
+      <canvas id="scaling-canvas" width="700" height="220"></canvas>
+      <p style="font-size:0.72rem;color:var(--muted);text-align:center;max-width:480px;">
+        Potenzgesetz: Loss fällt mit wachsendem Compute glatt und vorhersagbar.
+        <b style="color:var(--text)">Modellgröße</b> soll ~3× schneller wachsen als <b style="color:var(--text)">Datensatzgröße</b>.
+      </p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>05 — Reinforcement Learning mit verifizierbaren Rewards (RLVR)</h2>
+
+    <div class="chip-row" style="margin-bottom:0.25rem">
+      <span class="chip chip-brown">RLVR</span>
+      <span class="chip chip-orange">Policy Gradient</span>
+      <span class="chip chip-green">GRPO</span>
+    </div>
+
+    <p>
+      Bei RLVR gibt ein <b>Verifizierer</b> (kein Reward-Modell) den Reward:
+      er prüft maschinell, ob die Antwort korrekt ist.
+    </p>
+
+    <div class="formula-box" style="text-align:left;padding:0.6rem 1.2rem;">
+      \[
+        r(x_{1:T}) = \begin{cases} 1 & \text{wenn die Antwort korrekt ist} \\ 0 & \text{sonst} \end{cases}
+      \]
+    </div>
+
+    <p>Maximiertes Ziel:</p>
+
+    <div class="formula-box">
+      \[
+        \max_\theta\; \mathbb{E}_{x_{1:T} \sim p_\theta}\!\bigl[r(x_{1:T})\bigr]
+      \]
+    </div>
+
+    <hr class="section-divider">
+
+    <div class="steps">
+      <div class="step">
+        <span class="step-num">01</span>
+        <div class="step-body">
+          <span class="step-title">Policy-Gradient-Theorem</span>
+          <div class="formula-box">
+            \[
+              \nabla_\theta\, \mathbb{E}[r] = \mathbb{E}\!\left[\bigl(r(x_{1:T}) - b\bigr)\,\nabla_\theta \log p_\theta(x_{1:T})\right]
+            \]
+          </div>
+          <span class="step-desc">
+            Das Subtrahieren einer beliebigen Konstanten b lässt den erwarteten Gradienten unverändert.
+            Man wählt <b>b = r̄</b> (mittlerer Reward über den Batch) —
+            damit entsteht eine <b>reward-gewichtete Cross-Entropie</b>:
+          </span>
+          <div class="formula-box">
+            \[
+              = -\mathbb{E}\!\left[\bigl(r(x_{1:T}) - b\bigr)\,\nabla_\theta \sum_t \mathrm{CE}(\mathrm{logits}_\theta,\, x_t)\right]
+            \]
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">02</span>
+        <div class="step-body">
+          <span class="step-title">GRPO — Group-Relative Policy Optimization</span>
+          <span class="step-desc">
+            Für jede Frage q werden <b>G Antworten</b> o₁, …, o_G gesampelt und bewertet.
+            Die Baseline ist der Gruppen-Mittelwert (kein Wert-Netzwerk nötig):
+          </span>
+          <div class="formula-box">
+            \[
+              A_i = \frac{r_i - \bar{r}}{\mathrm{std}(\mathbf{r})}, \qquad
+              \bar{r} = \frac{1}{G}\sum_{i=1}^{G} r_i
+            \]
+          </div>
+          <span class="step-desc">
+            Quelle: DeepSeekMath — Shao et al. 2024.
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="grpo-diagram">
+      <div class="grpo-question">Frage q</div>
+      <div class="grpo-arrow-down">↓</div>
+      <div class="grpo-samples">
+        <div class="grpo-sample">
+          <div class="grpo-output">o₁</div>
+          <div class="grpo-reward high">r₁ = 1</div>
+        </div>
+        <div class="grpo-sample">
+          <div class="grpo-output">o₂</div>
+          <div class="grpo-reward low">r₂ = 0</div>
+        </div>
+        <div class="grpo-sample">
+          <div class="grpo-output" style="opacity:0.5">…</div>
+          <div class="grpo-reward">…</div>
+        </div>
+        <div class="grpo-sample">
+          <div class="grpo-output">o_G</div>
+          <div class="grpo-reward high">r_G = 1</div>
+        </div>
+      </div>
+      <div class="grpo-arrow-down" style="font-size:0.7rem;color:var(--muted);">Baseline = Gruppen-Mittelwert (kein Value-Network)</div>
+    </div>
+
+    <p style="font-size:0.76rem;color:var(--muted);">
+      <b style="color:var(--text)">Reasoning Trace:</b>
+      Durch RLVR lernen Modelle, in einem <span class="inline-code">&lt;thinking&gt;</span>-Block zu denken,
+      Fehler zu korrigieren und erst dann die finale Antwort (z.B. <span class="inline-code">#### 72</span>) zu geben.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>06 — DPO: Direct Preference Optimization</h2>
+
+    <div class="chip-row" style="margin-bottom:0.25rem">
+      <span class="chip chip-teal">RLHF-Alternative</span>
+      <span class="chip chip-blue">Bradley–Terry</span>
+      <span class="chip chip-brown">Rafailov 2023</span>
+    </div>
+
+    <p>
+      DPO trainiert das LLM direkt auf menschlichen Präferenzen,
+      ohne ein separates Reward-Modell zu benötigen.
+      Wenn ein Mensch Antwort A gegenüber B bevorzugt (<b>A ≻ B</b>):
+    </p>
+
+    <div class="flow-row" style="justify-content:center;gap:0.75rem;flex-wrap:wrap;margin-bottom:0.25rem;">
+      <div class="flow-node">Prompt</div>
+      <span class="flow-arrow">→ p_θ →</span>
+      <div style="display:flex;flex-direction:column;gap:0.35rem;">
+        <div class="flow-node accent-teal">Output A</div>
+        <div class="flow-node" style="color:var(--muted)">Output B</div>
+      </div>
+      <div style="font-family:'DM Mono',monospace;font-size:0.8rem;color:var(--c1);align-self:center;">A ≻ B</div>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <span class="step-num">01</span>
+        <div class="step-body">
+          <span class="step-title">Einfache DPO-Loss (Bradley–Terry)</span>
+          <div class="formula-box">
+            \[
+              \mathcal{L}(\theta) = -\log \sigma\!\bigl(\log p_\theta(A) - \log p_\theta(B)\bigr)
+            \]
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">02</span>
+        <div class="step-body">
+          <span class="step-title">Logistische Version — mit Referenzmodell</span>
+          <div class="formula-box">
+            \[
+              \mathcal{L}(\theta) = -\log \sigma\!\left(\beta\!\left[
+                \log \frac{p_\theta(A)}{p_\text{ref}(A)} - \log \frac{p_\theta(B)}{p_\text{ref}(B)}
+              \right]\right)
+            \]
+          </div>
+          <span class="step-desc">
+            Der Referenzmodell-Term \(p_\text{ref}\) verhindert, dass das Modell zu weit
+            vom ursprünglichen Pre-Training-Verhalten abweicht.
+            β steuert die Stärke dieser KL-Regularisierung.
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>07 — Coding Agents: Function Calling &amp; Tool-Use</h2>
+
+    <div class="chip-row" style="margin-bottom:0.25rem">
+      <span class="chip chip-green">Function Calling</span>
+      <span class="chip chip-teal">Tool-Use</span>
+    </div>
+
+    <p>
+      Ein LLM kann den Token-Generierungsloop verlassen, um ein externes Tool aufzurufen.
+      Das Modell erzeugt einen strukturierten Aufruf, das Tool läuft, das Ergebnis
+      wird in den Kontext eingefügt und die Generierung geht weiter.
+    </p>
+
+    <div class="two-col">
+      <div class="mcp-json">
+        <span style="color:var(--muted)">&lt;python&gt;</span><br>
+        import math<br>
+        print(48 + 24)<br>
+        <span style="color:var(--muted)">&lt;/python&gt;</span><br><br>
+        <span style="color:var(--muted)">&lt;results&gt;</span><br>
+        72<br>
+        <span style="color:var(--muted)">&lt;/results&gt;</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:0.4rem;justify-content:center;">
+        <div class="info-box">
+          <span class="info-box-title" style="color:var(--c2)">Beim &lt;/python&gt;-Tag:</span>
+          <span class="info-box-desc">
+            1. Token-Generierung pausieren<br>
+            2. Code mit Python ausführen<br>
+            3. stdout in &lt;results&gt; kopieren<br>
+            4. Generierung fortsetzen
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <hr class="section-divider">
+
+    <p>Ein <b>minimaler Coding Agent</b> braucht nur wenige Werkzeuge:</p>
+
+    <div class="agent-diagram">
+      <div class="agent-row">
+        <div class="agent-node llm">LLM</div>
+      </div>
+
+      <div style="display:flex;gap:0;align-items:flex-start;margin-top:0.5rem;">
+        <div style="display:flex;flex-direction:column;align-items:flex-end;padding-right:0.4rem;gap:0.5rem;padding-top:0.5rem;">
+          <span class="agent-side-label">function call →</span>
+          <span class="agent-side-label" style="margin-top:0.3rem;">← result</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:0.4rem;">
+          <div class="agent-node tool">read_file</div>
+          <div class="agent-node tool">write_file</div>
+          <div class="agent-node tool">bash</div>
+          <div class="agent-node tool">grep / search</div>
+        </div>
+      </div>
+    </div>
+
+    <p style="font-size:0.76rem;color:var(--muted);">
+      Mit diesen vier Werkzeugen kann ein LLM vollständige Coding-Aufgaben lösen:
+      Code lesen, schreiben, ausführen und im Codebase suchen.
+      Das ist das Prinzip hinter Tools wie <b style="color:var(--text)">Claude Code</b>.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>08 — MCP: Model Context Protocol (Anthropic)</h2>
+
+    <div class="chip-row" style="margin-bottom:0.25rem">
+      <span class="chip chip-blue">JSON-RPC 2.0</span>
+      <span class="chip chip-brown">Anthropic</span>
+      <span class="chip chip-teal">Standardprotokoll</span>
+    </div>
+
+    <p>
+      MCP standardisiert die Kommunikation zwischen LLM-Host, Client und externen Tool-Servern
+      über <b>JSON-RPC 2.0</b>. Das LLM generiert eine JSON-Anfrage, der Server verarbeitet sie
+      und gibt das Ergebnis zurück.
+    </p>
+
+    <div class="two-col">
+      <div style="display:flex;flex-direction:column;gap:0.5rem;">
+        <p style="font-size:0.75rem;color:var(--muted);">LLM generiert die Anfrage:</p>
+        <div class="mcp-json">
+          {<br>
+          &nbsp;&nbsp;<span class="key">"jsonrpc"</span>: <span class="str">"2.0"</span>,<br>
+          &nbsp;&nbsp;<span class="key">"id"</span>: <span class="num">1</span>,<br>
+          &nbsp;&nbsp;<span class="key">"method"</span>: <span class="str">"ping"</span><br>
+          }
+        </div>
+        <p style="font-size:0.75rem;color:var(--muted);">… zurückgegeben vom MCP-Server:</p>
+        <div class="mcp-json">
+          {<br>
+          &nbsp;&nbsp;<span class="key">"jsonrpc"</span>: <span class="str">"2.0"</span>,<br>
+          &nbsp;&nbsp;<span class="key">"id"</span>: <span class="num">1</span>,<br>
+          &nbsp;&nbsp;<span class="key">"result"</span>: {}<br>
+          }
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:0.5rem;">
+        <p style="font-size:0.75rem;color:var(--muted);">MCP Session-Ablauf (vereinfacht):</p>
+        <svg viewBox="0 0 220 260" style="width:100%;max-width:280px;font-family:'DM Mono',monospace;" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="ah" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="rgba(106,104,102,0.8)"/>
+            </marker>
+          </defs>
+          <text x="20" y="18" font-size="8" fill="#6a6866">Host</text>
+          <text x="95" y="18" font-size="8" fill="#6a6866">Client</text>
+          <text x="168" y="18" font-size="8" fill="#6a6866">Server</text>
+          <line x1="30" y1="22" x2="30" y2="255" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+          <line x1="110" y1="22" x2="110" y2="255" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+          <line x1="185" y1="22" x2="185" y2="255" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+
+          <line x1="110" y1="38" x2="185" y2="48" stroke="rgba(106,104,102,0.6)" stroke-width="1" marker-end="url(#ah)"/>
+          <text x="115" y="36" font-size="6.5" fill="#6a6866">init session</text>
+
+          <line x1="185" y1="60" x2="110" y2="70" stroke="rgba(106,104,102,0.6)" stroke-width="1" marker-end="url(#ah)"/>
+          <text x="118" y="80" font-size="6.5" fill="#6a6866">capabilities</text>
+
+          <rect x="50" y="88" width="120" height="13" rx="2" fill="rgba(160,82,45,0.15)" stroke="rgba(160,82,45,0.3)" stroke-width="0.5"/>
+          <text x="110" y="97" text-anchor="middle" font-size="6" fill="#a0522d">Active Session</text>
+
+          <text x="10" y="120" font-size="6" fill="#6a6866">User</text>
+          <line x1="30" y1="118" x2="110" y2="128" stroke="rgba(106,104,102,0.6)" stroke-width="1" marker-end="url(#ah)"/>
+          <text x="35" y="116" font-size="6" fill="#6a6866">action</text>
+
+          <line x1="110" y1="140" x2="185" y2="150" stroke="rgba(106,104,102,0.6)" stroke-width="1" marker-end="url(#ah)"/>
+          <text x="115" y="138" font-size="6.5" fill="#6a6866">tools/list</text>
+
+          <line x1="185" y1="162" x2="110" y2="172" stroke="rgba(106,104,102,0.6)" stroke-width="1" marker-end="url(#ah)"/>
+          <text x="118" y="182" font-size="6.5" fill="#6a6866">response</text>
+
+          <line x1="110" y1="192" x2="185" y2="202" stroke="rgba(160,82,45,0.7)" stroke-width="1" marker-end="url(#ah)"/>
+          <text x="115" y="190" font-size="6.5" fill="#a0522d">tools/call</text>
+
+          <line x1="185" y1="214" x2="110" y2="224" stroke="rgba(160,82,45,0.7)" stroke-width="1" marker-end="url(#ah)"/>
+          <text x="118" y="234" font-size="6.5" fill="#a0522d">result</text>
+
+          <line x1="110" y1="244" x2="30" y2="250" stroke="rgba(106,104,102,0.6)" stroke-width="1" marker-end="url(#ah)"/>
+          <text x="35" y="258" font-size="6" fill="#6a6866">update UI</text>
+        </svg>
+      </div>
+    </div>
+
+    <p style="font-size:0.76rem;color:var(--muted);">
+      MCP ermöglicht es, LLM-Clients (Claude Desktop, IDE-Extensions) mit
+      beliebigen Tool-Servern zu verbinden — ohne Custom-Integration pro Tool.
+      Server registrieren ihre verfügbaren Methoden beim Sitzungsstart.
+    </p>
+
+    <hr class="section-divider">
+    <p class="src-note">// Quelle: Foliensatz 10 — Language Models to Coding Agents (ML SS2026)</p>
+  </div>
+
+</div>
+
+<script>
+(function() {
+
+  const COLORS = [
+    '#a0522d','#4e9a8c','#7b8dc8','#c8965a','#8fa86a',
+    '#b06080','#5a8fb0','#c4a050','#6a90b0','#a07840'
+  ];
+
+  let currentModel = 'gpt2';
+
+  function setModel(m) {
+    currentModel = m;
+    document.getElementById('btn-gpt2').classList.toggle('active', m === 'gpt2');
+    document.getElementById('btn-gpt4o').classList.toggle('active', m === 'gpt4o');
+  }
+  window.setModel = setModel;
+
+  function fakeBPE(text, vocabSize) {
+    const tokens = [];
+    let i = 0;
+    const seed = vocabSize === 50000 ? 17 : 37;
+    function rng(n) { return ((n * seed * 2654435761) >>> 0) % 4294967296; }
+
+    while (i < text.length) {
+      let len = 1;
+      const ch = text.charCodeAt(i);
+      if (vocabSize >= 200000) {
+        if (/[a-zA-Z]/.test(text[i])) {
+          let j = i + 1;
+          while (j < text.length && /[a-zA-Z]/.test(text[j]) && j - i < 8) j++;
+          len = j - i;
+        } else if (/\d/.test(text[i])) {
+          let j = i + 1;
+          while (j < text.length && /\d/.test(text[j]) && j - i < 3) j++;
+          len = j - i;
+        } else if (text[i] === ' ') {
+          let j = i + 1;
+          while (j < text.length && /[a-zA-Z]/.test(text[j]) && j - i < 7) j++;
+          len = j - i;
+        }
+      } else {
+        if (text[i] === ' ' || /[a-zA-Z]/.test(text[i])) {
+          let j = i + 1;
+          while (j < text.length && /[a-zA-Z]/.test(text[j]) && j - i < 5) j++;
+          len = j - i;
+        } else if (/\d/.test(text[i])) {
+          len = 1;
+        }
+      }
+      const slice = text.slice(i, i + len);
+      const id = (rng(i + ch + len * 13) % (vocabSize - 100)) + 100;
+      tokens.push({ text: slice, id });
+      i += len;
+    }
+    return tokens;
+  }
+
+  function tokenize() {
+    const text = document.getElementById('tok-input').value;
+    if (!text.trim()) return;
+    const vocabSize = currentModel === 'gpt2' ? 50000 : 200000;
+    const tokens = fakeBPE(text, vocabSize);
+
+    const out = document.getElementById('tok-output');
+    out.innerHTML = '';
+    tokens.forEach((tok, idx) => {
+      const span = document.createElement('span');
+      span.className = 'tok-span';
+      span.textContent = tok.text.replace(/ /g, '·');
+      span.style.background = COLORS[idx % COLORS.length] + '28';
+      span.style.borderBottom = '2px solid ' + COLORS[idx % COLORS.length] + '90';
+      span.title = `Token-ID: ${tok.id}`;
+      out.appendChild(span);
+    });
+
+    const stats = document.getElementById('tok-stats');
+    const ids = tokens.map(t => t.id).join(', ');
+    stats.innerHTML = `Token-Count: <span>${tokens.length}</span> &nbsp;|&nbsp; Modell: <span>${currentModel === 'gpt2' ? 'GPT-2 (~50k Vocab)' : 'GPT-4o (~200k Vocab)'}</span><br><span style="color:var(--muted);font-size:0.65rem;">${ids.length > 120 ? ids.slice(0,120)+'…' : ids}</span>`;
+  }
+  window.tokenize = tokenize;
+
+  tokenize();
+
+  (function() {
+    const canvas = document.getElementById('scaling-canvas');
+    const ctx = canvas.getContext('2d');
+    const slider = document.getElementById('compute-slider');
+    const computeVal = document.getElementById('compute-val');
+    const lossVal = document.getElementById('loss-val');
+
+    const dpr = window.devicePixelRatio || 1;
+    const W = 700, H = 220;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    ctx.scale(dpr, dpr);
+
+    const PAD = { left: 52, right: 20, top: 20, bottom: 36 };
+    const plotW = W - PAD.left - PAD.right;
+    const plotH = H - PAD.top - PAD.bottom;
+
+    const C_MIN = -4, C_MAX = 1;
+    const L_MIN = 2.0, L_MAX = 7.0;
+
+    function computeLoss(logC) {
+      const C = Math.pow(10, logC);
+      const L = Math.pow(C / 2.3e5, -0.050);
+      return L;
+    }
+
+    function toX(logC) {
+      return PAD.left + ((logC - C_MIN) / (C_MAX - C_MIN)) * plotW;
+    }
+
+    function toY(L) {
+      const clamped = Math.max(L_MIN, Math.min(L_MAX, L));
+      return PAD.top + plotH - ((clamped - L_MIN) / (L_MAX - L_MIN)) * plotH;
+    }
+
+    function draw(highlightLogC) {
+      ctx.clearRect(0, 0, W, H);
+
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ctx.lineWidth = 1;
+      ctx.font = '10px DM Mono, monospace';
+      ctx.fillStyle = '#6a6866';
+      ctx.textAlign = 'right';
+
+      const lTicks = [2, 3, 4, 5, 6, 7];
+      lTicks.forEach(L => {
+        const y = toY(L);
+        if (y >= PAD.top && y <= PAD.top + plotH) {
+          ctx.beginPath();
+          ctx.moveTo(PAD.left, y);
+          ctx.lineTo(PAD.left + plotW, y);
+          ctx.stroke();
+          ctx.fillText(L.toFixed(0), PAD.left - 4, y + 3.5);
+        }
+      });
+
+      ctx.textAlign = 'center';
+      const cTicks = [-4, -3, -2, -1, 0, 1];
+      cTicks.forEach(c => {
+        const x = toX(c);
+        ctx.beginPath();
+        ctx.moveTo(x, PAD.top);
+        ctx.lineTo(x, PAD.top + plotH);
+        ctx.stroke();
+        ctx.fillText('10' + (c >= 0 ? '+' : '') + c, x, PAD.top + plotH + 14);
+      });
+
+      ctx.strokeStyle = '#0f0f11';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(PAD.left, PAD.top, plotW, plotH);
+
+      ctx.beginPath();
+      ctx.strokeStyle = '#a0522d';
+      ctx.lineWidth = 2.5;
+      ctx.shadowColor = 'rgba(160,82,45,0.5)';
+      ctx.shadowBlur = 6;
+      for (let px = 0; px <= plotW; px++) {
+        const logC = C_MIN + (px / plotW) * (C_MAX - C_MIN);
+        const L = computeLoss(logC);
+        const x = PAD.left + px;
+        const y = toY(L);
+        if (px === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      const hL = computeLoss(highlightLogC);
+      const hx = toX(highlightLogC);
+      const hy = toY(hL);
+
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      ctx.moveTo(hx, PAD.top + plotH);
+      ctx.lineTo(hx, hy);
+      ctx.moveTo(PAD.left, hy);
+      ctx.lineTo(hx, hy);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = '#a0522d';
+      ctx.beginPath();
+      ctx.arc(hx, hy, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#e8e6e0';
+      ctx.beginPath();
+      ctx.arc(hx, hy, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#6a6866';
+      ctx.textAlign = 'center';
+      ctx.fillText('Compute (PF-days)', PAD.left + plotW / 2, H - 2);
+      ctx.save();
+      ctx.translate(12, PAD.top + plotH / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillText('Test Loss L', 0, 0);
+      ctx.restore();
+
+      ctx.fillStyle = 'rgba(160,82,45,0.7)';
+      ctx.textAlign = 'left';
+      ctx.font = '9px DM Mono, monospace';
+      ctx.fillText('L = (C₁₀₀ / 2.3·10⁵)⁻⁰·⁰⁵⁰', PAD.left + 8, PAD.top + 14);
+    }
+
+    function update() {
+      const logC = parseFloat(slider.value);
+      const exp = Math.round(logC);
+      computeVal.textContent = '10' + (logC >= 0 ? '+' : '') + logC.toFixed(2);
+      const L = computeLoss(logC);
+      lossVal.textContent = L.toFixed(3);
+      draw(logC);
+    }
+
+    slider.addEventListener('input', update);
+    update();
+  })();
+
+})();
+</script>
+
+</body>
+</html>

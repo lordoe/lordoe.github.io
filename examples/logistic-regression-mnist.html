@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Logistic Regression on MNIST — EX1</title>
+<script>
+  MathJax = {
+    tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+    options: { skipHtmlTags: ['script','noscript','style','textarea'] }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0e11;
+    --bg2: #16161b;
+    --bg3: #1e1e26;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #e8e6f0;
+    --muted: #7a7890;
+    --accent: #c9488e;
+    --accent-dim: rgba(201,72,142,0.15);
+    --green: #4ecdc4;
+    --green-dim: rgba(78,205,196,0.12);
+    --blue: #2970c4;
+    --blue-dim: rgba(41,112,196,0.12);
+    --yellow: #ffd93d;
+    --yellow-dim: rgba(255,217,61,0.12);
+    --orange: #e8934a;
+    --orange-dim: rgba(232,147,74,0.12);
+    --red: #ff6b6b;
+    --red-dim: rgba(255,107,107,0.12);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem 4rem;
+  }
+
+  header {
+    width: 100%;
+    max-width: 900px;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  h1 {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.05rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+  }
+
+  .subtitle {
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .main {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+  }
+
+  /* ── cards ── */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.4rem 1.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .card-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .card-title.green  { color: var(--green); border-color: rgba(78,205,196,0.2); }
+  .card-title.blue   { color: var(--blue); border-color: rgba(41,112,196,0.2); }
+  .card-title.yellow { color: var(--yellow); border-color: rgba(255,217,61,0.2); }
+  .card-title.orange { color: var(--orange); border-color: rgba(232,147,74,0.2); }
+
+  .prose {
+    font-size: 0.88rem;
+    line-height: 1.75;
+    color: #c0bdd0;
+  }
+  .prose + .prose { margin-top: 0.3rem; }
+
+  /* ── highlight boxes ── */
+  .formula-box {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 0.9rem 1.2rem;
+    font-size: 0.92rem;
+    overflow-x: auto;
+  }
+
+  .formula-box.accent   { border-left: 3px solid var(--accent); background: var(--accent-dim); }
+  .formula-box.green    { border-left: 3px solid var(--green);  background: var(--green-dim); }
+  .formula-box.blue     { border-left: 3px solid var(--blue);   background: var(--blue-dim); }
+  .formula-box.yellow   { border-left: 3px solid var(--yellow); background: var(--yellow-dim); }
+  .formula-box.orange   { border-left: 3px solid var(--orange); background: var(--orange-dim); }
+  .formula-box.result   {
+    border-left: 3px solid var(--green);
+    background: var(--green-dim);
+    text-align: center;
+    font-size: 1.05rem;
+  }
+
+  /* ── pipeline diagram ── */
+  .pipeline {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 1rem 0;
+  }
+
+  .pipe-node {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 0.55rem 1rem;
+    text-align: center;
+    min-width: 80px;
+  }
+
+  .pipe-node .node-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+  .pipe-node .node-sub {
+    font-size: 0.68rem;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .pipe-node.input  { border-color: var(--blue);   background: var(--blue-dim); }
+  .pipe-node.linear { border-color: var(--green);  background: var(--green-dim); }
+  .pipe-node.softmax{ border-color: var(--orange); background: var(--orange-dim); }
+  .pipe-node.loss   { border-color: var(--accent); background: var(--accent-dim); }
+
+  .pipe-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 0.4rem;
+    color: var(--muted);
+    font-size: 0.7rem;
+  }
+  .pipe-arrow .arr { font-size: 1.1rem; line-height: 1; }
+  .pipe-arrow .fn  { font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--muted); }
+
+  /* ── step cards ── */
+  .steps { display: flex; flex-direction: column; gap: 0.7rem; }
+
+  .step {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.7rem 1rem;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+  }
+  .step-header:hover { background: rgba(255,255,255,0.03); }
+
+  .step-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--accent);
+    background: var(--accent-dim);
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    padding: 1px 7px;
+    flex-shrink: 0;
+  }
+  .step-num.green  { color: var(--green);  background: var(--green-dim);  border-color: var(--green); }
+  .step-num.blue   { color: var(--blue);   background: var(--blue-dim);   border-color: var(--blue); }
+  .step-num.yellow { color: var(--yellow); background: var(--yellow-dim); border-color: var(--yellow); }
+  .step-num.orange { color: var(--orange); background: var(--orange-dim); border-color: var(--orange); }
+
+  .step-title {
+    font-size: 0.85rem;
+    font-weight: 400;
+    flex: 1;
+  }
+
+  .step-chevron {
+    font-size: 0.7rem;
+    color: var(--muted);
+    transition: transform 0.2s;
+  }
+  .step.open .step-chevron { transform: rotate(90deg); }
+
+  .step-body {
+    display: none;
+    padding: 0 1rem 1rem;
+    display: none;
+    flex-direction: column;
+    gap: 0.7rem;
+    font-size: 0.86rem;
+    line-height: 1.8;
+    color: #c0bdd0;
+  }
+  .step.open .step-body { display: flex; }
+
+  /* ── two-col grid ── */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.8rem;
+  }
+  @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+
+  .three-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0.8rem;
+  }
+  @media (max-width: 650px) { .three-col { grid-template-columns: 1fr; } }
+
+  /* ── mini tag ── */
+  .tag {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    padding: 1px 6px;
+    border-radius: 3px;
+    border: 1px solid currentColor;
+    vertical-align: middle;
+    margin-right: 4px;
+  }
+
+  /* ── numerical example ── */
+  .matrix-display {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    line-height: 1.6;
+    color: #c0bdd0;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+  }
+
+  .matrix-display .label {
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-bottom: 0.3rem;
+  }
+
+  .matrix-display .val { color: var(--text); }
+  .matrix-display .hl  { color: var(--green); font-weight: 500; }
+  .matrix-display .hl2 { color: var(--yellow); }
+  .matrix-display .hl3 { color: var(--accent); }
+
+  /* numeric step buttons */
+  .num-steps { display: flex; flex-direction: column; gap: 0.5rem; }
+
+  .num-step {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.6rem 0.9rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+    font-size: 0.82rem;
+  }
+
+  .num-step .ns-idx {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    min-width: 1.5rem;
+    margin-top: 2px;
+  }
+
+  /* ── final summary ── */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.8rem;
+  }
+  @media (max-width: 580px) { .summary-grid { grid-template-columns: 1fr; } }
+
+  .sum-box {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .sum-box .sum-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.66rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Logistic Regression on MNIST</h1>
+  <span class="subtitle">// EX1 — End-to-End Ausarbeitung</span>
+</header>
+
+<div class="main">
+
+  <!-- ── 1. SETUP ── -->
+  <div class="card">
+    <div class="card-title blue">01 — Problemstellung &amp; Modell</div>
+
+    <p class="prose">
+      Logistic Regression ist ein <em>supervised</em> ML-Algorithmus zur Klassifikation.
+      Auf MNIST klassifizieren wir handgeschriebene Ziffern 0–9 aus Pixelbildern.
+    </p>
+
+    <div class="two-col">
+      <div class="formula-box blue">
+        <div style="font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--muted);margin-bottom:0.5rem">INPUT</div>
+        <p class="prose">
+          \(B\) Bilder (Vektoren) der Größe \(D\):<br>
+          \[ X \in \mathbb{R}^{B \times D} \]
+          Label \(y_n \in \{0,\ldots,9\}\), also \(y \in \{0,\ldots,9\}^B\)
+        </p>
+      </div>
+      <div class="formula-box orange">
+        <div style="font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--muted);margin-bottom:0.5rem">ZIEL</div>
+        <p class="prose">
+          Finde \(W \in \mathbb{R}^{D \times K}\) und \(b \in \mathbb{R}^K\)<br>
+          durch <em>supervised training</em>, so dass<br>
+          ungesehene Bilder korrekt klassifiziert werden.
+        </p>
+      </div>
+    </div>
+
+    <!-- Pipeline -->
+    <div class="card-title" style="color:var(--muted);border:none;padding-bottom:0;font-size:0.7rem">Forward Pass — Pipeline</div>
+
+    <div class="pipeline">
+      <div class="pipe-node input">
+        <div class="node-label">\(X\)</div>
+        <div class="node-sub">\(\mathbb{R}^{B \times D}\)</div>
+      </div>
+      <div class="pipe-arrow">
+        <span class="arr">→</span>
+        <span class="fn">g(·)</span>
+      </div>
+      <div class="pipe-node linear">
+        <div class="node-label">\(Z\)</div>
+        <div class="node-sub">\(\mathbb{R}^{B \times K}\)</div>
+      </div>
+      <div class="pipe-arrow">
+        <span class="arr">→</span>
+        <span class="fn">f(·)</span>
+      </div>
+      <div class="pipe-node softmax">
+        <div class="node-label">\(P\)</div>
+        <div class="node-sub">\(\mathbb{R}^{B \times K}\)</div>
+      </div>
+      <div class="pipe-arrow">
+        <span class="arr">→</span>
+        <span class="fn">h(·)</span>
+      </div>
+      <div class="pipe-node loss">
+        <div class="node-label">\(\mathcal{L}\)</div>
+        <div class="node-sub">\(\in \mathbb{R}\)</div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="formula-box green">
+        <div style="font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--green);margin-bottom:0.4rem">g — Lineare Schicht (Logits)</div>
+        \[ g: \mathbb{R}^D \to \mathbb{R}^K \]
+        \[ x \mapsto x^\top W + b \]
+        <p class="prose" style="margin-top:0.4rem;font-size:0.8rem">Für den ganzen Batch: \(Z = XW + \mathbf{1}b^\top\)</p>
+      </div>
+      <div class="formula-box orange">
+        <div style="font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--orange);margin-bottom:0.4rem">f — Softmax</div>
+        \[ f: \mathbb{R}^K \to \mathbb{R}^K \]
+        \[ z \mapsto p, \quad p_{nk} = \frac{e^{z_{nk}}}{\sum_{j=1}^K e^{z_{nj}}} \]
+        <p class="prose" style="margin-top:0.4rem;font-size:0.8rem">Ausgabe: Wahrscheinlichkeitsvektor über \(K\) Klassen</p>
+      </div>
+    </div>
+
+    <div class="formula-box">
+      <p class="prose">
+        Zusammen: \(h = f \circ g\), also \(\quad\hat{y} = \text{argmax}_k\; (f \circ g)(x)_k\)
+      </p>
+    </div>
+  </div>
+
+  <!-- ── 2. LOSS ── -->
+  <div class="card">
+    <div class="card-title yellow">02 — Loss-Funktion: Cross-Entropy</div>
+
+    <p class="prose">
+      Wir minimieren die mittlere <em>Negative Log-Likelihood</em> über den Batch —
+      das ist äquivalent zur Cross-Entropy zwischen der Vorhersage und dem wahren Label.
+    </p>
+
+    <div class="formula-box accent">
+      \[
+        \mathcal{L}(W,b) \;=\; -\frac{1}{B}\sum_{n=1}^B \log P_{n,y_n}
+        \;=\; -\frac{1}{B}\sum_{n=1}^B \!\left( z_{n,y_n} - \log\sum_{j=1}^K e^{z_{nj}} \right)
+      \]
+    </div>
+
+    <div class="two-col">
+      <div>
+        <p class="prose"><strong>Warum \(-\log\)?</strong></p>
+        <p class="prose">
+          \(-\log(p) \to 0\) wenn \(p \to 1\) (richtige Vorhersage → kein Fehler).<br>
+          \(-\log(p) \to \infty\) wenn \(p \to 0\) (falsche Vorhersage → großer Fehler).
+        </p>
+      </div>
+      <div class="formula-box">
+        <div style="font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--muted);margin-bottom:0.4rem">Vereinfachung von log(p)</div>
+        \[
+          \log p_{n,y_n} = \log\frac{e^{z_{n,y_n}}}{\sum_j e^{z_{nj}}}
+          = z_{n,y_n} - \log\sum_j e^{z_{nj}}
+        \]
+      </div>
+    </div>
+
+    <div class="formula-box">
+      <p class="prose">
+        <span class="tag" style="color:var(--muted)">Notation</span>
+        \(z_{n,y_n}\) = Logit von Sample \(n\) an der Stelle der <em>wahren</em> Klasse \(y_n\).
+        \(\;P_{n,y_n}\) = Wahrscheinlichkeit, dass Sample \(n\) korrekt klassifiziert wird.
+      </p>
+    </div>
+  </div>
+
+  <!-- ── 3. GRADIENT DESCENT ── -->
+  <div class="card">
+    <div class="card-title green">03 — Gradienten-Abstieg</div>
+
+    <p class="prose">
+      Um \(\mathcal{L}\) zu minimieren, iterieren wir:
+    </p>
+
+    <div class="formula-box green">
+      \[
+        W_{n+1} = W_n - \eta \,\nabla_W \mathcal{L}(W_n), \qquad
+        b_{n+1} = b_n - \eta \,\nabla_b \mathcal{L}(b_n)
+      \]
+    </div>
+
+    <div class="two-col">
+      <div class="formula-box">
+        <div style="font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--muted);margin-bottom:0.3rem">\(\eta\) — Lernrate</div>
+        <p class="prose" style="font-size:0.82rem">Hyperparameter, der die Schrittgröße steuert.</p>
+      </div>
+      <div class="formula-box">
+        <div style="font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--muted);margin-bottom:0.3rem">\(\nabla\) — Nabla / Gradient</div>
+        <p class="prose" style="font-size:0.82rem">Alle partiellen Ableitungen — \(\nabla_W\mathcal{L} = \frac{\partial\mathcal{L}}{\partial W}\)</p>
+      </div>
+    </div>
+
+    <p class="prose">Benötigt werden also:</p>
+    <div class="two-col">
+      <div class="formula-box">
+        \(\dfrac{\partial \mathcal{L}}{\partial W} \in \mathbb{R}^{D \times K}\)
+        <p class="prose" style="font-size:0.78rem;margin-top:0.3rem">Partielle Abl. nach allen Einträgen von \(W\)</p>
+      </div>
+      <div class="formula-box">
+        \(\dfrac{\partial \mathcal{L}}{\partial b} \in \mathbb{R}^{K}\)
+        <p class="prose" style="font-size:0.78rem;margin-top:0.3rem">Partielle Abl. nach allen Einträgen von \(b\)</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 4. GRADIENTS DERIVATION ── -->
+  <div class="card">
+    <div class="card-title accent">04 — Herleitung der Gradienten (Chain Rule)</div>
+
+    <p class="prose">
+      Über die Komposition \(\mathcal{L} = h \circ f \circ g\) gilt die Kettenregel:
+    </p>
+
+    <div class="formula-box accent" style="text-align:center">
+      \[
+        \frac{\partial \mathcal{L}}{\partial W} = \frac{\partial \mathcal{L}}{\partial Z} \cdot \frac{\partial Z}{\partial W}
+        \qquad\text{mit}\qquad
+        \frac{\partial \mathcal{L}}{\partial Z} = \frac{\partial h}{\partial P}\cdot\frac{\partial P}{\partial Z}
+      \]
+    </div>
+
+    <div class="steps">
+
+      <!-- Step 1 -->
+      <div class="step open" onclick="toggleStep(this)">
+        <div class="step-header">
+          <span class="step-num">Schritt 1</span>
+          <span class="step-title">\(\partial\mathcal{L}/\partial P_{nk}\) — Ableitung nach den Softmax-Wahrscheinlichkeiten</span>
+          <span class="step-chevron">▶</span>
+        </div>
+        <div class="step-body">
+          <p>
+            Die Loss-Funktion ist \(\mathcal{L} = -\frac{1}{B}\sum_{n=1}^B \log P_{n,y_n}\).
+            Sample \(n\) trägt nur über \(P_{n,y_n}\) bei (d.h. nur wenn \(k = y_n\)):
+          </p>
+          <div class="two-col">
+            <div class="formula-box">
+              <strong>Fall \(y_n = k\):</strong><br>
+              \[\frac{\partial\mathcal{L}}{\partial P_{nk}} = -\frac{1}{B} \cdot \frac{1}{P_{nk}}\]
+            </div>
+            <div class="formula-box">
+              <strong>Fall \(y_n \neq k\):</strong><br>
+              \[\frac{\partial\mathcal{L}}{\partial P_{nk}} = 0\]
+            </div>
+          </div>
+          <div class="formula-box result">
+            \[
+              \boxed{\frac{\partial\mathcal{L}}{\partial P_{nk}} =
+              \begin{cases} -\dfrac{1}{B \cdot P_{nk}} & \text{wenn } y_n = k \\ 0 & \text{wenn } y_n \neq k \end{cases}}
+            \]
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="step" onclick="toggleStep(this)">
+        <div class="step-header">
+          <span class="step-num green">Schritt 2</span>
+          <span class="step-title">\(\partial P_{nm}/\partial z_{nk}\) — Ableitung von Softmax nach Logits</span>
+          <span class="step-chevron">▶</span>
+        </div>
+        <div class="step-body">
+          <p>
+            \(P_{nm} = e^{z_{nm}} / \sum_j e^{z_{nj}}\). Wir differenzieren nach \(z_{nk}\)
+            mit der Quotientenregel — zwei Fälle:
+          </p>
+          <div class="two-col">
+            <div class="formula-box green">
+              <strong>Fall \(m = k\):</strong> Quotientenregel<br>
+              \[
+                \frac{\partial P_{nk}}{\partial z_{nk}}
+                = \frac{e^{z_{nk}}\sum_j e^{z_{nj}} - e^{z_{nk}} \cdot e^{z_{nk}}}{\left(\sum_j e^{z_{nj}}\right)^2}
+              \]
+              \[= P_{nk}\!\left(1 - P_{nk}\right)\]
+            </div>
+            <div class="formula-box green">
+              <strong>Fall \(m \neq k\):</strong> Kettenregel<br>
+              \[
+                \frac{\partial P_{nm}}{\partial z_{nk}}
+                = e^{z_{nm}} \cdot (-1) \cdot \left(\sum_j e^{z_{nj}}\right)^{-2} \cdot e^{z_{nk}}
+              \]
+              \[= -P_{nm}\,P_{nk}\]
+            </div>
+          </div>
+          <div class="formula-box result">
+            \[
+              \boxed{\frac{\partial P_{nm}}{\partial z_{nk}} =
+              \begin{cases} P_{nk}(1-P_{nk}) & \text{wenn } m = k \\ -P_{nm}\,P_{nk} & \text{wenn } m \neq k \end{cases}}
+            \]
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="step" onclick="toggleStep(this)">
+        <div class="step-header">
+          <span class="step-num blue">Schritt 3</span>
+          <span class="step-title">\(\partial\mathcal{L}/\partial z_{nk}\) — Kombiniert mit Chain Rule</span>
+          <span class="step-chevron">▶</span>
+        </div>
+        <div class="step-body">
+          <p>
+            Die Loss hängt über alle Wahrscheinlichkeiten ab — aber \(z_{nk}\) beeinflusst
+            nur Sample \(n\), also fallen alle \(j \neq n\) weg:
+          </p>
+          \[
+            \frac{\partial\mathcal{L}}{\partial z_{nk}}
+            = \sum_{m=1}^K \frac{\partial\mathcal{L}}{\partial P_{nm}} \cdot \frac{\partial P_{nm}}{\partial z_{nk}}
+            = \frac{\partial\mathcal{L}}{\partial P_{n,y_n}} \cdot \frac{\partial P_{n,y_n}}{\partial z_{nk}}
+          \]
+          <div class="two-col">
+            <div class="formula-box">
+              <strong>Fall \(y_n = k\):</strong><br>
+              \[
+                -\frac{1}{B\,P_{n,y_n}} \cdot P_{n,y_n}(1-P_{n,y_n})
+                = \frac{P_{nk}-1}{B}
+              \]
+            </div>
+            <div class="formula-box">
+              <strong>Fall \(y_n \neq k\):</strong><br>
+              \[
+                -\frac{1}{B\,P_{n,y_n}} \cdot (-P_{n,y_n}\,P_{nk})
+                = \frac{P_{nk}}{B}
+              \]
+            </div>
+          </div>
+          <div class="formula-box result">
+            \[
+              \boxed{\frac{\partial\mathcal{L}}{\partial z_{nk}} =
+              \begin{cases} \tfrac{1}{B}(P_{nk}-1) & \text{wenn } y_n = k \\ \tfrac{1}{B}\,P_{nk} & \text{wenn } y_n \neq k \end{cases}}
+            \]
+          </div>
+          <div class="formula-box accent">
+            <div style="font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--accent);margin-bottom:0.4rem">Kompakte Matrixform — mit One-Hot-Matrix Y</div>
+            <p style="font-size:0.82rem;color:#c0bdd0;margin-bottom:0.5rem">
+              Definiere \(Y \in \{0,1\}^{B\times K}\) mit \(Y_{nk} = \mathbf{1}[k=y_n]\), dann:
+            </p>
+            \[
+              \frac{\partial\mathcal{L}}{\partial Z} = \frac{1}{B}(P - Y)
+            \]
+            <p style="font-size:0.78rem;color:var(--muted);margin-top:0.3rem">
+              Denn: wenn \(y_n=k\): \(P_{nk}-Y_{nk}=P_{nk}-1\) ✓ · wenn \(y_n\neq k\): \(P_{nk}-0=P_{nk}\) ✓
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="step" onclick="toggleStep(this)">
+        <div class="step-header">
+          <span class="step-num yellow">Schritt 4</span>
+          <span class="step-title">\(\partial\mathcal{L}/\partial W\) und \(\partial\mathcal{L}/\partial b\) — Finale Gradienten</span>
+          <span class="step-chevron">▶</span>
+        </div>
+        <div class="step-body">
+
+          <p><strong>Gradient nach W:</strong></p>
+          <p>
+            Da \(Z_{nk} = \sum_d X_{nd} W_{dk} + b_k\), gilt \(\partial Z_{nk}/\partial W_{rq} = X_{nr}\) wenn \(k=q\), sonst \(0\).
+          </p>
+          \[
+            \frac{\partial\mathcal{L}}{\partial W_{rq}}
+            = \sum_{n=1}^B \frac{\partial\mathcal{L}}{\partial z_{nq}} \cdot X_{nr}
+            = \frac{1}{B}\sum_{n=1}^B X_{nr}\,(P_{nq}-Y_{nq})
+          \]
+          <p>
+            Das ist Matrixmultiplikation \(X^\top (P-Y)\), da \(X_{nr} = (X^\top)_{rn}\):
+          </p>
+          <div class="formula-box result">
+            \[
+              \boxed{\frac{\partial\mathcal{L}}{\partial W} = \frac{1}{B}\,X^\top(P-Y) = X^\top \frac{\partial\mathcal{L}}{\partial Z}}
+            \]
+          </div>
+
+          <p style="margin-top:0.5rem"><strong>Gradient nach b:</strong></p>
+          <p>
+            \(\partial Z_{nk}/\partial b_q = 1\) wenn \(k=q\), sonst \(0\). Damit:
+          </p>
+          \[
+            \frac{\partial\mathcal{L}}{\partial b_q}
+            = \sum_{n=1}^B \frac{\partial\mathcal{L}}{\partial z_{nq}}
+            = \frac{1}{B}\sum_{n=1}^B (P_{nq} - Y_{nq})
+          \]
+          <div class="formula-box result">
+            \[
+              \boxed{\frac{\partial\mathcal{L}}{\partial b} = \frac{1}{B}\sum_{n=1}^B (P-Y)_n = \sum_{n=1}^B \left(\frac{\partial\mathcal{L}}{\partial Z}\right)_n}
+            \]
+            <p style="font-size:0.78rem;color:var(--muted);margin-top:0.4rem">= Zeilenweise Summe von \(\frac{1}{B}(P-Y)\) (Gradientenvektor)</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── 5. SUMMARY ── -->
+  <div class="card">
+    <div class="card-title green">05 — Zusammenfassung: Finale Formeln</div>
+
+    <div class="summary-grid">
+      <div class="sum-box" style="border-color:var(--green)">
+        <div class="sum-label">Forward Pass</div>
+        \(Z = XW + \mathbf{1}b^\top\)
+        <div style="height:0.3rem"></div>
+        \(P_{nk} = \dfrac{e^{z_{nk}}}{\sum_j e^{z_{nj}}}\) (Softmax)
+        <div style="height:0.3rem"></div>
+        \(\mathcal{L} = -\dfrac{1}{B}\sum_n \log P_{n,y_n}\)
+      </div>
+      <div class="sum-box" style="border-color:var(--accent)">
+        <div class="sum-label">Gradienten (Backward)</div>
+        \(\dfrac{\partial\mathcal{L}}{\partial Z} = \dfrac{1}{B}(P-Y)\)
+        <div style="height:0.4rem"></div>
+        \(\dfrac{\partial\mathcal{L}}{\partial W} = X^\top \dfrac{\partial\mathcal{L}}{\partial Z}\)
+        <div style="height:0.4rem"></div>
+        \(\dfrac{\partial\mathcal{L}}{\partial b} = \displaystyle\sum_n \left(\dfrac{\partial\mathcal{L}}{\partial Z}\right)_n\)
+      </div>
+      <div class="sum-box" style="border-color:var(--blue)">
+        <div class="sum-label">Update-Schritt</div>
+        \(W \leftarrow W - \eta\,\dfrac{\partial\mathcal{L}}{\partial W}\)
+        <div style="height:0.3rem"></div>
+        \(b \leftarrow b - \eta\,\dfrac{\partial\mathcal{L}}{\partial b}\)
+      </div>
+      <div class="sum-box" style="border-color:var(--yellow)">
+        <div class="sum-label">One-Hot-Matrix Y</div>
+        \(Y \in \{0,1\}^{B\times K}\),\quad \(Y_{nk} = \mathbf{1}[k=y_n]\)
+        <div style="height:0.3rem"></div>
+        <p style="font-size:0.8rem;color:var(--muted)">Beispiel \(K=4,\,y=(2,0,3)\):</p>
+        <p style="font-family:'DM Mono',monospace;font-size:0.78rem;color:#c0bdd0">
+          Y = [[0,0,1,0],<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[1,0,0,0],<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[0,0,0,1]]
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 6. NUMERICAL EXAMPLE ── -->
+  <div class="card">
+    <div class="card-title orange">06 — Numerisches Beispiel: K=2, B=2, D=3</div>
+
+    <p class="prose">
+      Kleine Beispielrechnung mit 2 Bildern, 3 Pixeln (Features) und 2 Klassen.
+    </p>
+
+    <!-- Given -->
+    <div class="three-col">
+      <div class="matrix-display">
+        <div class="label">X ∈ ℝ²ˣ³ (Batch)</div>
+        <span class="hl">X = </span><span class="val">[[1, 2, 3],</span><br>
+        <span style="margin-left:2.5rem" class="val">[4, 5, 6]]</span>
+      </div>
+      <div class="matrix-display">
+        <div class="label">W ∈ ℝ³ˣ² (Gewichte)</div>
+        <span class="hl">W = </span><span class="val">[[1, 0],</span><br>
+        <span style="margin-left:2.5rem" class="val">[0, 1],</span><br>
+        <span style="margin-left:2.5rem" class="val">[1, 1]]</span>
+      </div>
+      <div class="matrix-display">
+        <div class="label">b ∈ ℝ² (Bias)</div>
+        <span class="hl">b = </span><span class="val">[1, -1]</span><br>
+        <span class="label" style="margin-top:0.4rem;display:block">Labels</span>
+        <span class="hl">y = </span><span class="val">[0, 1]</span>
+      </div>
+    </div>
+
+    <div class="num-steps">
+
+      <div class="num-step">
+        <span class="ns-idx">1.</span>
+        <div>
+          <strong>Logits Z = XW + b<sup>T</sup></strong><br>
+          <span style="font-family:'DM Mono',monospace;font-size:0.78rem;color:#c0bdd0">
+            z₁₁ = 1·1 + 2·0 + 3·1 + 1 = <span style="color:var(--green)">5</span> &nbsp;
+            z₁₂ = 1·0 + 2·1 + 3·1 – 1 = <span style="color:var(--green)">4</span><br>
+            z₂₁ = 4·1 + 5·0 + 6·1 + 1 = <span style="color:var(--yellow)">11</span> &nbsp;
+            z₂₂ = 4·0 + 5·1 + 6·1 – 1 = <span style="color:var(--yellow)">10</span>
+          </span>
+          <div class="matrix-display" style="margin-top:0.4rem">
+            <span class="hl">Z = </span><span class="val">[[</span><span class="hl">5</span><span class="val">,</span><span class="hl"> 4</span><span class="val">],</span><br>
+            <span style="margin-left:2.5rem"><span class="val">[</span><span class="hl2">11</span><span class="val">, </span><span class="hl2">10</span><span class="val">]]</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="num-step">
+        <span class="ns-idx">2.</span>
+        <div>
+          <strong>Softmax → Wahrscheinlichkeiten P</strong><br>
+          <span style="font-family:'DM Mono',monospace;font-size:0.78rem;color:#c0bdd0">
+            Sample 1: e⁵ ≈ 148.4, e⁴ ≈ 54.6 &nbsp;→&nbsp; p₁ ≈ [148.4/203, 54.6/203] ≈ <span style="color:var(--green)">[0.73, 0.27]</span><br>
+            Sample 2: e¹¹ ≈ 59874, e¹⁰ ≈ 22026 →&nbsp; p₂ ≈ [59874/81900, 22026/81900] ≈ <span style="color:var(--yellow)">[0.73, 0.27]</span>
+          </span>
+          <div class="matrix-display" style="margin-top:0.4rem">
+            <span class="hl">P ≈ </span><span class="val">[[</span><span class="hl">0.73</span><span class="val">, </span><span class="hl">0.27</span><span class="val">],</span><br>
+            <span style="margin-left:2.7rem"><span class="val">[</span><span class="hl2">0.73</span><span class="val">, </span><span class="hl2">0.27</span><span class="val">]]</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="num-step">
+        <span class="ns-idx">3.</span>
+        <div>
+          <strong>One-Hot-Matrix Y &nbsp;(y = [0, 1])</strong><br>
+          <span style="font-size:0.82rem;color:var(--muted)">Sample 1 → Klasse 0 &nbsp;|&nbsp; Sample 2 → Klasse 1</span>
+          <div class="matrix-display" style="margin-top:0.4rem">
+            <span class="hl">Y = </span><span class="val">[[1, 0],</span><br>
+            <span style="margin-left:2.5rem" class="val">[0, 1]]</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="num-step">
+        <span class="ns-idx">4.</span>
+        <div>
+          <strong>Loss \(\mathcal{L} = -\frac{1}{2}(\log P_{1,0} + \log P_{2,1})\)</strong><br>
+          <span style="font-family:'DM Mono',monospace;font-size:0.78rem;color:#c0bdd0">
+            ℒ = –½ · (log 0.73 + log 0.27) ≈ –½ · (–0.315 – 1.309) <span style="color:var(--green)">≈ 0.81</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="num-step">
+        <span class="ns-idx">5.</span>
+        <div>
+          <strong>Gradient \(\partial\mathcal{L}/\partial Z = \frac{1}{2}(P-Y)\)</strong>
+          <div class="matrix-display" style="margin-top:0.4rem">
+            <span class="hl">P – Y = </span><span class="val">[[0.73–1, 0.27–0],</span><br>
+            <span style="margin-left:4.8rem" class="val">[0.73–0, 0.27–1]]</span><br>
+            <span class="hl">= </span><span class="val">[[–0.27, 0.27],</span><br>
+            <span style="margin-left:1.5rem" class="val">[ 0.73, –0.73]]</span><br><br>
+            <span class="hl3">∂ℒ/∂Z = ½(P–Y) = [[–0.135, 0.135],</span><br>
+            <span style="margin-left:10.5rem" class="hl3">[ 0.365, –0.365]]</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="num-step">
+        <span class="ns-idx">6.</span>
+        <div>
+          <strong>Gradient \(\partial\mathcal{L}/\partial W = X^\top \cdot \partial\mathcal{L}/\partial Z\)</strong><br>
+          <span style="font-size:0.8rem;color:var(--muted)">\(X^\top \in \mathbb{R}^{3\times 2}\), &nbsp;\(\partial\mathcal{L}/\partial Z \in \mathbb{R}^{2\times 2}\) &nbsp;→&nbsp; \(\partial\mathcal{L}/\partial W \in \mathbb{R}^{3\times 2}\)</span>
+          <div class="matrix-display" style="margin-top:0.4rem">
+            <span class="hl3">∂ℒ/∂W = Xᵀ · ∂ℒ/∂Z &nbsp; ∈ ℝ³ˣ²</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Visual note about P_n,y_n -->
+    <div class="formula-box" style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap">
+      <div style="font-size:0.82rem;color:var(--muted);font-family:'DM Mono',monospace">Beachte:</div>
+      <div class="prose" style="font-size:0.82rem">
+        \(P_{n,y_n}\) ist die Wahrscheinlichkeit, die das Modell der <em>richtigen</em> Klasse zuordnet.
+        Sample 2 gehört zu Klasse 1 → \(P_{2,y_2} = P_{2,1} \approx 0.27\) — das Modell ist unsicher!
+        Ein perfektes Modell hätte \(P_{n,y_n} = 1\) und \(\mathcal{L} = 0\).
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function toggleStep(el) {
+    el.classList.toggle('open');
+  }
+</script>
+
+<p style="font-family:'DM Mono',monospace;font-size:0.7rem;color:#6a6866;text-align:center;margin-top:2rem">
+  // Quelle: EX1 — Logistic Regression on MNIST (ML SS2026)
+</p>
+
+</body>
+</html>

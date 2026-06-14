@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Overfitting bei Polynomen</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #0f0f11;
+    --surface:  #17171a;
+    --surface2: #1e1e22;
+    --border:   rgba(255,255,255,0.07);
+    --border2:  rgba(255,255,255,0.13);
+    --text:     #e8e6e0;
+    --muted:    #6a6866;
+    --accent:   #4ecdc4;
+    --fit:      #4ecdc4;
+    --overfit:  #e05a5a;
+    --test:     #c96a28;
+    --mono:     'DM Mono', monospace;
+    --sans:     'DM Sans', sans-serif;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 40px 24px 80px;
+    max-width: 860px;
+    margin: 0 auto;
+  }
+
+  header { margin-bottom: 40px; }
+  header .tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  header h1 {
+    font-size: clamp(22px, 3.5vw, 32px);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 10px;
+  }
+  header p { color: var(--muted); font-size: 14px; max-width: 580px; line-height: 1.7; }
+
+  .section-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  section { margin-bottom: 44px; }
+
+  /* ── demo ── */
+  .demo-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 24px;
+  }
+
+  .deg-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+  .deg-tab {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border2);
+    background: none;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .deg-tab:hover { color: var(--text); border-color: var(--border2); }
+  .deg-tab.active { background: var(--surface2); color: var(--accent); border-color: var(--accent); }
+
+  .deg-tab[data-deg="1"]  { --c: #4ecdc4; }
+  .deg-tab[data-deg="3"]  { --c: #378ADD; }
+  .deg-tab[data-deg="5"]  { --c: #EF9F27; }
+  .deg-tab[data-deg="9"]  { --c: #e05a5a; }
+  .deg-tab.active { color: var(--c); border-color: var(--c); }
+
+  canvas { width: 100%; display: block; border-radius: 8px; background: var(--bg); }
+
+  .legend {
+    display: flex;
+    gap: 20px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .legend-line {
+    width: 18px; height: 2px;
+    flex-shrink: 0;
+    border-radius: 2px;
+  }
+
+  .stats-row {
+    display: flex;
+    gap: 24px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .stat {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .stat span { color: var(--text); }
+  .stat .label { font-size: 10px; display: block; margin-bottom: 2px; }
+
+  /* ── cards ── */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .card .card-head {
+    font-family: var(--mono);
+    font-size: 11px;
+    margin-bottom: 8px;
+  }
+  .card p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .card strong { color: var(--text); }
+
+  /* ── formula ── */
+  .formula-block {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 18px 22px;
+    font-family: var(--mono);
+    font-size: 14px;
+    line-height: 2;
+    margin: 12px 0;
+  }
+  .formula-block .fl { font-size: 11px; color: var(--muted); margin-bottom: 6px; font-family: var(--sans); }
+
+  /* ── link box ── */
+  .link-box {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    text-decoration: none;
+    transition: border-color 0.12s, background 0.12s;
+    cursor: pointer;
+  }
+  .link-box:hover { border-color: rgba(41,112,196,0.6); background: var(--surface2); }
+  .link-box .lb-icon { font-size: 20px; flex-shrink: 0; }
+  .link-box .lb-body {}
+  .link-box .lb-title { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+  .link-box .lb-desc  { font-size: 12px; color: var(--muted); }
+  .link-box .lb-badge {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: rgba(41,112,196,0.8);
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="tag">// grundlagen</div>
+  <h1>Overfitting bei Polynomen</h1>
+  <p>Modelle mit zu hohem Polynomgrad passen sich perfekt an Trainingsdaten an — aber sie generalisieren nicht. Beobachte wie der Fit mit steigendem Grad instabiler wird.</p>
+</header>
+
+<!-- INTERAKTIV -->
+<section>
+  <div class="section-title">Interaktive Demo — Polynomgrad wählen</div>
+  <div class="demo-wrap">
+    <div class="deg-tabs">
+      <button class="deg-tab active" data-deg="1">Grad 1 — linear</button>
+      <button class="deg-tab" data-deg="3">Grad 3 — kubisch</button>
+      <button class="deg-tab" data-deg="5">Grad 5</button>
+      <button class="deg-tab" data-deg="9">Grad 9 — overfit</button>
+    </div>
+    <canvas id="c" height="360"></canvas>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(232,230,224,0.7)"></div>Trainingsdaten</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--test); opacity:0.9"></div>Testdaten</div>
+      <div class="legend-item"><div class="legend-line" id="leg-line" style="background:#4ecdc4"></div><span id="leg-label">Polynomfit (Grad 1)</span></div>
+      <div class="legend-item"><div class="legend-line" style="background:rgba(255,255,255,0.12); border: 1px dashed rgba(255,255,255,0.25); height:1px"></div>Wahre Funktion</div>
+    </div>
+    <div class="stats-row">
+      <div class="stat"><span class="label">Train-Fehler (RSS)</span><span id="train-err">—</span></div>
+      <div class="stat"><span class="label">Test-Fehler (RSS)</span><span id="test-err">—</span></div>
+      <div class="stat"><span class="label">max. Koeffizient |w|</span><span id="max-w">—</span></div>
+      <div class="stat"><span class="label">‖w‖₂²</span><span id="norm-w">—</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ERKLÄRUNG -->
+<section>
+  <div class="section-title">Was passiert hier?</div>
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-head" style="color:var(--fit)">Grad 1–2 — Underfitting</div>
+      <p>Zu einfach. Das Modell erfasst die Struktur der Daten nicht — <strong>hoher Bias</strong>, niedrige Varianz.</p>
+    </div>
+    <div class="card">
+      <div class="card-head" style="color:#378ADD">Grad 3–4 — guter Fit</div>
+      <p>Ausgewogener Kompromiss zwischen Fit und Generalisierung. Train- und Testfehler ähnlich.</p>
+    </div>
+    <div class="card">
+      <div class="card-head" style="color:var(--overfit)">Grad 7+ — Overfitting</div>
+      <p>Das Modell lernt das <strong>Rauschen</strong> der Trainingsdaten. Kleiner Train-Fehler, großer Test-Fehler.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FORMEL -->
+<section>
+  <div class="section-title">Polynomiale Hypothese</div>
+  <div class="formula-block">
+    <div class="fl">Polynomfit vom Grad d</div>
+    ŷ = w₀ + w₁x + w₂x² + … + w_d · x^d
+  </div>
+  <p style="font-size:14px; color:var(--muted); line-height:1.7; margin-top:12px;">
+    Jede Potenz von x ist ein Feature. Mehr Features → flexibler → die Koeffizienten w können
+    sehr groß werden, um alle Trainingspunkte exakt zu treffen. Das führt zu starken Schwingungen
+    zwischen den Datenpunkten.
+  </p>
+</section>
+
+<!-- LINK RIDGE -->
+<section>
+  <div class="section-title">Lösung: Regularisierung</div>
+  <p style="font-size:14px; color:var(--muted); line-height:1.7; margin-bottom:16px;">
+    Ridge Regression begrenzt die Koeffizientengröße durch einen Strafterm in der Kostenfunktion
+    und verhindert so das Overfitting — ohne den Polynomgrad zu reduzieren.
+  </p>
+  <div class="link-box" onclick="window.parent.postMessage({type:'open-card', src:'supervised/ridge-regression.html', title:'Ridge Regression'}, '*'); if(window === window.parent) window.location.href='../supervised/ridge-regression.html'">
+    <div class="lb-icon">📐</div>
+    <div class="lb-body">
+      <div class="lb-title">Ridge Regression</div>
+      <div class="lb-desc">L2-Regularisierung — Total cost = RSS(w) + λ·‖w‖₂²</div>
+    </div>
+    <div class="lb-badge">→ öffnen</div>
+  </div>
+</section>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+// Fixed RNG for reproducibility
+const rng = (() => { let s = 123; return () => { s ^= s<<13; s ^= s>>17; s ^= s<<5; return (s>>>0)/2**32; }; })();
+
+const trueFn = x => 0.15 + 0.7 * Math.sin(x * Math.PI * 1.8 + 0.3);
+
+const N_train = 20, N_test = 10;
+const trainData = Array.from({length: N_train}, () => {
+  const x = rng();
+  return {x, y: trueFn(x) + (rng() - 0.5) * 0.25};
+});
+const testData = Array.from({length: N_test}, () => {
+  const x = rng();
+  return {x, y: trueFn(x) + (rng() - 0.5) * 0.25};
+});
+
+function buildVandermonde(xs, deg) {
+  return xs.map(x => Array.from({length: deg + 1}, (_, d) => Math.pow(x, d)));
+}
+function matMul(A, B) {
+  const m = A.length, n = B[0].length, k = B.length;
+  return Array.from({length: m}, (_, i) =>
+    Array.from({length: n}, (_, j) =>
+      A[i].reduce((s, v, l) => s + v * B[l][j], 0)));
+}
+function transpose(A) { return A[0].map((_, j) => A.map(r => r[j])); }
+function addLambdaI(M, lam) { return M.map((row, i) => row.map((v, j) => i === j ? v + lam : v)); }
+function inv(M) {
+  const n = M.length;
+  const A = M.map(r => [...r]);
+  const I = Array.from({length: n}, (_, i) => Array.from({length: n}, (_, j) => i === j ? 1 : 0));
+  for (let col = 0; col < n; col++) {
+    let maxRow = col;
+    for (let row = col + 1; row < n; row++)
+      if (Math.abs(A[row][col]) > Math.abs(A[maxRow][col])) maxRow = row;
+    [A[col], A[maxRow]] = [A[maxRow], A[col]];
+    [I[col], I[maxRow]] = [I[maxRow], I[col]];
+    const div = A[col][col];
+    if (Math.abs(div) < 1e-12) continue;
+    for (let j = 0; j < n; j++) { A[col][j] /= div; I[col][j] /= div; }
+    for (let row = 0; row < n; row++) {
+      if (row === col) continue;
+      const f = A[row][col];
+      for (let j = 0; j < n; j++) { A[row][j] -= f * A[col][j]; I[row][j] -= f * I[col][j]; }
+    }
+  }
+  return I;
+}
+function fitPoly(deg) {
+  const X = buildVandermonde(trainData.map(d => d.x), deg);
+  const y = trainData.map(d => d.y);
+  const Xt = transpose(X);
+  const XtX = addLambdaI(matMul(Xt, X), 1e-6);
+  const w = matMul(inv(XtX), matMul(Xt, y.map(v => [v]))).map(r => r[0]);
+  return w;
+}
+function predict(w, x) { return w.reduce((s, wi, i) => s + wi * Math.pow(x, i), 0); }
+
+const degColors = {1: '#4ecdc4', 3: '#378ADD', 5: '#EF9F27', 9: '#e05a5a'};
+let currentDeg = 1;
+
+function draw() {
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = 360 * dpr;
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = 360, pad = 44;
+  const toX = x => pad + x * (W - 2 * pad);
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const gy = pad + (i / 4) * (H - 2 * pad);
+    ctx.beginPath(); ctx.moveTo(pad, gy); ctx.lineTo(W - pad, gy); ctx.stroke();
+    const gx = pad + (i / 4) * (W - 2 * pad);
+    ctx.beginPath(); ctx.moveTo(gx, pad); ctx.lineTo(gx, H - pad); ctx.stroke();
+  }
+
+  const w = fitPoly(currentDeg);
+  const color = degColors[currentDeg] || '#4ecdc4';
+
+  // Compute dynamic Y range from polynomial samples
+  const samples = Array.from({length: 200}, (_, i) => predict(w, i / 199));
+  const polyMin = Math.min(...samples);
+  const polyMax = Math.max(...samples);
+  const yLo = Math.max(-2, Math.min(polyMin, -0.1) - 0.1);
+  const yHi = Math.min(3,  Math.max(polyMax,  1.0) + 0.1);
+  const toY = y => H - pad - (y - yLo) / (yHi - yLo) * (H - 2 * pad);
+
+  // Clip drawing to plot area
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(pad, pad, W - 2 * pad, H - 2 * pad);
+  ctx.clip();
+
+  // True function (dashed)
+  ctx.beginPath();
+  for (let i = 0; i <= 300; i++) {
+    const x = i / 300;
+    const y = trueFn(x);
+    i === 0 ? ctx.moveTo(toX(x), toY(y)) : ctx.lineTo(toX(x), toY(y));
+  }
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([5, 5]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Polynomial fit (no clamping — canvas clip handles boundaries)
+  ctx.beginPath();
+  for (let i = 0; i <= 400; i++) {
+    const x = i / 400;
+    const y = predict(w, x);
+    i === 0 ? ctx.moveTo(toX(x), toY(y)) : ctx.lineTo(toX(x), toY(y));
+  }
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  ctx.restore();
+
+  // Test data
+  testData.forEach(({x, y}) => {
+    ctx.beginPath();
+    ctx.arc(toX(x), toY(y), 5, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(201,106,40,0.85)';
+    ctx.fill();
+    // residual line
+    const yhat = predict(w, x);
+    ctx.beginPath();
+    ctx.moveTo(toX(x), toY(y));
+    ctx.lineTo(toX(x), toY(yhat));
+    ctx.strokeStyle = 'rgba(201,106,40,0.3)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  });
+
+  // Train data
+  trainData.forEach(({x, y}) => {
+    ctx.beginPath();
+    ctx.arc(toX(x), toY(y), 4.5, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(232,230,224,0.75)';
+    ctx.fill();
+  });
+
+  // Stats
+  const trainRSS = trainData.reduce((s, {x, y}) => s + (y - predict(w, x)) ** 2, 0);
+  const testRSS  = testData.reduce((s, {x, y}) => s + (y - predict(w, x)) ** 2, 0);
+  const maxW = Math.max(...w.map(Math.abs));
+  const norm2 = w.reduce((s, wi) => s + wi * wi, 0);
+
+  document.getElementById('train-err').textContent = trainRSS.toFixed(4);
+  document.getElementById('test-err').textContent  = testRSS.toFixed(4);
+  document.getElementById('max-w').textContent     = maxW > 1e6 ? maxW.toExponential(2) : maxW.toFixed(2);
+  document.getElementById('norm-w').textContent    = norm2 > 1e8 ? norm2.toExponential(2) : norm2.toFixed(2);
+
+  document.getElementById('leg-line').style.background = color;
+  document.getElementById('leg-label').textContent = `Polynomfit (Grad ${currentDeg})`;
+}
+
+document.querySelectorAll('.deg-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.deg-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentDeg = +btn.dataset.deg;
+    draw();
+  });
+});
+
+window.addEventListener('resize', draw);
+draw();
+</script>
+</body>
+</html>

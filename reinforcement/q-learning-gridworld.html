@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Q-Learning — Grid World</title>
+<script>
+  MathJax = {
+    tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+    options: { skipHtmlTags: ['script','noscript','style','textarea'] }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #0e0e11;
+    --bg2:     #16161b;
+    --bg3:     #1e1e26;
+    --border:  rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.13);
+    --text:    #e8e6f0;
+    --muted:   #7a7890;
+    --accent:  #c96a28;
+    --accent2: #e8894a;
+    --goal:    #f0c040;
+    --start:   #4ecdc4;
+    --wall:    #2a2a35;
+    --danger:  #ff6b6b;
+    --green:   #4ecdc4;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.5rem 1rem 2rem;
+  }
+
+  header {
+    width: 100%;
+    max-width: 980px;
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  h1 {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.05rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+  }
+
+  .subtitle {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .main {
+    width: 100%;
+    max-width: 980px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+
+  /* Formula box */
+  .formula-panel {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 10px;
+    padding: 0.9rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+
+  .formula-panel .fp-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .formula-main {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 0.55rem 1rem;
+    overflow-x: auto;
+    font-size: 0.95rem;
+  }
+
+  .formula-main mjx-container { color: var(--text) !important; }
+
+  .formula-step {
+    background: var(--bg3);
+    border: 1px solid rgba(201,106,40,0.3);
+    border-radius: 7px;
+    padding: 0.45rem 1rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    min-height: 2rem;
+    line-height: 1.6;
+    transition: border-color 0.3s, background 0.3s;
+  }
+
+  .formula-step.flash {
+    border-color: var(--accent);
+    background: rgba(201,106,40,0.08);
+    color: var(--text);
+  }
+
+  .formula-step mjx-container { color: var(--text) !important; }
+
+  .td-error {
+    color: var(--accent2);
+    font-weight: 500;
+  }
+
+  /* Two-column layout */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 0.9rem;
+    align-items: start;
+  }
+
+  @media (max-width: 720px) {
+    .two-col { grid-template-columns: 1fr; }
+  }
+
+  /* Canvas container */
+  .canvas-wrap {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  canvas#grid {
+    display: block;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    image-rendering: pixelated;
+  }
+
+  .canvas-legend {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.67rem;
+    color: var(--muted);
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+  }
+
+  /* Right panel */
+  .right-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  /* Controls */
+  .controls {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .ctrl-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  button {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 500;
+    padding: 6px 13px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+  button:hover { background: rgba(201,106,40,0.12); border-color: var(--accent); color: var(--accent); }
+  button.primary { background: rgba(201,106,40,0.15); border-color: var(--accent); color: var(--accent); }
+  button.active  { background: rgba(201,106,40,0.22); border-color: var(--accent2); color: var(--accent2); }
+  button:active  { transform: scale(0.97); }
+
+  label {
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  select {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    padding: 5px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    color: var(--text);
+    cursor: pointer;
+    outline: none;
+  }
+
+  input[type=range] {
+    accent-color: var(--accent);
+    width: 80px;
+    cursor: pointer;
+  }
+
+  .slider-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text);
+    min-width: 36px;
+  }
+
+  /* Stats */
+  .stats-box {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .stat-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--muted);
+  }
+
+  .stat-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .stat-val.good { color: var(--green); }
+  .stat-val.warn { color: var(--accent); }
+
+  /* Reward chart */
+  .chart-box {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .chart-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  svg#reward-chart {
+    display: block;
+    width: 100%;
+    border-radius: 6px;
+    overflow: visible;
+  }
+
+  /* Bottom chart */
+  .bottom-chart {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.85rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .bottom-chart .fp-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  svg#reward-chart-full {
+    display: block;
+    width: 100%;
+    border-radius: 6px;
+  }
+
+  .src-note {
+    font-size: 0.67rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    border-top: 1px solid var(--border);
+    padding-top: 0.65rem;
+    width: 100%;
+    max-width: 980px;
+    margin-top: 0.25rem;
+  }
+
+  /* Algorithm comparison cards */
+  .algo-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .algo-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.6rem 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .algo-card.selected {
+    border-color: var(--accent);
+    background: rgba(201,106,40,0.08);
+  }
+
+  .algo-card .ac-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .algo-card.selected .ac-title { color: var(--accent); }
+
+  .algo-card .ac-desc {
+    font-size: 0.68rem;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>q-learning-gridworld.js</h1>
+  <span class="subtitle">// Temporal-Difference Learning — interaktive Visualisierung</span>
+</header>
+
+<div class="main">
+
+  <!-- Formula Panel -->
+  <div class="formula-panel">
+    <span class="fp-label">// Update-Regel (aktiver Algorithmus)</span>
+    <div class="formula-main" id="formula-main"></div>
+    <div class="formula-step" id="formula-step">Starte eine Episode, um aktuelle Werte zu sehen…</div>
+  </div>
+
+  <!-- Two-column: canvas | controls -->
+  <div class="two-col">
+
+    <!-- Left: Grid World -->
+    <div class="canvas-wrap">
+      <canvas id="grid"></canvas>
+      <div class="canvas-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#4ecdc4;"></div> Start</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#f0c040;"></div> Ziel (+10)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#2e2e38;"></div> Wand</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#c96a28; border-radius:50%;"></div> Agent</div>
+        <div class="legend-item" style="gap:3px;">Pfeil-Helligkeit → Q-Wert</div>
+      </div>
+    </div>
+
+    <!-- Right: controls + stats -->
+    <div class="right-panel">
+
+      <!-- Algorithm selector -->
+      <div class="algo-cards">
+        <div class="algo-card selected" id="card-ql" onclick="selectAlgo('ql')">
+          <span class="ac-title">Q-Learning</span>
+          <span class="ac-desc">Off-policy · max über alle Aktionen</span>
+        </div>
+        <div class="algo-card" id="card-sarsa" onclick="selectAlgo('sarsa')">
+          <span class="ac-title">SARSA</span>
+          <span class="ac-desc">On-policy · folgt der ε-greedy Policy</span>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="controls">
+        <div class="ctrl-row">
+          <button class="primary" onclick="runEpisode(1)">▶ Episode</button>
+          <button onclick="runEpisode(100)">⏩ 100 Episoden</button>
+          <button onclick="resetAll()">↺ Reset</button>
+        </div>
+        <div class="ctrl-row">
+          <button id="auto-btn" onclick="toggleAuto()">▶ Auto-Play</button>
+          <label>Geschw.
+            <input type="range" id="speed-sl" min="1" max="10" step="1" value="5" oninput="updateSpeed()">
+            <span class="slider-val" id="speed-val">5</span>
+          </label>
+        </div>
+        <div class="ctrl-row">
+          <label>α =
+            <input type="range" id="alpha-sl" min="0.01" max="0.5" step="0.01" value="0.1" oninput="updateSliders()">
+            <span class="slider-val" id="alpha-val">0.10</span>
+          </label>
+        </div>
+        <div class="ctrl-row">
+          <label>γ =
+            <input type="range" id="gamma-sl" min="0.5" max="1.0" step="0.01" value="0.95" oninput="updateSliders()">
+            <span class="slider-val" id="gamma-val">0.95</span>
+          </label>
+        </div>
+        <div class="ctrl-row">
+          <label>ε =
+            <input type="range" id="eps-sl" min="0.0" max="0.5" step="0.01" value="0.2" oninput="updateSliders()">
+            <span class="slider-val" id="eps-val">0.20</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-box">
+        <div class="stat-row">
+          <span class="stat-label">Episoden</span>
+          <span class="stat-val" id="stat-ep">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Schritte gesamt</span>
+          <span class="stat-val" id="stat-steps">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Letzte Episode (Reward)</span>
+          <span class="stat-val" id="stat-rew">—</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Letzter TD-Fehler δ</span>
+          <span class="stat-val warn" id="stat-td">—</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Schritte (letzte Ep.)</span>
+          <span class="stat-val" id="stat-ep-steps">—</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Bester Reward</span>
+          <span class="stat-val good" id="stat-best">—</span>
+        </div>
+      </div>
+
+      <!-- Mini chart in right column -->
+      <div class="chart-box">
+        <span class="chart-label">// Reward pro Episode</span>
+        <svg id="reward-chart" height="90" viewBox="0 0 300 90" preserveAspectRatio="none"></svg>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Full-width reward chart -->
+  <div class="bottom-chart">
+    <span class="fp-label">// Lernkurve — Episode vs. Reward (gleitender Durchschnitt)</span>
+    <svg id="reward-chart-full" height="120" viewBox="0 0 900 120" preserveAspectRatio="none"></svg>
+  </div>
+
+</div><!-- .main -->
+
+<p class="src-note">// Quelle: Foliensatz 06 — Reinforcement Learning (ML SS2026) · Sutton &amp; Barto, Ch. 4–6</p>
+
+<script>
+/* =========================================================
+   Grid World — Q-Learning / SARSA Visualisierung
+   ========================================================= */
+
+const GRID = 5;
+// Walls: [row, col]
+const WALLS = [[1,1],[1,3],[2,3],[3,1],[3,3]];
+const START = [0,0];
+const GOAL  = [4,4];
+const STEP_COST = -0.1;
+const GOAL_REWARD = 10.0;
+const MAX_STEPS = 200;
+
+// Directions: 0=up, 1=right, 2=down, 3=left
+const DR = [-1, 0, 1, 0];
+const DC = [ 0, 1, 0,-1];
+const DIR_NAMES = ['↑','→','↓','←'];
+
+// Q-table: [row][col][action]
+let Q = [];
+// Reward history
+let rewardHistory = [];
+
+// Algorithm params
+let alpha = 0.10;
+let gamma = 0.95;
+let epsilon = 0.20;
+let algo = 'ql'; // 'ql' or 'sarsa'
+
+// Stats
+let totalEpisodes = 0;
+let totalSteps = 0;
+let lastReward = null;
+let lastTD = null;
+let lastEpSteps = null;
+let bestReward = null;
+
+// Auto-play
+let autoInterval = null;
+let speed = 5;
+
+// Canvas
+const canvas = document.getElementById('grid');
+const ctx = canvas.getContext('2d');
+let CELL = 80; // pixels per cell
+
+function wallSet() {
+  const s = new Set();
+  WALLS.forEach(([r,c]) => s.add(r*GRID+c));
+  return s;
+}
+
+const WALL_SET = wallSet();
+
+function isWall(r,c) { return WALL_SET.has(r*GRID+c); }
+function isGoal(r,c) { return r===GOAL[0] && c===GOAL[1]; }
+function isStart(r,c){ return r===START[0] && c===START[1]; }
+function inBounds(r,c){ return r>=0&&r<GRID&&c>=0&&c<GRID; }
+
+function initQ() {
+  Q = [];
+  for(let r=0;r<GRID;r++){
+    Q[r]=[];
+    for(let c=0;c<GRID;c++){
+      Q[r][c]=[0,0,0,0];
+    }
+  }
+}
+
+function resetAll() {
+  initQ();
+  rewardHistory = [];
+  totalEpisodes = 0;
+  totalSteps = 0;
+  lastReward = null;
+  lastTD = null;
+  lastEpSteps = null;
+  bestReward = null;
+  updateStats();
+  updateFormulaMain();
+  clearFormulaStep();
+  drawGrid([...START]);
+  drawCharts();
+}
+
+function epsilonGreedy(r, c) {
+  if (Math.random() < epsilon) {
+    // Random valid action
+    const valid = [];
+    for(let a=0;a<4;a++){
+      const nr=r+DR[a], nc=c+DC[a];
+      if(inBounds(nr,nc)&&!isWall(nr,nc)) valid.push(a);
+    }
+    if(valid.length===0) return Math.floor(Math.random()*4);
+    return valid[Math.floor(Math.random()*valid.length)];
+  } else {
+    return greedyAction(r,c);
+  }
+}
+
+function greedyAction(r,c) {
+  let best=0, bestQ=-Infinity;
+  for(let a=0;a<4;a++){
+    if(Q[r][c][a]>bestQ){ bestQ=Q[r][c][a]; best=a; }
+  }
+  return best;
+}
+
+function maxQ(r,c) {
+  return Math.max(...Q[r][c]);
+}
+
+function step(r,c,a) {
+  const nr=r+DR[a], nc=c+DC[a];
+  if(!inBounds(nr,nc)||isWall(nr,nc)) {
+    // Bump into wall → stay
+    return {nr:r, nc:c, reward: STEP_COST};
+  }
+  const reward = isGoal(nr,nc) ? GOAL_REWARD : STEP_COST;
+  return {nr, nc, reward};
+}
+
+function runEpisode(count) {
+  for(let e=0;e<count;e++){
+    let [r,c] = [...START];
+    let epReward = 0;
+    let steps = 0;
+    let a = epsilonGreedy(r,c);
+    let lastDelta = 0;
+
+    while(!isGoal(r,c) && steps < MAX_STEPS) {
+      const {nr, nc, reward} = step(r,c,a);
+      const na = epsilonGreedy(nr,nc);
+
+      let delta;
+      if(algo==='ql'){
+        // Q-Learning: off-policy, use max
+        const target = reward + gamma * (isGoal(nr,nc)?0:maxQ(nr,nc));
+        delta = target - Q[r][c][a];
+        Q[r][c][a] += alpha * delta;
+      } else {
+        // SARSA: on-policy
+        const target = reward + gamma * (isGoal(nr,nc)?0:Q[nr][nc][na]);
+        delta = target - Q[r][c][a];
+        Q[r][c][a] += alpha * delta;
+      }
+
+      lastDelta = delta;
+      epReward += reward;
+      steps++;
+      totalSteps++;
+
+      // Show formula flash for last episode, last step (only if count===1)
+      if(count===1){
+        flashFormula(r,c,a,reward,nr,nc,na,delta);
+      }
+
+      r=nr; c=nc; a=na;
+    }
+
+    totalEpisodes++;
+    lastReward = epReward;
+    lastTD = lastDelta;
+    lastEpSteps = steps;
+    if(bestReward===null||epReward>bestReward) bestReward=epReward;
+    rewardHistory.push(epReward);
+  }
+
+  updateStats();
+  drawGrid([...START]);
+  drawCharts();
+}
+
+/* ── MathJax formula rendering ───────────────────────── */
+
+function updateFormulaMain() {
+  const el = document.getElementById('formula-main');
+  if(algo==='ql'){
+    el.innerHTML = `\\[Q(S_t,A_t) \\leftarrow Q(S_t,A_t) + \\alpha\\underbrace{\\bigl[R_{t+1} + \\gamma \\max_a Q(S_{t+1},a) - Q(S_t,A_t)\\bigr]}_{\\delta_t\\text{ (TD-Fehler)}}\\]`;
+  } else {
+    el.innerHTML = `\\[Q(S_t,A_t) \\leftarrow Q(S_t,A_t) + \\alpha\\underbrace{\\bigl[R_{t+1} + \\gamma\\, Q(S_{t+1},A_{t+1}) - Q(S_t,A_t)\\bigr]}_{\\delta_t\\text{ (TD-Fehler)}}\\]`;
+  }
+  if(window.MathJax && MathJax.typesetPromise) {
+    MathJax.typesetPromise([el]).catch(()=>{});
+  }
+}
+
+function clearFormulaStep(){
+  const el = document.getElementById('formula-step');
+  el.innerHTML = 'Starte eine Episode, um aktuelle Werte zu sehen…';
+  el.classList.remove('flash');
+}
+
+function flashFormula(r,c,a,reward,nr,nc,na,delta){
+  const el = document.getElementById('formula-step');
+  const Qold  = (Q[r][c][a]).toFixed(3);
+  const Qnext = algo==='ql' ? maxQ(nr,nc).toFixed(3) : (Q[nr]&&Q[nr][nc]?Q[nr][nc][na]:0).toFixed(3);
+  const target = (reward + gamma*(isGoal(nr,nc)?0:parseFloat(Qnext))).toFixed(3);
+  const Qnew   = Q[r][c][a].toFixed(3);
+  const dStr   = delta>=0 ? `+${delta.toFixed(3)}` : delta.toFixed(3);
+  const cell   = `(${r},${c})`;
+  const act    = DIR_NAMES[a];
+
+  if(algo==='ql'){
+    el.innerHTML = `\\(Q${cell}^{${act}}: \\underbrace{${Qold}}_{Q_{\\text{alt}}} + ${alpha.toFixed(2)}\\cdot\\underbrace{[${reward.toFixed(1)} + ${gamma.toFixed(2)}\\cdot${Qnext} - ${Qold}]}_{\\delta=${dStr}} = ${Qnew}\\)`;
+  } else {
+    el.innerHTML = `\\(Q${cell}^{${act}}: \\underbrace{${Qold}}_{Q_{\\text{alt}}} + ${alpha.toFixed(2)}\\cdot\\underbrace{[${reward.toFixed(1)} + ${gamma.toFixed(2)}\\cdot${Qnext} - ${Qold}]}_{\\delta=${dStr}} = ${Qnew}\\)`;
+  }
+
+  el.classList.remove('flash');
+  void el.offsetWidth; // force reflow
+  el.classList.add('flash');
+
+  if(window.MathJax && MathJax.typesetPromise) {
+    MathJax.typesetPromise([el]).catch(()=>{});
+  }
+
+  setTimeout(()=>{ el.classList.remove('flash'); }, 1200);
+}
+
+/* ── Canvas drawing ──────────────────────────────────── */
+
+function resizeCanvas() {
+  const wrap = canvas.parentElement;
+  const avail = Math.min(wrap.clientWidth - 24, 480);
+  CELL = Math.floor(avail / GRID);
+  canvas.width  = CELL * GRID;
+  canvas.height = CELL * GRID;
+  canvas.style.width  = canvas.width  + 'px';
+  canvas.style.height = canvas.height + 'px';
+}
+
+function drawGrid(agentPos) {
+  resizeCanvas();
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  // Compute Q value range for normalization
+  let qMin = Infinity, qMax = -Infinity;
+  for(let r=0;r<GRID;r++) for(let c=0;c<GRID;c++) {
+    if(isWall(r,c)||isGoal(r,c)) continue;
+    Q[r][c].forEach(v=>{ if(v<qMin)qMin=v; if(v>qMax)qMax=v; });
+  }
+  if(qMax===qMin){ qMax=qMin+1; }
+
+  for(let r=0;r<GRID;r++){
+    for(let c=0;c<GRID;c++){
+      const x=c*CELL, y=r*CELL;
+
+      // Cell background
+      if(isWall(r,c)){
+        ctx.fillStyle='#232330';
+        ctx.fillRect(x,y,CELL,CELL);
+        // Hatch pattern for wall
+        ctx.strokeStyle='rgba(255,255,255,0.04)';
+        ctx.lineWidth=1;
+        for(let i=0;i<CELL*2;i+=8){
+          ctx.beginPath();
+          ctx.moveTo(x+i,y);
+          ctx.lineTo(x,y+i);
+          ctx.stroke();
+        }
+      } else if(isGoal(r,c)){
+        ctx.fillStyle='#1a1810';
+        ctx.fillRect(x,y,CELL,CELL);
+        // Goal glow
+        const grd = ctx.createRadialGradient(x+CELL/2,y+CELL/2,2,x+CELL/2,y+CELL/2,CELL*0.6);
+        grd.addColorStop(0,'rgba(240,192,64,0.25)');
+        grd.addColorStop(1,'transparent');
+        ctx.fillStyle=grd;
+        ctx.fillRect(x,y,CELL,CELL);
+      } else if(isStart(r,c)){
+        ctx.fillStyle='#0d1918';
+        ctx.fillRect(x,y,CELL,CELL);
+      } else {
+        ctx.fillStyle='#16161f';
+        ctx.fillRect(x,y,CELL,CELL);
+      }
+
+      // Grid lines
+      ctx.strokeStyle='rgba(255,255,255,0.06)';
+      ctx.lineWidth=1;
+      ctx.strokeRect(x,y,CELL,CELL);
+
+      // Q-value arrows (4 directions)
+      if(!isWall(r,c) && !isGoal(r,c)){
+        const qVals = Q[r][c];
+        const bestA = greedyAction(r,c);
+
+        for(let a=0;a<4;a++){
+          const v = qVals[a];
+          // Normalize to [0,1]
+          const norm = Math.max(0, Math.min(1, (v - qMin)/(qMax - qMin)));
+          // Color: negative→red, positive→orange/white
+          let arrowColor;
+          if(v < 0){
+            const t = Math.max(0, Math.min(1, -v/5));
+            arrowColor = `rgba(255,80,80,${0.15+t*0.65})`;
+          } else {
+            arrowColor = `rgba(201,106,40,${0.1+norm*0.88})`;
+          }
+
+          const isGreedy = (a===bestA);
+          drawArrow(ctx, x, y, CELL, a, arrowColor, isGreedy ? 1.0 : 0.7, isGreedy ? 2.5 : 1.5);
+        }
+      }
+
+      // Labels
+      if(isGoal(r,c)){
+        ctx.fillStyle='#f0c040';
+        ctx.font=`bold ${Math.round(CELL*0.18)}px DM Mono, monospace`;
+        ctx.textAlign='center';
+        ctx.textBaseline='middle';
+        ctx.fillText('GOAL',x+CELL/2,y+CELL*0.72);
+        ctx.font=`${Math.round(CELL*0.16)}px DM Mono, monospace`;
+        ctx.fillStyle='rgba(240,192,64,0.7)';
+        ctx.fillText('+10',x+CELL/2,y+CELL*0.88);
+      }
+      if(isStart(r,c)){
+        ctx.fillStyle='rgba(78,205,196,0.5)';
+        ctx.font=`${Math.round(CELL*0.15)}px DM Mono, monospace`;
+        ctx.textAlign='center';
+        ctx.textBaseline='middle';
+        ctx.fillText('START',x+CELL/2,y+CELL*0.88);
+      }
+      if(isWall(r,c)){
+        ctx.fillStyle='rgba(255,255,255,0.06)';
+        ctx.font=`${Math.round(CELL*0.22)}px DM Sans, sans-serif`;
+        ctx.textAlign='center';
+        ctx.textBaseline='middle';
+        ctx.fillText('▪',x+CELL/2,y+CELL/2);
+      }
+
+      // Greedy policy large arrow
+      if(!isWall(r,c) && !isGoal(r,c) && totalEpisodes > 0){
+        const bestA = greedyAction(r,c);
+        drawLargeArrow(ctx, x, y, CELL, bestA);
+      }
+    }
+  }
+
+  // Agent
+  if(agentPos){
+    const [ar,ac] = agentPos;
+    const ax = ac*CELL + CELL/2;
+    const ay = ar*CELL + CELL/2;
+    const rad = CELL*0.2;
+
+    // Agent shadow/glow
+    const grd = ctx.createRadialGradient(ax,ay,0,ax,ay,rad*2.2);
+    grd.addColorStop(0,'rgba(201,106,40,0.35)');
+    grd.addColorStop(1,'transparent');
+    ctx.fillStyle=grd;
+    ctx.beginPath();
+    ctx.arc(ax,ay,rad*2.2,0,Math.PI*2);
+    ctx.fill();
+
+    // Agent circle
+    ctx.beginPath();
+    ctx.arc(ax,ay,rad,0,Math.PI*2);
+    ctx.fillStyle='#c96a28';
+    ctx.fill();
+    ctx.strokeStyle='#e8894a';
+    ctx.lineWidth=2;
+    ctx.stroke();
+  }
+}
+
+function drawArrow(ctx, x, y, cell, dir, color, opacity, lineWidth) {
+  // Small arrow in each quadrant of cell
+  const cx = x + cell/2;
+  const cy = y + cell/2;
+  const len = cell * 0.22;
+  const margin = cell * 0.1;
+
+  // Offset arrow center toward the direction
+  let ox=0, oy=0;
+  if(dir===0) oy=-cell*0.28; // up
+  if(dir===1) ox= cell*0.28; // right
+  if(dir===2) oy= cell*0.28; // down
+  if(dir===3) ox=-cell*0.28; // left
+
+  const ax = cx+ox, ay = cy+oy;
+
+  // Arrow line
+  const ex = ax + DR[dir]*len*0; // arrow direction mapped: dr=row, dc=col
+  // direction vectors for drawing
+  const drow = DR[dir], dcol = DC[dir];
+  const sx = ax - dcol*len*0.5;
+  const sy = ay - drow*len*0.5;
+  const ex2 = ax + dcol*len*0.5;
+  const ey2 = ay + drow*len*0.5;
+
+  ctx.save();
+  ctx.globalAlpha = opacity;
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = lineWidth;
+  ctx.lineCap = 'round';
+
+  ctx.beginPath();
+  ctx.moveTo(sx,sy);
+  ctx.lineTo(ex2,ey2);
+  ctx.stroke();
+
+  // Arrowhead
+  const headLen = Math.max(4, cell*0.09);
+  const angle = Math.atan2(ey2-sy,ex2-sx);
+  ctx.beginPath();
+  ctx.moveTo(ex2,ey2);
+  ctx.lineTo(ex2-headLen*Math.cos(angle-0.45), ey2-headLen*Math.sin(angle-0.45));
+  ctx.lineTo(ex2-headLen*Math.cos(angle+0.45), ey2-headLen*Math.sin(angle+0.45));
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawLargeArrow(ctx, x, y, cell, dir) {
+  const cx = x + cell/2;
+  const cy = y + cell/2;
+  const drow = DR[dir], dcol = DC[dir];
+  const len = cell * 0.22;
+
+  const sx = cx - dcol*len;
+  const sy = cy - drow*len;
+  const ex = cx + dcol*len;
+  const ey = cy + drow*len;
+
+  ctx.save();
+  ctx.globalAlpha = 0.22;
+  ctx.strokeStyle = '#e8e6f0';
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'round';
+
+  ctx.beginPath();
+  ctx.moveTo(sx,sy);
+  ctx.lineTo(ex,ey);
+  ctx.stroke();
+
+  // Arrowhead
+  const headLen = cell*0.16;
+  const angle = Math.atan2(ey-sy,ex-sx);
+  ctx.fillStyle='#e8e6f0';
+  ctx.beginPath();
+  ctx.moveTo(ex,ey);
+  ctx.lineTo(ex-headLen*Math.cos(angle-0.4),ey-headLen*Math.sin(angle-0.4));
+  ctx.lineTo(ex-headLen*Math.cos(angle+0.4),ey-headLen*Math.sin(angle+0.4));
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+}
+
+/* ── Charts ──────────────────────────────────────────── */
+
+function drawCharts(){
+  drawMiniChart();
+  drawFullChart();
+}
+
+function drawMiniChart(){
+  const svg = document.getElementById('reward-chart');
+  const W=300, H=90;
+  const hist = rewardHistory;
+  if(hist.length<2){ svg.innerHTML=''; return; }
+
+  const mn = Math.min(...hist), mx = Math.max(...hist);
+  const range = mx-mn || 1;
+
+  const n = Math.min(hist.length, 100);
+  const slice = hist.slice(-n);
+
+  const pts = slice.map((v,i)=>{
+    const px = (i/(n-1))*W;
+    const py = H - ((v-mn)/range)*(H*0.8) - H*0.1;
+    return `${px},${py}`;
+  });
+
+  svg.innerHTML = `
+    <polyline points="${pts.join(' ')}"
+      fill="none" stroke="#c96a28" stroke-width="1.5"
+      stroke-linejoin="round" stroke-linecap="round" opacity="0.9"/>
+    <line x1="0" y1="${H}" x2="${W}" y2="${H}" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+  `;
+}
+
+function drawFullChart(){
+  const svg = document.getElementById('reward-chart-full');
+  const W=900, H=120;
+  const hist = rewardHistory;
+  if(hist.length<2){ svg.innerHTML=''; return; }
+
+  // Moving average (window=10)
+  const MA_WIN=10;
+  const ma = hist.map((_,i)=>{
+    const start=Math.max(0,i-MA_WIN+1);
+    const sub=hist.slice(start,i+1);
+    return sub.reduce((a,b)=>a+b,0)/sub.length;
+  });
+
+  const mn = Math.min(...hist), mx = Math.max(...hist);
+  const range = mx-mn || 1;
+  const pad = H*0.1;
+
+  function toY(v){ return H - pad - ((v-mn)/range)*(H-2*pad); }
+  function toX(i){ return (i/(hist.length-1))*W; }
+
+  // Raw line (faint)
+  const rawPts = hist.map((v,i)=>`${toX(i)},${toY(v)}`).join(' ');
+  // MA line
+  const maPts = ma.map((v,i)=>`${toX(i)},${toY(v)}`).join(' ');
+
+  // Zero line
+  const y0 = toY(0);
+
+  svg.innerHTML = `
+    <line x1="0" y1="${y0}" x2="${W}" y2="${y0}" stroke="rgba(255,255,255,0.08)" stroke-width="1" stroke-dasharray="4,4"/>
+    <polyline points="${rawPts}" fill="none" stroke="rgba(201,106,40,0.25)" stroke-width="1" stroke-linejoin="round"/>
+    <polyline points="${maPts}"  fill="none" stroke="#c96a28" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <text x="6" y="12" font-family="DM Mono,monospace" font-size="10" fill="rgba(201,106,40,0.6)">gleit. Durchschn. (10 Ep.)</text>
+    <text x="6" y="${H-5}" font-family="DM Mono,monospace" font-size="9" fill="rgba(255,255,255,0.2)">Ep. 0</text>
+    <text x="${W-4}" y="${H-5}" font-family="DM Mono,monospace" font-size="9" fill="rgba(255,255,255,0.2)" text-anchor="end">Ep. ${hist.length}</text>
+    <text x="6" y="${toY(mx)+4}" font-family="DM Mono,monospace" font-size="9" fill="rgba(240,192,64,0.5)">${mx.toFixed(1)}</text>
+    <text x="6" y="${toY(mn)-3}" font-family="DM Mono,monospace" font-size="9" fill="rgba(255,80,80,0.4)">${mn.toFixed(1)}</text>
+  `;
+}
+
+/* ── Stats update ────────────────────────────────────── */
+
+function updateStats(){
+  document.getElementById('stat-ep').textContent = totalEpisodes;
+  document.getElementById('stat-steps').textContent = totalSteps;
+  document.getElementById('stat-rew').textContent =
+    lastReward !== null ? lastReward.toFixed(2) : '—';
+  document.getElementById('stat-td').textContent =
+    lastTD !== null ? lastTD.toFixed(4) : '—';
+  document.getElementById('stat-ep-steps').textContent =
+    lastEpSteps !== null ? lastEpSteps : '—';
+  document.getElementById('stat-best').textContent =
+    bestReward !== null ? bestReward.toFixed(2) : '—';
+
+  // Color reward
+  const rewEl = document.getElementById('stat-rew');
+  if(lastReward!==null){
+    if(lastReward>0) rewEl.style.color='#4ecdc4';
+    else if(lastReward < -5) rewEl.style.color='#ff6b6b';
+    else rewEl.style.color='#c96a28';
+  }
+}
+
+function updateSliders(){
+  alpha   = parseFloat(document.getElementById('alpha-sl').value);
+  gamma   = parseFloat(document.getElementById('gamma-sl').value);
+  epsilon = parseFloat(document.getElementById('eps-sl').value);
+  document.getElementById('alpha-val').textContent = alpha.toFixed(2);
+  document.getElementById('gamma-val').textContent = gamma.toFixed(2);
+  document.getElementById('eps-val').textContent   = epsilon.toFixed(2);
+}
+
+function updateSpeed(){
+  speed = parseInt(document.getElementById('speed-sl').value);
+  document.getElementById('speed-val').textContent = speed;
+  if(autoInterval!==null){ toggleAuto(); toggleAuto(); } // restart with new speed
+}
+
+/* ── Algorithm selector ──────────────────────────────── */
+
+function selectAlgo(a){
+  algo = a;
+  document.getElementById('card-ql').classList.toggle('selected', a==='ql');
+  document.getElementById('card-sarsa').classList.toggle('selected', a==='sarsa');
+  updateFormulaMain();
+  clearFormulaStep();
+}
+
+/* ── Auto-play ───────────────────────────────────────── */
+
+function toggleAuto(){
+  const btn = document.getElementById('auto-btn');
+  if(autoInterval!==null){
+    clearInterval(autoInterval);
+    autoInterval=null;
+    btn.textContent='▶ Auto-Play';
+    btn.classList.remove('active');
+  } else {
+    btn.textContent='⏸ Stop';
+    btn.classList.add('active');
+    const msPerEp = Math.max(50, 600 - speed*55);
+    autoInterval = setInterval(()=>{ runEpisode(1); }, msPerEp);
+  }
+}
+
+/* ── Init ────────────────────────────────────────────── */
+
+window.addEventListener('load', ()=>{
+  initQ();
+  updateSliders();
+  updateFormulaMain();
+  drawGrid([...START]);
+});
+
+window.addEventListener('resize', ()=>{
+  drawGrid([...START]);
+  drawCharts();
+});
+</script>
+</body>
+</html>

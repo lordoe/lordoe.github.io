@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ssl-deep.js — Deep Self-Supervised Learning</title>
+<script>
+  MathJax = {
+    tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+    options: { skipHtmlTags: ['script','noscript','style','textarea'] }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0e11;
+    --bg2: #16161b;
+    --bg3: #1e1e26;
+    --border: rgba(255,255,255,0.08);
+    --text: #e8e6f0;
+    --muted: #7a7890;
+    --accent: #8b7cf8;
+    --accent2: #4ecdc4;
+    --c0: #8b7cf8; --c0l: rgba(139,124,248,0.15);
+    --c1: #4ecdc4; --c1l: rgba(78,205,196,0.15);
+    --c2: #ff6b6b; --c2l: rgba(255,107,107,0.15);
+    --c3: #ffd93d; --c3l: rgba(255,217,61,0.15);
+    --c4: #6bcb77; --c4l: rgba(107,203,119,0.15);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem;
+  }
+
+  header {
+    width: 100%;
+    max-width: 860px;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  h1 {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.05rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+  }
+
+  .subtitle {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .main {
+    width: 100%;
+    max-width: 860px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .explanation {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .explanation h2 {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .explanation p {
+    font-size: 0.82rem;
+    line-height: 1.65;
+    color: var(--muted);
+  }
+  .explanation p b { color: var(--text); font-weight: 500; }
+
+  .steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .step {
+    display: grid;
+    grid-template-columns: 1.6rem 1fr;
+    gap: 0.5rem 0.75rem;
+    align-items: start;
+  }
+
+  .step-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    padding-top: 0.1rem;
+  }
+
+  .step-body { display: flex; flex-direction: column; gap: 0.35rem; }
+
+  .step-title {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .step-desc {
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+  .step-desc b { color: var(--text); font-weight: 500; }
+
+  .formula-box {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.4rem 1rem;
+    color: var(--text);
+    overflow-x: auto;
+  }
+
+  .formula-box mjx-container { color: var(--text) !important; }
+
+  .src-note {
+    font-size: 0.7rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    border-top: 1px solid var(--border);
+    padding-top: 0.75rem;
+  }
+
+  /* chip / badge for algorithm names */
+  .chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .chip {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid;
+    letter-spacing: 0.03em;
+  }
+  .chip-purple { color: var(--c0); border-color: var(--c0); background: var(--c0l); }
+  .chip-teal   { color: var(--c1); border-color: var(--c1); background: var(--c1l); }
+  .chip-red    { color: var(--c2); border-color: var(--c2); background: var(--c2l); }
+  .chip-yellow { color: var(--c3); border-color: var(--c3); background: var(--c3l); }
+  .chip-green  { color: var(--c4); border-color: var(--c4); background: var(--c4l); }
+
+  /* two-family overview diagram */
+  .families-diagram {
+    display: flex;
+    gap: 1rem;
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+
+  .family-box {
+    flex: 1;
+    min-width: 220px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .family-box.generative  { border-left: 3px solid var(--c0); }
+  .family-box.latent      { border-left: 3px solid var(--c1); }
+
+  .family-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+  }
+  .family-title.gen   { color: var(--c0); }
+  .family-title.lat   { color: var(--c1); }
+
+  .family-desc {
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .family-examples {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .family-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: var(--muted);
+    padding: 0 0.25rem;
+    align-self: center;
+  }
+
+  /* flow-row for the encoder → latent → decoder diagram */
+  .flow-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .flow-node {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.3rem 0.75rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text);
+    text-align: center;
+  }
+  .flow-node.accent-purple { border-color: var(--c0); color: var(--c0); }
+  .flow-node.accent-teal   { border-color: var(--c1); color: var(--c1); }
+  .flow-node.accent-red    { border-color: var(--c2); color: var(--c2); }
+  .flow-node.accent-yellow { border-color: var(--c3); color: var(--c3); }
+
+  .flow-arrow {
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* Section separator within explanation block */
+  .section-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 0.25rem 0;
+  }
+
+  /* Recap table */
+  .recap-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.78rem;
+  }
+
+  .recap-table th {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .recap-table td {
+    padding: 0.55rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .recap-table tr:last-child td { border-bottom: none; }
+
+  .recap-table td.cat {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .recap-table td b { color: var(--text); font-weight: 500; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>ssl-deep.js</h1>
+  <span class="subtitle">// Deep Self-Supervised Learning</span>
+</header>
+
+<div class="main">
+
+  <!-- Overview: two families -->
+  <div class="explanation">
+    <h2>// Überblick — Repräsentation lernen</h2>
+
+    <p>
+      Ein neuronales Netz bildet den Input auf eine niedrig-dimensionale Repräsentation ab:
+      <b>z = f<sub>θ</sub>(x) ∈ ℝ<sup>K</sup></b>, mit x ∈ ℝ<sup>d</sup>, K ≪ d.
+      θ sind die Netzparameter (Gewichte &amp; Biases). z heißt auch <b>Embedding</b>,
+      <b>latente Variable</b> oder <b>latente Repräsentation</b>.
+    </p>
+
+    <p>
+      Deep Self-Supervised Learning (SSL) lernt diese Repräsentation <b>ohne manuell annotierte Labels</b> —
+      die Supervisionsstruktur kommt aus den Daten selbst (Rekonstruktion, Augmentierungspaare, nächstes Token).
+      Es gibt zwei Hauptfamilien:
+    </p>
+
+    <div class="families-diagram">
+      <div class="family-box generative">
+        <span class="family-title gen">Generativ (Rekonstruktion)</span>
+        <span class="family-desc">
+          Der Verlust liegt im <b>Eingaberaum</b>: das Netz rekonstruiert x̂ ≈ x
+          aus der kompakten Repräsentation z.
+        </span>
+        <div class="family-examples">
+          <span class="chip chip-purple">Auto-encoder</span>
+          <span class="chip chip-purple">VAE</span>
+          <span class="chip chip-purple">Diffusion</span>
+        </div>
+        <div class="formula-box" style="margin-top:0.25rem">
+          \[ \mathcal{L} = \| x - \hat{x} \|^2 \]
+        </div>
+      </div>
+
+      <div class="family-arrow">↔</div>
+
+      <div class="family-box latent">
+        <span class="family-title lat">Latent-Space Learning</span>
+        <span class="family-desc">
+          Der Verlust liegt direkt im <b>Latenzraum</b>: Paare z, z' werden
+          verglichen oder regularisiert — kein Decoder nötig.
+        </span>
+        <div class="family-examples">
+          <span class="chip chip-teal">SimCLR</span>
+          <span class="chip chip-teal">CLIP</span>
+          <span class="chip chip-teal">SigLIP</span>
+          <span class="chip chip-teal">VICReg</span>
+          <span class="chip chip-teal">Barlow Twins</span>
+        </div>
+        <div class="formula-box" style="margin-top:0.25rem">
+          \[ \mathcal{L}(z,\, z') \]
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUTO-ENCODER -->
+  <div class="explanation">
+    <h2>// Auto-encoder — nichtlineares PCA</h2>
+
+    <div class="chip-row" style="margin-bottom:0.25rem">
+      <span class="chip chip-purple">Auto-encoder</span>
+      <span class="chip chip-purple">Rekonstruktion</span>
+    </div>
+
+    <p>
+      Encoder f<sub>θ</sub> und Decoder g<sub>φ</sub> sind tiefe Netze.
+      Der Encoder komprimiert x auf z ∈ ℝ<sup>K</sup>; der Decoder rekonstruiert daraus x̂.
+      Das Netz wird durch Minimierung des <b>Rekonstruktionsfehlers</b> trainiert —
+      ohne externe Labels.
+    </p>
+
+    <div class="flow-row">
+      <div class="flow-node">x ∈ ℝ<sup>d</sup></div>
+      <span class="flow-arrow">→ f<sub>θ</sub> →</span>
+      <div class="flow-node accent-purple">z ∈ ℝ<sup>K</sup></div>
+      <span class="flow-arrow">→ g<sub>φ</sub> →</span>
+      <div class="flow-node">x̂ ∈ ℝ<sup>d</sup></div>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <span class="step-num">01</span>
+        <div class="step-body">
+          <span class="step-title">Encoder &amp; Decoder</span>
+          <div class="formula-box">
+            \[ z = f_\theta(x) \in \mathbb{R}^K, \qquad \hat{x} = g_\varphi(z) \in \mathbb{R}^d \]
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">02</span>
+        <div class="step-body">
+          <span class="step-title">Rekonstruktionsverlust</span>
+          <div class="formula-box">
+            \[ \mathcal{L}(\theta, \varphi) = \frac{1}{N} \sum_{n=1}^{N} \| x_n - g_\varphi(f_\theta(x_n)) \|^2 \]
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">03</span>
+        <div class="step-body">
+          <span class="step-title">Analogie zu PCA</span>
+          <span class="step-desc">
+            Ein <b>linearer</b> Auto-encoder mit f<sub>θ</sub>(x) = W<sup>T</sup>x und g<sub>φ</sub>(z) = Wz,
+            trainiert mit MSE, lernt dieselben Unterräume wie PCA.
+            Tiefe (nichtlineare) Aktivierungsfunktionen erzeugen eine <b>nichtlineare Verallgemeinerung</b> von PCA.
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VAE -->
+  <div class="explanation">
+    <h2>// Variational Auto-Encoder (VAE)</h2>
+
+    <div class="chip-row" style="margin-bottom:0.25rem">
+      <span class="chip chip-purple">VAE</span>
+      <span class="chip chip-purple">Rekonstruktion</span>
+    </div>
+
+    <p>
+      Das VAE (Kingma &amp; Welling) erweitert den Auto-encoder um eine probabilistische Latenzstruktur.
+      Statt eines fixen z gibt der Encoder eine <b>Gaußverteilung</b> über z aus.
+    </p>
+
+    <div class="flow-row">
+      <div class="flow-node">x</div>
+      <span class="flow-arrow">→ q<sub>φ</sub>(z|x) →</span>
+      <div class="flow-node accent-purple">z ~ N(μ, σ²)</div>
+      <span class="flow-arrow">→ p<sub>θ</sub>(x|z) →</span>
+      <div class="flow-node">x̂</div>
+    </div>
+    <p style="margin-top:0.1rem; font-size:0.75rem; color:var(--muted);">
+      Prior: p<sub>θ</sub>(z) = N(0, I)
+    </p>
+
+    <div class="steps">
+      <div class="step">
+        <span class="step-num">01</span>
+        <div class="step-body">
+          <span class="step-title">Encoder-Ausgabe: Gaußverteilung</span>
+          <div class="formula-box">
+            \[ q_\varphi(z \mid x) = \mathcal{N}\!\left(z;\; \mu_\varphi(x),\; \sigma^2_\varphi(x)\right) \]
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">02</span>
+        <div class="step-body">
+          <span class="step-title">Reparameterisierungs-Trick</span>
+          <span class="step-desc">
+            Sampling wird differenzierbar, sodass Gradienten durch μ<sub>φ</sub> und σ<sub>φ</sub> fließen:
+          </span>
+          <div class="formula-box">
+            \[ z = \mu_\varphi(x) + \sigma_\varphi(x) \odot \varepsilon, \qquad \varepsilon \sim \mathcal{N}(0, I) \]
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">03</span>
+        <div class="step-body">
+          <span class="step-title">VAE-Verlust: Rekonstruktion + KL-Regularisierung</span>
+          <div class="formula-box">
+            \[ \mathcal{L} = \| x - \hat{x} \|^2 + \mathrm{KL}\!\left(q_\varphi(z \mid x) \;\|\; \mathcal{N}(0, I)\right) \]
+          </div>
+          <span class="step-desc">
+            Der KL-Term drängt die Posteriorverteilung zum Standard-Prior —
+            das erzwingt eine geordnete, kompakte Latenzstruktur.
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SigLIP -->
+  <div class="explanation">
+    <h2>// SigLIP — Binary Cross-Entropy auf Paaren</h2>
+
+    <div class="chip-row" style="margin-bottom:0.25rem">
+      <span class="chip chip-teal">SigLIP</span>
+      <span class="chip chip-teal">Latent-Space</span>
+      <span class="chip chip-teal">Kontrastiv</span>
+    </div>
+
+    <p>
+      Für einen Batch von N Paaren werden beide Seiten eingebettet.
+      Für jedes Paar (i, j) wird ein <b>Ähnlichkeitsscore</b> berechnet
+      und mit Binary Cross-Entropy als Positiv- oder Negativpaar klassifiziert.
+      (Quelle: Zhai et al., SigLIP — Google.)
+    </p>
+
+    <div class="steps">
+      <div class="step">
+        <span class="step-num">01</span>
+        <div class="step-body">
+          <span class="step-title">Embeddings &amp; Scores</span>
+          <div class="formula-box">
+            \[
+              z_i = f_\theta(x_i), \quad z_i^+ = f_\theta(x_i^+)
+            \]
+          </div>
+          <div class="formula-box" style="margin-top:0.35rem">
+            \[
+              s^+ = z_i^\top z_i^+ \;(\text{Positivpaar, } i=j), \qquad
+              s^- = z_i^\top z_j^+ \;(\text{Negativpaar, } i \neq j)
+            \]
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">02</span>
+        <div class="step-body">
+          <span class="step-title">SigLIP-Verlust</span>
+          <div class="formula-box">
+            \[
+              \mathcal{L}_\text{SigLIP} = \sum_{s^+} \mathrm{BCE}(1, s^+) + \sum_{s^-} \mathrm{BCE}(0, s^-)
+            \]
+          </div>
+          <div class="formula-box" style="margin-top:0.35rem">
+            \[
+              \mathrm{BCE}(y, s) = -\bigl[y \log \sigma(s) + (1-y)\log(1-\sigma(s))\bigr],
+              \quad \sigma = \text{Sigmoid}
+            \]
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SimCLR / CLIP -->
+  <div class="explanation">
+    <h2>// SimCLR &amp; CLIP — Contrastive Loss (NT-Xent)</h2>
+
+    <div class="chip-row" style="margin-bottom:0.25rem">
+      <span class="chip chip-teal">SimCLR</span>
+      <span class="chip chip-teal">CLIP</span>
+      <span class="chip chip-teal">Latent-Space</span>
+      <span class="chip chip-teal">Kontrastiv</span>
+    </div>
+
+    <p>
+      Zwei Augmentierungen desselben Bildes bilden ein <b>Positivpaar</b>.
+      Der Verlust zieht positive Paare zusammen und schiebt negative (alle anderen im Batch) auseinander.
+      (Quelle: Chen et al., SimCLR.)
+    </p>
+
+    <div class="steps">
+      <div class="step">
+        <span class="step-num">01</span>
+        <div class="step-body">
+          <span class="step-title">Kosinus-Ähnlichkeit</span>
+          <div class="formula-box">
+            \[
+              s_{ij} = \mathrm{sim}(z_i, z_j^+)
+                     = \frac{z_i^\top z_j^+}{\|z_i\|\,\|z_j^+\|}
+            \]
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">02</span>
+        <div class="step-body">
+          <span class="step-title">Softmax über den Batch</span>
+          <div class="formula-box">
+            \[
+              \hat{p}_i = \mathrm{softmax}_j\!\left(\frac{s_{ij}}{\tau}\right)
+            \]
+          </div>
+          <span class="step-desc">
+            τ ist die <b>Temperatur</b>; sie kontrolliert, wie scharf die Verteilung ist.
+          </span>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">03</span>
+        <div class="step-body">
+          <span class="step-title">NT-Xent-Verlust</span>
+          <span class="step-desc">
+            Für jeden Anker i liegt das zugehörige Positiv bei Index i —
+            der Verlust ist die Cross-Entropie:
+          </span>
+          <div class="formula-box">
+            \[
+              \ell_i = \mathrm{CE}(i,\, \hat{p}_i) = -\log \hat{p}_{i,i},
+              \qquad
+              \mathcal{L}_\text{SimCLR} = \frac{1}{N} \sum_{i=1}^{N} \ell_i
+            \]
+          </div>
+          <span class="step-desc">
+            Alle anderen Einträge z<sub>j</sub><sup>+</sup> (j ≠ i) dienen als <b>Negative</b>.
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VICReg / Barlow Twins -->
+  <div class="explanation">
+    <h2>// VICReg &amp; Barlow Twins — nicht-kontrastiv</h2>
+
+    <div class="chip-row" style="margin-bottom:0.25rem">
+      <span class="chip chip-yellow">VICReg</span>
+      <span class="chip chip-yellow">Barlow Twins</span>
+      <span class="chip chip-yellow">Latent-Space</span>
+      <span class="chip chip-yellow">Nicht-kontrastiv</span>
+    </div>
+
+    <p>
+      Statt expliziter Negativpaare regularisieren diese Methoden die Embedding-Statistik,
+      um den <b>Kollaps</b> (alle z gleich) zu verhindern.
+      Zwei augmentierte Ansichten x, x<sup>+</sup> erzeugen Embeddings z, z<sup>+</sup> ∈ ℝ<sup>K</sup>.
+    </p>
+
+    <div class="steps">
+      <div class="step">
+        <span class="step-num">01</span>
+        <div class="step-body">
+          <span class="step-title">Invarianz-Term — ziehe Positive zusammen</span>
+          <div class="formula-box">
+            \[
+              \mathcal{L}_\text{inv} = \frac{1}{N} \sum_{n=1}^{N} \| z_n - z_n^+ \|^2
+            \]
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">02</span>
+        <div class="step-body">
+          <span class="step-title">Regularisierung — verhindere Kollaps</span>
+          <span class="step-desc"><b>VICReg:</b> Varianz ≈ 1 auf der Diagonale, Kovarianz → 0 außerhalb:</span>
+          <div class="formula-box">
+            \[
+              C_{kk} \approx 1, \qquad C_{kj}^2 \to 0 \quad (k \neq j)
+            \]
+          </div>
+          <span class="step-desc" style="margin-top:0.3rem"><b>Barlow Twins:</b> Kreuzkorrelationsmatrix → Einheitsmatrix:</span>
+          <div class="formula-box">
+            \[
+              \mathrm{Corr}(z, z^+) \to I_K
+            \]
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">03</span>
+        <div class="step-body">
+          <span class="step-title">Gesamtverlust</span>
+          <div class="formula-box">
+            \[
+              \mathcal{L} = \mathcal{L}_\text{inv} + \lambda\, \mathcal{L}_\text{reg}
+            \]
+          </div>
+          <span class="step-desc">
+            Brücke zu PCA: Beide Methoden erzwingen <b>dekorrelierte, einheitsvariante Features</b> —
+            genau die Struktur des PCA-Whitenings.
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Auto-regressive -->
+  <div class="explanation">
+    <h2>// Auto-regressiv — Next-Token Prediction</h2>
+
+    <div class="chip-row" style="margin-bottom:0.25rem">
+      <span class="chip chip-green">GPT</span>
+      <span class="chip chip-green">WaveNet</span>
+      <span class="chip chip-green">Generativ</span>
+      <span class="chip chip-green">Next-Token</span>
+    </div>
+
+    <p>
+      Das Modell lernt, das nächste Token aus der Vergangenheit vorherzusagen:
+      p<sub>θ</sub>(x<sub>t</sub> | x<sub>&lt;t</sub>).
+      Die Labels kommen <b>direkt aus den Daten</b> — das nächste Token —
+      ohne manuelle Annotierung. Grundlage aller GPT-artigen Modelle.
+    </p>
+
+    <div class="steps">
+      <div class="step">
+        <span class="step-num">01</span>
+        <div class="step-body">
+          <span class="step-title">Cross-Entropie über die Sequenz</span>
+          <div class="formula-box">
+            \[
+              \mathcal{L} = \sum_{t=1}^{T} \mathrm{CE}\!\left(x_t^\text{next},\; \hat{x}_t\right)
+            \]
+          </div>
+          <span class="step-desc">
+            x<sub>t</sub><sup>next</sup> ist das wahre nächste Token,
+            x̂<sub>t</sub> die vorhergesagte Verteilung des Modells bei Position t.
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recap Table -->
+  <div class="explanation">
+    <h2>// Recap — Kategorien des Deep SSL</h2>
+
+    <table class="recap-table">
+      <thead>
+        <tr>
+          <th>Kategorie</th>
+          <th>Algorithmen</th>
+          <th>Verlustfunktion</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="cat" style="color:var(--c0)">Generativ<br><span style="color:var(--muted);font-weight:400">(Rekonstruktion)</span></td>
+          <td>
+            <div class="chip-row">
+              <span class="chip chip-purple">Auto-encoder</span>
+              <span class="chip chip-purple">VAE</span>
+              <span class="chip chip-purple">Diffusion</span>
+            </div>
+          </td>
+          <td>
+            <div class="formula-box" style="font-size:0.78rem">\(\displaystyle\| x - \hat{x} \|^2\)</div>
+          </td>
+        </tr>
+        <tr>
+          <td class="cat" style="color:var(--c1)">Latent<br><span style="color:var(--muted);font-weight:400">(kontrastiv)</span></td>
+          <td>
+            <div class="chip-row">
+              <span class="chip chip-teal">SimCLR</span>
+              <span class="chip chip-teal">CLIP</span>
+              <span class="chip chip-teal">SigLIP</span>
+            </div>
+          </td>
+          <td>
+            <div class="formula-box" style="font-size:0.78rem">\(\mathrm{CE} / \mathrm{BCE}\) auf paarweisen Ähnlichkeiten</div>
+          </td>
+        </tr>
+        <tr>
+          <td class="cat" style="color:var(--c3)">Latent<br><span style="color:var(--muted);font-weight:400">(nicht-kontrastiv)</span></td>
+          <td>
+            <div class="chip-row">
+              <span class="chip chip-yellow">VICReg</span>
+              <span class="chip chip-yellow">Barlow Twins</span>
+            </div>
+          </td>
+          <td>
+            <div class="formula-box" style="font-size:0.78rem">\(\mathcal{L}_\text{inv} + \lambda\,\mathcal{L}_\text{reg}\)</div>
+          </td>
+        </tr>
+        <tr>
+          <td class="cat" style="color:var(--c4)">Next-Token<br><span style="color:var(--muted);font-weight:400">(auto-regressiv)</span></td>
+          <td>
+            <div class="chip-row">
+              <span class="chip chip-green">GPT</span>
+              <span class="chip chip-green">WaveNet</span>
+            </div>
+          </td>
+          <td>
+            <div class="formula-box" style="font-size:0.78rem">\(\displaystyle\sum_t \mathrm{CE}(x_t^\text{next}, \hat{x}_t)\)</div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="src-note">// Quelle: Foliensatz 04 — Unsupervised Learning (ML SS2026)</p>
+  </div>
+
+</div>
+</body>
+</html>

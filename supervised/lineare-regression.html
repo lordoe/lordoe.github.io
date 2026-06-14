@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lineare Regression</title>
+<script>
+  MathJax = {
+    tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+    options: { skipHtmlTags: ['script','noscript','style','textarea'] }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0e11;
+    --bg2: #16161b;
+    --bg3: #1e1e26;
+    --border: rgba(255,255,255,0.08);
+    --text: #e8e6f0;
+    --muted: #7a7890;
+    --accent: #2970c4;
+    --accent2: #4ecdc4;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem;
+  }
+
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
+
+  header {
+    width: 100%;
+    max-width: 860px;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  h1 {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.05rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+  }
+
+  .subtitle {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .main {
+    width: 100%;
+    max-width: 860px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+  }
+
+  button {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    letter-spacing: 0.02em;
+  }
+  button:hover { background: rgba(41,112,196,0.12); border-color: var(--accent); color: var(--accent); }
+  button.primary { background: rgba(41,112,196,0.15); border-color: var(--accent); color: var(--accent); }
+  button:active { transform: scale(0.97); }
+
+  label { font-size: 0.75rem; color: var(--muted); font-family: 'DM Mono', monospace; display: flex; align-items: center; gap: 6px; }
+
+  input[type=checkbox] { accent-color: var(--accent); }
+
+  .stats {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+  .stat span { color: var(--text); font-weight: 500; }
+
+  canvas {
+    display: block;
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    cursor: crosshair;
+  }
+
+  .hint {
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    text-align: center;
+    margin-top: 0.25rem;
+  }
+
+  /* ── explanation ── */
+  .explanation {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .explanation h2 {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .explanation p {
+    font-size: 0.82rem;
+    line-height: 1.65;
+    color: var(--muted);
+  }
+  .explanation p b { color: var(--text); font-weight: 500; }
+
+  .steps { display: flex; flex-direction: column; gap: 0.75rem; }
+
+  .step {
+    display: grid;
+    grid-template-columns: 1.6rem 1fr;
+    gap: 0.5rem 0.75rem;
+    align-items: start;
+  }
+
+  .step-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    padding-top: 0.1rem;
+  }
+
+  .step-body { display: flex; flex-direction: column; gap: 0.35rem; }
+  .step-title { font-size: 0.82rem; font-weight: 500; color: var(--text); }
+  .step-desc { font-size: 0.78rem; color: var(--muted); line-height: 1.55; }
+  .step-desc b { color: var(--text); font-weight: 500; }
+
+  .formula-box {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.4rem 1rem;
+    color: var(--text);
+    overflow-x: auto;
+  }
+
+  .formula-box mjx-container { color: var(--text) !important; }
+
+  .src-note {
+    font-size: 0.7rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    border-top: 1px solid var(--border);
+    padding-top: 0.75rem;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>lineare-regression.js</h1>
+  <span class="subtitle">// Supervised Learning — interaktive Visualisierung</span>
+</header>
+
+<div class="main">
+
+  <div class="controls">
+    <button onclick="clearPoints()" class="primary">↺ leeren</button>
+    <button onclick="addRandom()">⊕ zufällige Punkte</button>
+    <label><input type="checkbox" id="show-residuals" checked onchange="draw()"> Residuen zeigen</label>
+  </div>
+
+  <div class="stats">
+    <div class="stat">punkte <span id="pt-count">0</span></div>
+    <div class="stat">θ₀ (intercept) <span id="stat-t0">—</span></div>
+    <div class="stat">θ₁ (slope) <span id="stat-t1">—</span></div>
+    <div class="stat">MSE <span id="stat-mse">—</span></div>
+    <div class="stat">R² <span id="stat-r2">—</span></div>
+  </div>
+
+  <canvas id="c"></canvas>
+  <div class="hint">klick auf leinwand → punkt hinzufügen &nbsp;·&nbsp; rechtsklick → punkt entfernen</div>
+
+  <div class="explanation">
+    <h2>// lineare regression — erklärung</h2>
+
+    <p>
+      Die <b>lineare Regression</b> modelliert den Zusammenhang zwischen einer Eingabe \(x\) und einer
+      kontinuierlichen Ausgabe \(y\) durch eine lineare Hypothese. Ziel ist es, die Parameter
+      \(\theta_0, \theta_1\) so zu wählen, dass der mittlere quadratische Fehler minimiert wird.
+    </p>
+
+    <div class="steps">
+
+      <div class="step">
+        <span class="step-num">01</span>
+        <div class="step-body">
+          <span class="step-title">Hypothese</span>
+          <span class="step-desc">Das Modell sagt für einen Eingabewert \(x\) folgendes voraus:</span>
+          <div class="formula-box">
+            \[ h_\theta(x) = \theta_0 + \theta_1 \cdot x \]
+          </div>
+          <span class="step-desc">
+            <b>\(\theta_0\)</b> ist der y-Achsenabschnitt (Intercept),
+            <b>\(\theta_1\)</b> die Steigung (Slope).
+            Bei mehreren Features verallgemeinert sich das zur <b>multiplen linearen Regression</b>:
+            \(h_\theta(\mathbf{x}) = \boldsymbol{\theta}^\top \mathbf{x}\).
+          </span>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">02</span>
+        <div class="step-body">
+          <span class="step-title">Kostenfunktion — Mean Squared Error (MSE)</span>
+          <span class="step-desc">
+            Die Güte der Parameter wird durch den mittleren quadratischen Fehler über alle
+            \(n\) Trainingsbeispiele gemessen:
+          </span>
+          <div class="formula-box">
+            \[ J(\theta_0, \theta_1) = \frac{1}{n} \sum_{i=1}^{n} \bigl( h_\theta(x_i) - y_i \bigr)^2 \]
+          </div>
+          <span class="step-desc">
+            Die Residuen \(h_\theta(x_i) - y_i\) (vertikale Abstände) werden quadriert,
+            damit positive und negative Abweichungen sich nicht aufheben.
+          </span>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">03</span>
+        <div class="step-body">
+          <span class="step-title">Normalengleichung (analytische Lösung)</span>
+
+          <span class="step-desc">
+            <b>Idee:</b> Da \(J\) eine konvexe, quadratische Funktion ist, hat sie genau ein Minimum.
+            Dort ist die Ableitung gleich null — wir setzen also \(\nabla_{\boldsymbol{\theta}}\, J = 0\) und lösen nach \(\boldsymbol{\theta}\).
+          </span>
+
+          <span class="step-desc" style="margin-top:4px">
+            <b>Schritt 1 — Matrixform von J.</b>
+            Schreibe alle \(n\) Trainingsbeispiele in eine <b>Designmatrix</b> \(\mathbf{X} \in \mathbb{R}^{n \times 2}\)
+            (erste Spalte Einsen für den Intercept, zweite Spalte die Eingabewerte)
+            und die Zielwerte in einen Vektor \(\mathbf{y} \in \mathbb{R}^n\):
+          </span>
+          <div class="formula-box">
+            \[
+              \mathbf{X} = \begin{pmatrix} 1 & x_1 \\ 1 & x_2 \\ \vdots & \vdots \\ 1 & x_n \end{pmatrix},
+              \quad
+              \mathbf{y} = \begin{pmatrix} y_1 \\ y_2 \\ \vdots \\ y_n \end{pmatrix},
+              \quad
+              \boldsymbol{\theta} = \begin{pmatrix} \theta_0 \\ \theta_1 \end{pmatrix}
+            \]
+          </div>
+          <span class="step-desc">
+            Dann ist der Vektor der Vorhersagen \(\hat{\mathbf{y}} = \mathbf{X}\boldsymbol{\theta}\),
+            und die Kostenfunktion lässt sich kompakt schreiben als:
+          </span>
+          <div class="formula-box">
+            \[ J(\boldsymbol{\theta}) = \frac{1}{n}\,(\mathbf{y} - \mathbf{X}\boldsymbol{\theta})^\top(\mathbf{y} - \mathbf{X}\boldsymbol{\theta}) \]
+          </div>
+
+          <span class="step-desc" style="margin-top:4px">
+            <b>Schritt 2 — Gradient berechnen.</b>
+            Wir leiten \(J\) nach \(\boldsymbol{\theta}\) ab. Mit den Regeln der Matrixableitung ergibt sich:
+          </span>
+          <div class="formula-box">
+            \[ \nabla_{\boldsymbol{\theta}}\, J = -\frac{2}{n}\,\mathbf{X}^\top(\mathbf{y} - \mathbf{X}\boldsymbol{\theta}) \]
+          </div>
+          <span class="step-desc">
+            Anschaulich: \(\mathbf{X}^\top\) „projiziert" die Residuen \((\mathbf{y} - \mathbf{X}\boldsymbol{\theta})\) zurück in den Parameter-Raum.
+            Der Gradient gibt die Richtung des steilsten Anstiegs an — am Minimum ist er null.
+          </span>
+
+          <span class="step-desc" style="margin-top:4px">
+            <b>Schritt 3 — Gradient null setzen und umformen.</b>
+          </span>
+          <div class="formula-box">
+            \[
+              -\frac{2}{n}\,\mathbf{X}^\top(\mathbf{y} - \mathbf{X}\boldsymbol{\theta}) = 0
+              \;\;\Longrightarrow\;\;
+              \mathbf{X}^\top\mathbf{X}\,\boldsymbol{\theta} = \mathbf{X}^\top\mathbf{y}
+            \]
+          </div>
+          <span class="step-desc">
+            Das ist die <b>Normalengleichung</b>. Wenn \(\mathbf{X}^\top\mathbf{X}\) invertierbar ist
+            (d.h. keine linear abhängigen Features), folgt die eindeutige Lösung:
+          </span>
+          <div class="formula-box">
+            \[ \boldsymbol{\theta}^* = (\mathbf{X}^\top \mathbf{X})^{-1} \mathbf{X}^\top \mathbf{y} \]
+          </div>
+
+          <span class="step-desc" style="margin-top:4px">
+            <b>Vereinfachung für ein Feature.</b>
+            Mit \(\bar{x} = \frac{1}{n}\sum x_i\) und \(\bar{y} = \frac{1}{n}\sum y_i\):
+          </span>
+          <div class="formula-box">
+            \[
+              \theta_1 = \frac{\sum_{i=1}^n (x_i - \bar{x})(y_i - \bar{y})}{\sum_{i=1}^n (x_i - \bar{x})^2}
+              \qquad
+              \theta_0 = \bar{y} - \theta_1\,\bar{x}
+            \]
+          </div>
+          <span class="step-desc">
+            Zähler = Kovarianz von \(x\) und \(y\), Nenner = Varianz von \(x\).
+            \(\theta_1\) gibt an, wie stark \(y\) im Schnitt steigt, wenn \(x\) um 1 wächst.
+            \(\theta_0\) verschiebt die Gerade so, dass sie durch den Schwerpunkt \((\bar{x}, \bar{y})\) geht.
+          </span>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">04</span>
+        <div class="step-body">
+          <span class="step-title">Bestimmtheitsmaß R²</span>
+          <span class="step-desc">
+            R² misst, welchen Anteil der Varianz in \(y\) das Modell erklärt (\(0 \le R^2 \le 1\)):
+          </span>
+          <div class="formula-box">
+            \[ R^2 = 1 - \frac{\sum_{i=1}^n (y_i - h_\theta(x_i))^2}{\sum_{i=1}^n (y_i - \bar{y})^2} \]
+          </div>
+          <span class="step-desc">
+            \(R^2 = 1\) bedeutet perfekte Vorhersage, \(R^2 = 0\) bedeutet das Modell ist nicht besser als der Mittelwert.
+          </span>
+        </div>
+      </div>
+
+    </div>
+
+    <p class="src-note">// Quelle: Foliensatz 02 — Predicting Numeric Values (ML SS2026)</p>
+  </div>
+
+</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let pts = [];
+
+function resize() {
+  const W = Math.min(860, window.innerWidth - 32);
+  canvas.width = W;
+  canvas.height = Math.round(W * 0.55);
+  draw();
+}
+window.addEventListener('resize', resize);
+
+function toCanvas(px, py) {
+  const W = canvas.width, H = canvas.height;
+  const pad = 40;
+  return [pad + px * (W - 2*pad), H - pad - py * (H - 2*pad)];
+}
+
+function fromCanvas(cx, cy) {
+  const W = canvas.width, H = canvas.height;
+  const pad = 40;
+  return [(cx - pad) / (W - 2*pad), (H - pad - cy) / (H - 2*pad)];
+}
+
+function regression() {
+  if (pts.length < 2) return null;
+  const n = pts.length;
+  const mx = pts.reduce((s,p) => s+p[0], 0) / n;
+  const my = pts.reduce((s,p) => s+p[1], 0) / n;
+  const num = pts.reduce((s,p) => s + (p[0]-mx)*(p[1]-my), 0);
+  const den = pts.reduce((s,p) => s + (p[0]-mx)**2, 0);
+  if (den === 0) return null;
+  const t1 = num / den;
+  const t0 = my - t1 * mx;
+  return { t0, t1 };
+}
+
+function updateStats(reg) {
+  const n = pts.length;
+  document.getElementById('pt-count').textContent = n;
+  if (!reg || n < 2) {
+    ['stat-t0','stat-t1','stat-mse','stat-r2'].forEach(id => {
+      document.getElementById(id).textContent = '—';
+    });
+    return;
+  }
+  const { t0, t1 } = reg;
+  const my = pts.reduce((s,p) => s+p[1], 0) / n;
+  const mse = pts.reduce((s,p) => s + (t0 + t1*p[0] - p[1])**2, 0) / n;
+  const ssTot = pts.reduce((s,p) => s + (p[1]-my)**2, 0);
+  const ssRes = pts.reduce((s,p) => s + (t0 + t1*p[0] - p[1])**2, 0);
+  const r2 = ssTot === 0 ? 1 : 1 - ssRes/ssTot;
+  document.getElementById('stat-t0').textContent = t0.toFixed(3);
+  document.getElementById('stat-t1').textContent = t1.toFixed(3);
+  document.getElementById('stat-mse').textContent = mse.toFixed(4);
+  document.getElementById('stat-r2').textContent = r2.toFixed(4);
+}
+
+function draw() {
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#16161b';
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 10; i++) {
+    const [x0, y0] = toCanvas(i/10, 0);
+    const [x1, y1] = toCanvas(i/10, 1);
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    const [xa, ya] = toCanvas(0, i/10);
+    const [xb, yb] = toCanvas(1, i/10);
+    ctx.beginPath(); ctx.moveTo(xa, ya); ctx.lineTo(xb, yb); ctx.stroke();
+  }
+
+  const reg = regression();
+
+  // Regression line
+  if (reg) {
+    const { t0, t1 } = reg;
+    const [x0, y0] = toCanvas(0, t0);
+    const [x1, y1] = toCanvas(1, t0 + t1);
+    ctx.beginPath();
+    ctx.moveTo(x0, y0); ctx.lineTo(x1, y1);
+    ctx.strokeStyle = 'rgba(41,112,196,0.85)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Residuals
+    if (document.getElementById('show-residuals').checked) {
+      pts.forEach(p => {
+        const pred = t0 + t1 * p[0];
+        const [px, py] = toCanvas(p[0], p[1]);
+        const [, ry] = toCanvas(p[0], pred);
+        ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px, ry);
+        ctx.strokeStyle = 'rgba(255,107,107,0.5)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      });
+    }
+  }
+
+  // Points
+  pts.forEach(p => {
+    const [cx, cy] = toCanvas(p[0], p[1]);
+    ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(41,112,196,0.9)';
+    ctx.fill();
+    ctx.strokeStyle = '#0e0e11';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  });
+
+  updateStats(reg);
+}
+
+canvas.addEventListener('click', e => {
+  const rect = canvas.getBoundingClientRect();
+  const sx = canvas.width / rect.width;
+  const sy = canvas.height / rect.height;
+  const [px, py] = fromCanvas((e.clientX - rect.left)*sx, (e.clientY - rect.top)*sy);
+  if (px < 0 || px > 1 || py < 0 || py > 1) return;
+  pts.push([px, py]);
+  draw();
+});
+
+canvas.addEventListener('contextmenu', e => {
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  const sx = canvas.width / rect.width;
+  const sy = canvas.height / rect.height;
+  const [mx, my] = fromCanvas((e.clientX - rect.left)*sx, (e.clientY - rect.top)*sy);
+  let best = -1, bestD = Infinity;
+  pts.forEach(([px, py], i) => {
+    const d = (px-mx)**2 + (py-my)**2;
+    if (d < bestD) { bestD = d; best = i; }
+  });
+  if (best >= 0 && bestD < 0.005) pts.splice(best, 1);
+  draw();
+});
+
+function clearPoints() { pts = []; draw(); }
+
+function addRandom() {
+  const n = 20;
+  const t1 = (Math.random() - 0.5) * 2;
+  const t0 = Math.random() * 0.4 + 0.3 - t1 * 0.5;
+  for (let i = 0; i < n; i++) {
+    const x = Math.random() * 0.85 + 0.05;
+    const y = Math.max(0.02, Math.min(0.98, t0 + t1*x + (Math.random()-0.5)*0.18));
+    pts.push([x, y]);
+  }
+  draw();
+}
+
+resize();
+addRandom();
+</script>
+</body>
+</html>

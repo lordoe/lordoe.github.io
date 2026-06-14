@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Naive Bayes &amp; Covering Algorithms</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script>
+  MathJax = {
+    tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+    options: { skipHtmlTags: ['script','noscript','style','textarea'] }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:     #0f0f11;
+  --bg2:    #17171a;
+  --bg3:    #1e1e22;
+  --border: rgba(255,255,255,0.07);
+  --text:   #e8e6e0;
+  --muted:  #6a6866;
+  --accent: #2970c4;
+  --accent-soft: rgba(41,112,196,0.12);
+  --green:  #3abf7e;
+  --red:    #e05252;
+  --yellow: #d4a843;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 300;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2.5rem 1rem 4rem;
+}
+
+.page {
+  width: 100%;
+  max-width: 880px;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* ── Header ── */
+header {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+h1 {
+  font-family: 'DM Mono', monospace;
+  font-size: 1.05rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+.subtitle {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+}
+
+/* ── Section ── */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.section-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.section-desc {
+  font-size: 0.875rem;
+  color: var(--muted);
+  line-height: 1.65;
+  max-width: 72ch;
+}
+
+/* ── Card ── */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+}
+.card-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
+}
+
+/* ── Formula ── */
+.formula-block {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.85rem;
+  line-height: 2;
+  color: var(--text);
+  overflow-x: auto;
+}
+.formula-block .comment {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.f-accent { color: var(--accent); }
+.f-green  { color: var(--green);  }
+.f-yellow { color: var(--yellow); }
+
+/* ── Two-col grid ── */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+@media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+
+/* ── Dataset table ── */
+.dataset-wrap {
+  overflow-x: auto;
+}
+table.dataset {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem;
+}
+table.dataset th {
+  color: var(--muted);
+  text-align: left;
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+table.dataset td {
+  padding: 4px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  white-space: nowrap;
+}
+table.dataset tr.highlight-row td { background: rgba(41,112,196,0.08); }
+table.dataset tr.covered td { opacity: 0.35; text-decoration: line-through; }
+.badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-family: 'DM Mono', monospace;
+  font-weight: 500;
+}
+.badge-hard   { background: rgba(41,112,196,0.18); color: #6db3f5; }
+.badge-soft   { background: rgba(58,191,126,0.15); color: #3abf7e; }
+.badge-none   { background: rgba(255,255,255,0.05); color: var(--muted); }
+
+/* ── Covering demo ── */
+.rule-display {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.85rem 1.1rem;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.83rem;
+  min-height: 2.8rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.rule-kw  { color: var(--muted); }
+.rule-cond { color: var(--accent); }
+.rule-then { color: var(--yellow); }
+.rule-placeholder { color: var(--muted); font-style: italic; }
+
+.pt-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.6rem;
+}
+.pt-card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.85rem;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  cursor: default;
+  transition: border-color 0.15s, background 0.15s;
+}
+.pt-card.best-card {
+  border-color: var(--accent);
+  background: rgba(41,112,196,0.1);
+}
+.pt-card.chosen-card {
+  border-color: var(--green);
+  background: rgba(58,191,126,0.08);
+}
+.pt-test  { color: var(--text); font-weight: 500; }
+.pt-ratio { color: var(--accent); }
+.pt-bar-wrap { background: rgba(255,255,255,0.05); border-radius: 3px; height: 4px; width: 100%; margin-top: 3px; }
+.pt-bar { height: 4px; border-radius: 3px; background: var(--accent); transition: width 0.4s ease; }
+.pt-note  { color: var(--muted); font-size: 0.66rem; }
+
+.step-info {
+  background: rgba(41,112,196,0.07);
+  border: 1px solid rgba(41,112,196,0.2);
+  border-radius: 8px;
+  padding: 0.7rem 1rem;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--text);
+  line-height: 1.55;
+  min-height: 2.8rem;
+}
+.step-info .hl { color: var(--accent); }
+.step-info .hl-g { color: var(--green); }
+.step-info .hl-y { color: var(--yellow); }
+
+.final-rule-box {
+  background: rgba(58,191,126,0.07);
+  border: 1px solid rgba(58,191,126,0.25);
+  border-radius: 8px;
+  padding: 0.85rem 1.1rem;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.82rem;
+  color: var(--green);
+  display: none;
+}
+
+/* ── Controls ── */
+.controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+button {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 6px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  letter-spacing: 0.02em;
+}
+button:hover { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+button.primary { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+button:active { transform: scale(0.97); }
+button:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.step-counter {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+/* ── Insights ── */
+.insight-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+@media (max-width: 580px) { .insight-grid { grid-template-columns: 1fr; } }
+.insight-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.insight-card h3 {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+}
+.insight-card p {
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.insight-card ul {
+  padding-left: 1rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.8;
+}
+.insight-card li { list-style: "→  "; }
+
+/* ── Divider ── */
+.divider {
+  border: none;
+  border-top: 1px solid var(--border);
+}
+mjx-container { color: var(--text) !important; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ══ HEADER ══ -->
+  <header>
+    <h1>Naive Bayes &amp; Covering Algorithms</h1>
+    <span class="subtitle">// 184.702 Machine Learning — Nysret Musliu</span>
+  </header>
+
+  <!-- ══ PART 1: NAIVE BAYES ══ -->
+  <section class="section">
+    <div class="section-title">Part 1 — Naive Bayes</div>
+    <p class="section-desc">
+      A simple probabilistic classifier based on Bayes' theorem with the "naive" assumption that all
+      features are conditionally independent given the class. Despite the strong assumption, it performs
+      surprisingly well in practice.
+    </p>
+
+    <!-- Bayes Theorem -->
+    <div class="card">
+      <div class="card-title">Bayes' Theorem</div>
+      <div class="formula-block">
+        \[ P(C \mid \mathbf{x}) = \frac{P(\mathbf{x} \mid C) \cdot P(C)}{P(\mathbf{x})} \]
+        <span class="comment">
+          &nbsp;  posterior &nbsp;&nbsp;= likelihood &nbsp;· prior &nbsp;/ evidence
+        </span>
+      </div>
+      <div style="margin-top:.75rem; font-size:.82rem; color:var(--muted); line-height:1.65;">
+        For classification we only need to find the class that <em>maximises</em> the posterior —
+        <code style="font-family:'DM Mono',monospace;font-size:.78rem;color:var(--text)">P(x)</code>
+        is identical for all classes and can be dropped.
+      </div>
+    </div>
+
+    <div class="two-col">
+      <!-- Naive assumption -->
+      <div class="card">
+        <div class="card-title">Naive Independence Assumption</div>
+        <div class="formula-block" style="font-size:.78rem;">
+          \[ P(\mathbf{x} \mid C) \approx \prod_i P(x_i \mid C) \]
+          <span class="comment">features assumed independent given class</span>
+        </div>
+        <p style="margin-top:.75rem;font-size:.8rem;color:var(--muted);line-height:1.6;">
+          Each feature contributes its own conditional probability, estimated separately from training data.
+          For discrete attributes the estimate is straightforward frequency counting.
+        </p>
+      </div>
+      <!-- Classification rule -->
+      <div class="card">
+        <div class="card-title">Classification Rule</div>
+        <div class="formula-block" style="font-size:.78rem;">
+          \[ \hat{C} = \arg\max_C \; P(C) \cdot \prod_i P(x_i \mid C) \]
+          <span class="comment">pick the class with highest score</span>
+        </div>
+        <p style="margin-top:.75rem;font-size:.8rem;color:var(--muted);line-height:1.6;">
+          Works well even when the independence assumption is violated.
+          Robustness comes from the fact that we only need the relative ranking of classes, not exact probabilities.
+        </p>
+      </div>
+    </div>
+
+    <!-- Contact lens example -->
+    <div class="card">
+      <div class="card-title">Example — Contact Lens Recommendation</div>
+      <p style="font-size:.82rem;color:var(--muted);line-height:1.6;margin-bottom:.9rem;">
+        24 instances, 4 features, 3 classes: <span style="color:#6db3f5">Hard</span> /
+        <span style="color:#3abf7e">Soft</span> / <span style="color:var(--muted)">None</span>.
+        The table shows all instances used in the Covering demo below.
+      </p>
+      <div class="dataset-wrap">
+        <table class="dataset" id="nb-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Age</th>
+              <th>Prescription</th>
+              <th>Astigmatism</th>
+              <th>Tear Rate</th>
+              <th>Lenses</th>
+            </tr>
+          </thead>
+          <tbody id="nb-tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- NB calculation example -->
+      <div style="margin-top:1.1rem;">
+        <div class="card-title" style="margin-bottom:.5rem;">Worked Example — classify: Age=Young, Prescription=Myope, Astigmatism=Yes, Tear=Normal</div>
+        <div class="formula-block" style="font-size:.76rem;line-height:1.9;">
+          <span class="comment">// Prior probabilities from dataset</span><br>
+          <span class="f-yellow">P(Hard)</span> = 4/24 &nbsp;&nbsp;
+          <span class="f-green">P(Soft)</span>  = 5/24 &nbsp;&nbsp;
+          P(None) = 15/24<br><br>
+          <span class="comment">// Score for class = Hard</span><br>
+          <span class="f-accent">score(Hard)</span> = P(Hard) · P(Young|Hard) · P(Myope|Hard) · P(Yes|Hard) · P(Normal|Hard)<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+          = (4/24) · (2/4) · (3/4) · (4/4) · (4/4) ≈ <span class="f-accent">0.0625</span><br><br>
+          <span class="comment">// Score for class = Soft (all astigmatic=yes instances → Soft=0)</span><br>
+          <span class="f-green">score(Soft)</span> = P(Soft) · P(Young|Soft) · P(Myope|Soft) · <span class="f-yellow">P(Yes|Soft)</span> · P(Normal|Soft)<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+          = (5/24) · (2/5) · (1/5) · <span class="f-yellow">(0/5)</span> · (5/5) = <span class="f-green">0</span><br><br>
+          <span class="comment">// → Predicted class: Hard ✓</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ══ PART 2: COVERING ALGORITHMS ══ -->
+  <section class="section">
+    <div class="section-title">Part 2 — Covering Algorithms (Rule Learning)</div>
+    <p class="section-desc">
+      Covering algorithms learn a set of IF-THEN rules by repeatedly finding a rule that covers positive
+      examples of a target class, then removing those examples and repeating until all are covered.
+    </p>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">Simple Covering Algorithm</div>
+        <ol style="font-size:.82rem;color:var(--muted);line-height:1.9;padding-left:1.1rem;">
+          <li>Start with empty rule: <code style="font-family:'DM Mono',monospace;font-size:.76rem;color:var(--text)">If ? → class</code></li>
+          <li>Add the test that maximises <span style="color:var(--accent)">p/t</span> (positive / total covered)</li>
+          <li>Stop when <span style="color:var(--accent)">p/t = 1</span> or no improvement possible</li>
+          <li>Remove covered positive instances from dataset</li>
+          <li>Repeat until all positives are covered</li>
+        </ol>
+      </div>
+      <div class="card">
+        <div class="card-title">p/t Ratio</div>
+        <div class="formula-block" style="font-size:.8rem;">
+          \[ \frac{p}{t} = \frac{\text{positive examples covered}}{\text{total examples covered}} \]
+        </div>
+        <p style="margin-top:.75rem;font-size:.8rem;color:var(--muted);line-height:1.6;">
+          We greedily pick the test with the highest ratio. When there are ties,
+          prefer the test that covers <em>more</em> positive instances (higher absolute p).
+        </p>
+      </div>
+    </div>
+
+    <!-- ══ INTERACTIVE DEMO ══ -->
+    <div class="card">
+      <div class="card-title">Interactive Demo — Learn rule for: Recommended = Hard</div>
+
+      <!-- Current rule -->
+      <div style="margin-bottom:.75rem;">
+        <div style="font-family:'DM Mono',monospace;font-size:.66rem;color:var(--muted);letter-spacing:.05em;margin-bottom:.35rem;">CURRENT RULE</div>
+        <div class="rule-display" id="rule-display">
+          <span class="rule-kw">If</span>
+          <span class="rule-placeholder" id="rule-conditions">&nbsp;?&nbsp;</span>
+          <span class="rule-kw">then</span>
+          <span class="rule-then">recommendation = hard</span>
+        </div>
+      </div>
+
+      <!-- Step info -->
+      <div class="step-info" id="step-info">
+        Press <strong>Next Step</strong> to start. The algorithm will greedily add tests to the rule.
+      </div>
+
+      <!-- p/t ratio cards -->
+      <div style="margin:.85rem 0 .5rem;">
+        <div style="font-family:'DM Mono',monospace;font-size:.66rem;color:var(--muted);letter-spacing:.05em;margin-bottom:.5rem;">
+          CANDIDATE TESTS — p/t ratios
+          <span id="pool-size" style="color:var(--text)"></span>
+        </div>
+        <div class="pt-grid" id="pt-grid"></div>
+      </div>
+
+      <!-- Final rule -->
+      <div class="final-rule-box" id="final-rule-box">
+        ✓ &nbsp; IF astigmatism=yes AND tear production rate=normal AND spectacle prescription=myope
+        <br>&nbsp;&nbsp;&nbsp;&nbsp; THEN recommendation = hard &nbsp; (covers 3/3 remaining positives)
+      </div>
+
+      <!-- Controls -->
+      <div class="controls" style="margin-top:1rem;">
+        <button class="primary" id="btn-next" onclick="nextStep()">Next Step →</button>
+        <button id="btn-reset" onclick="resetDemo()">Reset</button>
+        <span class="step-counter" id="step-counter">Step 0 / 3</span>
+      </div>
+    </div>
+
+    <!-- Dataset with highlights -->
+    <div class="card">
+      <div class="card-title">Dataset — instances remaining / covered by current rule</div>
+      <div class="dataset-wrap">
+        <table class="dataset" id="demo-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Age</th>
+              <th>Prescription</th>
+              <th>Astigmatism</th>
+              <th>Tear Rate</th>
+              <th>Lenses</th>
+            </tr>
+          </thead>
+          <tbody id="demo-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ══ INSIGHTS ══ -->
+  <section class="section">
+    <div class="section-title">Key Insights</div>
+    <div class="insight-grid">
+      <div class="insight-card">
+        <h3>Rules vs. Decision Trees</h3>
+        <ul>
+          <li>Decision trees can have <em>replicated subtrees</em> in different branches</li>
+          <li>Rule sets avoid replication — each rule is independent</li>
+          <li>Rules are often more readable for multi-class problems</li>
+          <li>Covering concentrates on one class at a time</li>
+        </ul>
+      </div>
+      <div class="insight-card">
+        <h3>Naive Bayes Strengths</h3>
+        <ul>
+          <li>Very fast training and prediction</li>
+          <li>Works well with high-dimensional feature spaces</li>
+          <li>Handles missing data gracefully</li>
+          <li>Robust: needs relative ordering, not exact probabilities</li>
+        </ul>
+      </div>
+      <div class="insight-card">
+        <h3>Two Approaches to Rules</h3>
+        <p>
+          (1) Convert a decision tree to rules — then prune each rule independently.<br><br>
+          (2) Generate rules directly with covering — greedily specialise until p/t = 1,
+          then repeat for remaining instances.
+        </p>
+      </div>
+      <div class="insight-card">
+        <h3>When Covering Stops</h3>
+        <ul>
+          <li>p/t = 1.0: rule is perfectly precise</li>
+          <li>No test improves p/t further</li>
+          <li>All positive instances of the class are covered</li>
+          <li>Remaining instances passed to the next rule</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+<p style="font-size:0.7rem;color:var(--muted);font-family:'DM Mono',monospace;border-top:1px solid var(--border);padding-top:0.75rem;margin-top:1rem;">// Quelle: Foliensatz 02 — Covering Algorithms, Naive Bayes (ML SS2026)</p>
+</div><!-- .page -->
+
+<script>
+// ─── Dataset ───────────────────────────────────────────────────────────────
+const DATA = [
+  // [age, prescription, astigmatism, tearRate, lens]
+  // age: young/pre-presbyopic/presbyopic
+  // prescription: myope/hypermetrope
+  // astigmatism: no/yes
+  // tearRate: reduced/normal
+  // lens: none/soft/hard
+  {age:'young',        presc:'myope',        astig:'no',  tear:'reduced', lens:'none'},
+  {age:'young',        presc:'myope',        astig:'no',  tear:'normal',  lens:'soft'},
+  {age:'young',        presc:'myope',        astig:'yes', tear:'reduced', lens:'none'},
+  {age:'young',        presc:'myope',        astig:'yes', tear:'normal',  lens:'hard'},
+  {age:'young',        presc:'hypermetrope', astig:'no',  tear:'reduced', lens:'none'},
+  {age:'young',        presc:'hypermetrope', astig:'no',  tear:'normal',  lens:'soft'},
+  {age:'young',        presc:'hypermetrope', astig:'yes', tear:'reduced', lens:'none'},
+  {age:'young',        presc:'hypermetrope', astig:'yes', tear:'normal',  lens:'hard'},
+  {age:'pre-presbyopic',presc:'myope',       astig:'no',  tear:'reduced', lens:'none'},
+  {age:'pre-presbyopic',presc:'myope',       astig:'no',  tear:'normal',  lens:'soft'},
+  {age:'pre-presbyopic',presc:'myope',       astig:'yes', tear:'reduced', lens:'none'},
+  {age:'pre-presbyopic',presc:'myope',       astig:'yes', tear:'normal',  lens:'hard'},
+  {age:'pre-presbyopic',presc:'hypermetrope',astig:'no',  tear:'reduced', lens:'none'},
+  {age:'pre-presbyopic',presc:'hypermetrope',astig:'no',  tear:'normal',  lens:'soft'},
+  {age:'pre-presbyopic',presc:'hypermetrope',astig:'yes', tear:'reduced', lens:'none'},
+  {age:'pre-presbyopic',presc:'hypermetrope',astig:'yes', tear:'normal',  lens:'none'},
+  {age:'presbyopic',   presc:'myope',        astig:'no',  tear:'reduced', lens:'none'},
+  {age:'presbyopic',   presc:'myope',        astig:'no',  tear:'normal',  lens:'none'},
+  {age:'presbyopic',   presc:'myope',        astig:'yes', tear:'reduced', lens:'none'},
+  {age:'presbyopic',   presc:'myope',        astig:'yes', tear:'normal',  lens:'hard'},
+  {age:'presbyopic',   presc:'hypermetrope', astig:'no',  tear:'reduced', lens:'none'},
+  {age:'presbyopic',   presc:'hypermetrope', astig:'no',  tear:'normal',  lens:'soft'},
+  {age:'presbyopic',   presc:'hypermetrope', astig:'yes', tear:'reduced', lens:'none'},
+  {age:'presbyopic',   presc:'hypermetrope', astig:'yes', tear:'normal',  lens:'none'},
+];
+
+function lensBadge(l) {
+  if (l==='hard') return `<span class="badge badge-hard">hard</span>`;
+  if (l==='soft') return `<span class="badge badge-soft">soft</span>`;
+  return `<span class="badge badge-none">none</span>`;
+}
+
+// Populate NB reference table
+(function() {
+  const tbody = document.getElementById('nb-tbody');
+  DATA.forEach((d,i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${i+1}</td><td>${d.age}</td><td>${d.presc}</td><td>${d.astig}</td><td>${d.tear}</td><td>${lensBadge(d.lens)}</td>`;
+    tbody.appendChild(tr);
+  });
+})();
+
+// ─── Covering Demo State ────────────────────────────────────────────────────
+const TARGET = 'hard';
+
+// Each step: {test, label, p, t, note}
+const STEPS = [
+  {
+    field: 'astig', value: 'yes',
+    label: 'astigmatism = yes',
+    note: 'Best ratio across all possible tests',
+    poolStep: 0,
+  },
+  {
+    field: 'tear', value: 'normal',
+    label: 'tear production = normal',
+    note: 'Eliminates all non-hard astigmatic instances with reduced tears',
+    poolStep: 1,
+  },
+  {
+    field: 'presc', value: 'myope',
+    label: 'spectacle prescription = myope',
+    note: 'p/t = 1.0 reached — rule is pure',
+    poolStep: 2,
+  },
+];
+
+// Candidate tests shown at each step (pre-computed from dataset for clarity)
+const POOLS = [
+  // Step 0: all instances in dataset (24 total, 4 hard)
+  [
+    { test:'age = young',                  p:2, t:8,  ratio:'2/8  = 0.25' },
+    { test:'age = pre-presbyopic',         p:2, t:8,  ratio:'2/8  = 0.25' },
+    { test:'age = presbyopic',             p:0, t:8,  ratio:'0/8  = 0.00' },
+    { test:'prescription = myope',         p:3, t:12, ratio:'3/12 = 0.25' },
+    { test:'prescription = hypermetrope',  p:1, t:12, ratio:'1/12 = 0.08' },
+    { test:'astigmatism = no',             p:0, t:12, ratio:'0/12 = 0.00' },
+    { test:'astigmatism = yes',            p:4, t:12, ratio:'4/12 = 0.33', best:true },
+    { test:'tear rate = reduced',          p:0, t:12, ratio:'0/12 = 0.00' },
+    { test:'tear rate = normal',           p:4, t:12, ratio:'4/12 = 0.33', best:true },
+  ],
+  // Step 1: only astigmatism=yes (12 instances, 4 hard)
+  [
+    { test:'age = young',                  p:2, t:4,  ratio:'2/4  = 0.50' },
+    { test:'age = pre-presbyopic',         p:2, t:4,  ratio:'2/4  = 0.50' },
+    { test:'age = presbyopic',             p:0, t:4,  ratio:'0/4  = 0.00' },
+    { test:'prescription = myope',         p:3, t:6,  ratio:'3/6  = 0.50' },
+    { test:'prescription = hypermetrope',  p:1, t:6,  ratio:'1/6  = 0.17' },
+    { test:'tear rate = reduced',          p:0, t:6,  ratio:'0/6  = 0.00' },
+    { test:'tear rate = normal',           p:4, t:6,  ratio:'4/6  = 0.67', best:true },
+  ],
+  // Step 2: astigmatism=yes AND tear=normal (6 instances, 4 hard)
+  [
+    { test:'age = young',                  p:2, t:2,  ratio:'2/2  = 1.00', best:true },
+    { test:'age = pre-presbyopic',         p:2, t:2,  ratio:'2/2  = 1.00', best:true },
+    { test:'age = presbyopic',             p:0, t:2,  ratio:'0/2  = 0.00' },
+    { test:'prescription = myope',         p:3, t:3,  ratio:'3/3  = 1.00', best:true },
+    { test:'prescription = hypermetrope',  p:1, t:3,  ratio:'1/3  = 0.33' },
+  ],
+];
+
+const STEP_MESSAGES = [
+  'Initial state: rule covers all 24 instances (4 hard = positives).<br>Best test: <span class="hl">astigmatism = yes</span> with ratio <span class="hl">4/12 = 0.33</span>.<br>Note: astigmatism=yes and tear=normal both score 0.33, but astig=yes chosen here (slide convention).',
+  'After adding <span class="hl-g">astigmatism = yes</span>: 12 instances remain, 4 are hard.<br>Best test: <span class="hl">tear production rate = normal</span> with ratio <span class="hl">4/6 = 0.67</span>.',
+  'After adding <span class="hl-g">tear production rate = normal</span>: 6 instances, 4 hard.<br>Three tests reach p/t = 1.0. Choose <span class="hl">prescription = myope</span> (p=3, highest coverage among tied tests).',
+  'Rule complete: <span class="hl-y">p/t = 3/3 = 1.0</span> — pure rule found!<br>Covered 3 hard-lens instances. Remaining hard instances start next rule iteration.',
+];
+
+let currentStep = 0;
+
+function matches(inst, conditions) {
+  return conditions.every(c => inst[c.field] === c.value);
+}
+
+function currentConditions() {
+  return STEPS.slice(0, currentStep).map(s => ({field: s.field, value: s.value}));
+}
+
+function renderPtGrid(poolIdx, chosenIdx) {
+  const grid = document.getElementById('pt-grid');
+  const pool = POOLS[poolIdx];
+  if (!pool) { grid.innerHTML = ''; return; }
+  grid.innerHTML = pool.map((c, i) => {
+    const ratio = parseFloat(c.ratio.split('=')[1]);
+    const barW  = Math.round(ratio * 100);
+    let cls = 'pt-card';
+    if (chosenIdx !== undefined && i === chosenIdx) cls += ' chosen-card';
+    else if (c.best) cls += ' best-card';
+    return `<div class="${cls}">
+      <div class="pt-test">${c.test}</div>
+      <div class="pt-ratio">${c.ratio}</div>
+      <div class="pt-bar-wrap"><div class="pt-bar" style="width:${barW}%"></div></div>
+      <div class="pt-note">p=${c.p}, t=${c.t}${c.best ? ' ★ best' : ''}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderRule() {
+  const conds = currentConditions();
+  const el = document.getElementById('rule-conditions');
+  if (conds.length === 0) {
+    el.innerHTML = '<span class="rule-placeholder">&nbsp;?&nbsp;</span>';
+  } else {
+    el.innerHTML = conds.map(c =>
+      `<span class="rule-cond">${c.field.replace('presc','spectacle prescription').replace('astig','astigmatism').replace('tear','tear production rate')} = ${c.value}</span>`
+    ).join('<span class="rule-kw"> AND </span>');
+  }
+}
+
+function renderDemoTable() {
+  const tbody = document.getElementById('demo-tbody');
+  const conds = currentConditions();
+  tbody.innerHTML = '';
+  DATA.forEach((d, i) => {
+    const tr = document.createElement('tr');
+    const covered = conds.length > 0 && matches(d, conds);
+    const isTarget = d.lens === TARGET;
+    if (covered) tr.className = isTarget ? 'highlight-row' : '';
+    tr.innerHTML = `<td>${i+1}</td><td>${d.age}</td><td>${d.presc}</td><td>${d.astig}</td><td>${d.tear}</td><td>${lensBadge(d.lens)}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function nextStep() {
+  if (currentStep >= STEPS.length) return;
+
+  // Show the pool for current step, highlight the chosen card
+  const pool = POOLS[currentStep];
+  const chosenTest = STEPS[currentStep];
+  const chosenIdx = pool.findIndex(c => c.test.includes(chosenTest.value));
+  renderPtGrid(currentStep, chosenIdx);
+
+  currentStep++;
+
+  renderRule();
+  renderDemoTable();
+
+  document.getElementById('step-info').innerHTML = STEP_MESSAGES[currentStep - 1] || '';
+  document.getElementById('step-counter').textContent = `Step ${currentStep} / ${STEPS.length}`;
+
+  if (currentStep >= STEPS.length) {
+    document.getElementById('btn-next').disabled = true;
+    document.getElementById('final-rule-box').style.display = 'block';
+    document.getElementById('step-info').innerHTML = STEP_MESSAGES[STEPS.length];
+  }
+}
+
+function resetDemo() {
+  currentStep = 0;
+  renderRule();
+  renderDemoTable();
+  renderPtGrid(0, undefined);
+  document.getElementById('step-info').innerHTML = 'Press <strong>Next Step</strong> to start. The algorithm will greedily add tests to the rule.';
+  document.getElementById('step-counter').textContent = 'Step 0 / 3';
+  document.getElementById('btn-next').disabled = false;
+  document.getElementById('final-rule-box').style.display = 'none';
+}
+
+// ─── Init ──────────────────────────────────────────────────────────────────
+renderRule();
+renderDemoTable();
+renderPtGrid(0, undefined);
+</script>
+</body>
+</html>

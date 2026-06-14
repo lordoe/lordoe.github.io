@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>k-Armed Bandit</title>
+<script>
+  MathJax = {
+    tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+    options: { skipHtmlTags: ['script','noscript','style','textarea'] }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #0e0e11;
+    --surface:  #16161b;
+    --surface2: #1e1e26;
+    --border:   rgba(255,255,255,0.07);
+    --border2:  rgba(255,255,255,0.13);
+    --text:     #e8e6f0;
+    --muted:    #7a7890;
+    --accent:   #c96a28;
+    --accent-dim: rgba(201,106,40,0.18);
+    --accent-glow: rgba(201,106,40,0.35);
+    --green:    #4caf82;
+    --blue:     #5a9cf8;
+    --mono:     'DM Mono', monospace;
+    --sans:     'DM Sans', sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 36px 24px 80px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  mjx-container { color: var(--text) !important; }
+
+  /* ── header ── */
+  header { margin-bottom: 32px; }
+  header .tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  header h1 {
+    font-size: clamp(22px, 3.5vw, 32px);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+  }
+  header p { color: var(--muted); font-size: 14px; max-width: 620px; line-height: 1.7; }
+
+  /* ── section title ── */
+  .section-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  section { margin-bottom: 32px; }
+
+  /* ── formula box ── */
+  .formula-box {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-left: 3px solid var(--accent);
+    border-radius: 10px;
+    padding: 18px 22px;
+    min-height: 72px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .formula-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .formula-text {
+    font-size: 15px;
+    line-height: 1.8;
+  }
+  .formula-note {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  .delta-highlight {
+    color: #f0a050;
+    font-style: italic;
+  }
+
+  /* ── arm visualization ── */
+  .arms-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 20px;
+    overflow-x: auto;
+  }
+  #arms-svg-container {
+    min-height: 200px;
+    width: 100%;
+  }
+  .arm-svg { overflow: visible; }
+
+  /* ── controls ── */
+  .controls-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .ctrl-group { display: flex; flex-direction: column; gap: 6px; }
+  .ctrl-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+  .ctrl-label span { color: var(--text); }
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    background: var(--accent);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: box-shadow 0.12s;
+  }
+  input[type="range"]::-webkit-slider-thumb:hover {
+    box-shadow: 0 0 0 4px var(--accent-glow);
+  }
+  select {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 6px 10px;
+    cursor: pointer;
+    outline: none;
+    width: 100%;
+  }
+  select:focus { border-color: var(--accent); }
+
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+  }
+  button {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 8px 16px;
+    border-radius: 7px;
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.12s;
+    letter-spacing: 0.03em;
+    flex: 1;
+  }
+  button:hover { border-color: var(--accent); color: var(--accent); }
+  button.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  button.primary:hover { opacity: 0.9; color: #fff; }
+  button.active-play { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+
+  /* ── stats row ── */
+  .stats-row {
+    display: flex;
+    gap: 0;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .stat-cell {
+    flex: 1;
+    padding: 14px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    border-right: 1px solid var(--border);
+  }
+  .stat-cell:last-child { border-right: none; }
+  .stat-key {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .stat-val {
+    font-family: var(--mono);
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.2;
+  }
+  .stat-val.good { color: var(--green); }
+  .stat-val.accent { color: var(--accent); }
+
+  /* ── reward chart ── */
+  .chart-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  #rewardChart {
+    width: 100%;
+    display: block;
+    border-radius: 6px;
+    background: var(--bg);
+  }
+
+  /* ── info cards ── */
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 12px;
+  }
+  .info-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .info-card .ic-head {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+  }
+  .info-card p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .info-card strong { color: var(--text); }
+
+  /* ── legend ── */
+  .legend {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .leg-dash { width: 20px; height: 2px; border-top: 2px dashed; flex-shrink: 0; }
+  .leg-solid { width: 20px; height: 3px; border-radius: 2px; flex-shrink: 0; }
+
+  /* ── source note ── */
+  .src-note {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    opacity: 0.6;
+  }
+
+  /* ── last selected arm flash ── */
+  .arm-bar-selected { filter: brightness(1.4); }
+
+  /* ── UCB c controls only when UCB strategy ── */
+  .ucb-only { display: none; }
+  .optinit-only { display: none; }
+  .eps-only { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="tag">Reinforcement Learning · k-Armed Bandit</div>
+  <h1>k-Armed Bandit Problem</h1>
+  <p>
+    Ein Agent wählt aus <em>k</em> Aktionen (Hebelzügen), jede liefert eine stochastische Belohnung aus einer festen Verteilung \(q^*(a)\).
+    Ziel: Gesamtbelohnung maximieren — Balance zwischen Exploration und Exploitation.
+  </p>
+</header>
+
+<!-- Formula Panel -->
+<section>
+  <div class="section-title">Aktuelle Strategie — Update-Formel</div>
+  <div class="formula-box" id="formulaBox">
+    <div class="formula-label" id="formulaLabel">Sample-Average (Greedy)</div>
+    <div class="formula-text" id="formulaText">
+      \[Q_{n+1} = Q_n + \frac{1}{n}\underbrace{[R_n - Q_n]}_{\delta_n \text{ (TD-Fehler)}}\]
+    </div>
+    <div class="formula-note" id="formulaNote">
+      \(\delta_n = R_n - Q_n\) ist der Schätzfehler (analog zum TD-Fehler). Greedy wählt immer \(A_t = \arg\max_a Q_t(a)\).
+    </div>
+  </div>
+</section>
+
+<!-- Arm Visualization -->
+<section>
+  <div class="section-title">Arm-Visualisierung — wahre Werte vs. Schätzungen</div>
+  <div class="arms-wrap">
+    <div id="arms-svg-container"></div>
+    <div class="legend">
+      <div class="legend-item">
+        <div class="leg-dash" style="border-color: rgba(201,106,40,0.5);"></div>
+        <span>wahrer Wert \(q^*(a)\)</span>
+      </div>
+      <div class="legend-item">
+        <div class="leg-solid" style="background: var(--accent);"></div>
+        <span>Schätzung \(Q_t(a)\)</span>
+      </div>
+      <div class="legend-item">
+        <div class="leg-solid" style="background: var(--green);"></div>
+        <span>bester Arm (optimal)</span>
+      </div>
+      <div class="legend-item">
+        <div class="leg-solid" style="background: #5a9cf8;"></div>
+        <span>zuletzt gewählt</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Controls -->
+<section>
+  <div class="section-title">Parameter &amp; Steuerung</div>
+  <div class="controls-grid">
+    <div class="ctrl-group">
+      <div class="ctrl-label">Arme k = <span id="kVal">5</span></div>
+      <input type="range" id="kSlider" min="2" max="10" value="5">
+    </div>
+    <div class="ctrl-group eps-only" id="epsGroup">
+      <div class="ctrl-label">ε = <span id="epsVal">0.10</span></div>
+      <input type="range" id="epsSlider" min="0" max="0.5" step="0.01" value="0.1">
+    </div>
+    <div class="ctrl-group ucb-only" id="ucbGroup">
+      <div class="ctrl-label">UCB c = <span id="ucbCVal">2.0</span></div>
+      <input type="range" id="ucbCSlider" min="0.1" max="5" step="0.1" value="2.0">
+    </div>
+    <div class="ctrl-group optinit-only" id="optGroup">
+      <div class="ctrl-label">Q₀ (optimistisch) = <span id="optInitVal">5.0</span></div>
+      <input type="range" id="optInitSlider" min="1" max="10" step="0.5" value="5.0">
+    </div>
+    <div class="ctrl-group">
+      <div class="ctrl-label">Strategie</div>
+      <select id="stratSelect">
+        <option value="greedy">Greedy</option>
+        <option value="egreedy" selected>ε-Greedy</option>
+        <option value="ucb">UCB</option>
+        <option value="optinit">Optimist. Startwerte</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <div class="ctrl-label">Schritte/Klick = <span id="stepsVal">10</span></div>
+      <select id="stepsSelect">
+        <option value="1">1</option>
+        <option value="10" selected>10</option>
+        <option value="100">100</option>
+      </select>
+    </div>
+    <div class="ctrl-group btn-row">
+      <button class="primary" id="btnStep">Schritt</button>
+      <button id="btnAuto">Auto-Play</button>
+    </div>
+    <div class="ctrl-group btn-row">
+      <button id="btnReset">Reset</button>
+    </div>
+  </div>
+</section>
+
+<!-- Stats -->
+<section>
+  <div class="section-title">Live-Statistiken</div>
+  <div class="stats-row">
+    <div class="stat-cell">
+      <div class="stat-key">Schritt t</div>
+      <div class="stat-val accent" id="statStep">0</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-key">Kum. Belohnung</div>
+      <div class="stat-val" id="statReward">0.000</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-key">Ø Belohnung</div>
+      <div class="stat-val" id="statAvgReward">—</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-key">% Optimal</div>
+      <div class="stat-val good" id="statOptimal">—</div>
+    </div>
+  </div>
+</section>
+
+<!-- Reward Chart -->
+<section>
+  <div class="section-title">Ø Belohnung pro Schritt (gleitendes Fenster: 20)</div>
+  <div class="chart-wrap">
+    <canvas id="rewardChart" height="150"></canvas>
+  </div>
+</section>
+
+<!-- Concept Cards -->
+<section>
+  <div class="section-title">Konzepte</div>
+  <div class="info-grid">
+    <div class="info-card">
+      <div class="ic-head">Action-Value</div>
+      <p>
+        \(q^*(a) = \mathbb{E}[R_t \mid A_t=a]\) ist der wahre Erwartungswert.
+        Schätzung: \(Q_t(a) = \frac{\sum_{i} R_i \cdot \mathbf{1}_{A_i=a}}{N_t(a)}\)
+      </p>
+    </div>
+    <div class="info-card">
+      <div class="ic-head">ε-Greedy</div>
+      <p>
+        Mit Prob. <strong>ε</strong> zufällige Aktion (Exploration),<br>
+        sonst \(\arg\max_a Q_t(a)\) (Exploitation).
+      </p>
+    </div>
+    <div class="info-card">
+      <div class="ic-head">UCB</div>
+      <p>
+        \(A_t = \arg\max_a \!\left[Q_t(a) + c\sqrt{\dfrac{\ln t}{N_t(a)}}\right]\)
+        Obere Konfidenzschranke steuert Exploration.
+      </p>
+    </div>
+    <div class="info-card">
+      <div class="ic-head">Non-Stationär</div>
+      <p>
+        Konstante Schrittweite \(\alpha\): neuere Belohnungen erhalten mehr Gewicht.
+        \(Q_{n+1} = Q_n + \alpha[R_n - Q_n]\)
+      </p>
+    </div>
+    <div class="info-card">
+      <div class="ic-head">Optimist. Init.</div>
+      <p>
+        Start mit \(Q_1(a) = Q_0 \gg 0\) zwingt den Agenten, alle Arme zu erkunden, bevor er greedy wird.
+      </p>
+    </div>
+  </div>
+</section>
+
+<p class="src-note">// Quelle: Foliensatz 06 — Reinforcement Learning (ML SS2026)</p>
+
+<script>
+// ════════════════════════════════════════════════════════
+//  State
+// ════════════════════════════════════════════════════════
+let k = 5;
+let eps = 0.1;
+let ucbC = 2.0;
+let optInitVal = 5.0;
+let strategy = 'egreedy';
+let stepsPerClick = 10;
+
+let qTrue = [];       // true q*(a)
+let qEst = [];        // estimates Q_t(a)
+let nArm = [];        // N_t(a)
+let t = 0;
+let cumReward = 0;
+let optimalCount = 0;
+let lastChosen = -1;
+let rewardHistory = [];   // per-step rewards
+let optimalArm = 0;
+
+let autoPlay = false;
+let autoTimer = null;
+
+const CHART_WINDOW = 20;
+
+// ════════════════════════════════════════════════════════
+//  Init / Reset
+// ════════════════════════════════════════════════════════
+function reset() {
+  qTrue = [];
+  qEst = [];
+  nArm = [];
+  for (let i = 0; i < k; i++) {
+    qTrue.push(randn() * 1.5);   // spread out true values
+    if (strategy === 'optinit') {
+      qEst.push(optInitVal);
+    } else {
+      qEst.push(0);
+    }
+    nArm.push(0);
+  }
+  optimalArm = argmax(qTrue);
+  t = 0;
+  cumReward = 0;
+  optimalCount = 0;
+  lastChosen = -1;
+  rewardHistory = [];
+  updateStats();
+  renderArms();
+  renderChart();
+  updateFormula();
+}
+
+// ════════════════════════════════════════════════════════
+//  Step
+// ════════════════════════════════════════════════════════
+function step() {
+  let a;
+  if (strategy === 'greedy' || strategy === 'optinit') {
+    a = argmax(qEst);
+  } else if (strategy === 'egreedy') {
+    if (Math.random() < eps) {
+      a = Math.floor(Math.random() * k);
+    } else {
+      a = argmax(qEst);
+    }
+  } else if (strategy === 'ucb') {
+    if (t === 0) {
+      // pick untried arms first
+      const untried = nArm.findIndex(n => n === 0);
+      a = untried >= 0 ? untried : 0;
+    } else {
+      let best = -Infinity, bestA = 0;
+      for (let i = 0; i < k; i++) {
+        const bonus = nArm[i] === 0 ? Infinity : ucbC * Math.sqrt(Math.log(t) / nArm[i]);
+        const val = qEst[i] + bonus;
+        if (val > best) { best = val; bestA = i; }
+      }
+      a = bestA;
+    }
+  }
+
+  // draw reward
+  const r = qTrue[a] + randn() * 1.0;
+  t++;
+  nArm[a]++;
+  // incremental update
+  qEst[a] = qEst[a] + (1 / nArm[a]) * (r - qEst[a]);
+  cumReward += r;
+  if (a === optimalArm) optimalCount++;
+  lastChosen = a;
+  rewardHistory.push(r);
+
+  updateStats();
+  renderArms(a);
+  renderChart();
+}
+
+function runNSteps(n) {
+  for (let i = 0; i < n; i++) step();
+}
+
+// ════════════════════════════════════════════════════════
+//  Auto-play
+// ════════════════════════════════════════════════════════
+function toggleAuto() {
+  autoPlay = !autoPlay;
+  const btn = document.getElementById('btnAuto');
+  if (autoPlay) {
+    btn.textContent = 'Stop';
+    btn.classList.add('active-play');
+    autoLoop();
+  } else {
+    btn.textContent = 'Auto-Play';
+    btn.classList.remove('active-play');
+    if (autoTimer) { clearTimeout(autoTimer); autoTimer = null; }
+  }
+}
+
+function autoLoop() {
+  if (!autoPlay) return;
+  step();
+  autoTimer = setTimeout(autoLoop, stepsPerClick === 1 ? 200 : stepsPerClick === 10 ? 80 : 20);
+}
+
+// ════════════════════════════════════════════════════════
+//  UI Updates
+// ════════════════════════════════════════════════════════
+function updateStats() {
+  document.getElementById('statStep').textContent = t;
+  document.getElementById('statReward').textContent = cumReward.toFixed(3);
+  if (t > 0) {
+    document.getElementById('statAvgReward').textContent = (cumReward / t).toFixed(3);
+    document.getElementById('statOptimal').textContent = (100 * optimalCount / t).toFixed(1) + '%';
+  } else {
+    document.getElementById('statAvgReward').textContent = '—';
+    document.getElementById('statOptimal').textContent = '—';
+  }
+}
+
+function updateFormula() {
+  const label = document.getElementById('formulaLabel');
+  const text = document.getElementById('formulaText');
+  const note = document.getElementById('formulaNote');
+
+  const formulas = {
+    greedy: {
+      lbl: 'Sample-Average (Greedy)',
+      tex: `\\[Q_{n+1} = Q_n + \\frac{1}{n}\\underbrace{[R_n - Q_n]}_{\\delta_n}\\]`,
+      note: `\\(\\delta_n = R_n - Q_n\\) ist der Schätzfehler. Greedy: \\(A_t = \\arg\\max_a Q_t(a)\\).`
+    },
+    egreedy: {
+      lbl: 'ε-Greedy + Sample-Average',
+      tex: `\\[Q_{n+1} = Q_n + \\frac{1}{n}\\underbrace{[R_n - Q_n]}_{\\delta_n}, \\quad A_t = \\begin{cases} \\arg\\max_a Q_t(a) & \\text{w.p. } 1-\\varepsilon \\\\ \\text{random} & \\text{w.p. } \\varepsilon \\end{cases}\\]`,
+      note: `Mit Wahrscheinlichkeit \\(\\varepsilon\\) wird exploriert (Zufallsarm), sonst die beste bekannte Aktion gewählt.`
+    },
+    ucb: {
+      lbl: 'UCB — Upper Confidence Bound',
+      tex: `\\[A_t = \\arg\\max_a \\left[ Q_t(a) + c\\sqrt{\\frac{\\ln t}{N_t(a)}} \\right]\\]`,
+      note: `Der Bonus \\(c\\sqrt{\\ln t / N_t(a)}\\) wächst für selten gewählte Arme — gezielte Exploration ohne Zufall.`
+    },
+    optinit: {
+      lbl: 'Optimistische Startwerte',
+      tex: `\\[Q_1(a) = Q_0 \\gg 0, \\quad Q_{n+1} = Q_n + \\frac{1}{n}\\underbrace{[R_n - Q_n]}_{\\delta_n}\\]`,
+      note: `Anfänglich hohe Schätzungen erzwingen Exploration: jede Enttäuschung \\(\\delta_n < 0\\) senkt den Wert, bis alle Arme probiert wurden.`
+    }
+  };
+
+  const f = formulas[strategy];
+  label.textContent = f.lbl;
+  text.innerHTML = f.tex;
+  note.innerHTML = f.note;
+
+  // re-typeset MathJax
+  if (window.MathJax && MathJax.typesetPromise) {
+    MathJax.typesetPromise([document.getElementById('formulaBox')]).catch(()=>{});
+  }
+
+  // show/hide param controls
+  document.querySelectorAll('.eps-only').forEach(el =>
+    el.style.display = strategy === 'egreedy' ? '' : 'none');
+  document.querySelectorAll('.ucb-only').forEach(el =>
+    el.style.display = strategy === 'ucb' ? '' : 'none');
+  document.querySelectorAll('.optinit-only').forEach(el =>
+    el.style.display = strategy === 'optinit' ? '' : 'none');
+}
+
+// ════════════════════════════════════════════════════════
+//  Arm SVG Renderer
+// ════════════════════════════════════════════════════════
+function renderArms(chosen = -1) {
+  const container = document.getElementById('arms-svg-container');
+  const W = container.clientWidth || 800;
+  const H = 220;
+  const padL = 40, padR = 16, padT = 20, padB = 40;
+  const innerW = W - padL - padR;
+  const innerH = H - padT - padB;
+
+  // value range
+  const allVals = [...qTrue, ...qEst];
+  const minVal = Math.min(...allVals, -0.5);
+  const maxVal = Math.max(...allVals, 0.5);
+  const range = maxVal - minVal || 1;
+
+  function yScale(v) {
+    return padT + innerH * (1 - (v - minVal) / range);
+  }
+  const y0 = yScale(0); // zero line
+
+  const barW = Math.max(16, Math.min(60, innerW / k * 0.55));
+  const slotW = innerW / k;
+
+  let svg = `<svg class="arm-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`;
+
+  // grid lines
+  const nGridLines = 5;
+  for (let i = 0; i <= nGridLines; i++) {
+    const v = minVal + (range / nGridLines) * i;
+    const yy = yScale(v);
+    const isZero = Math.abs(v) < range / nGridLines / 2;
+    svg += `<line x1="${padL}" y1="${yy}" x2="${W - padR}" y2="${yy}"
+      stroke="${isZero ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.05)'}"
+      stroke-width="${isZero ? 1.5 : 1}" stroke-dasharray="${isZero ? '' : '3,4'}"/>`;
+    svg += `<text x="${padL - 4}" y="${yy + 4}" text-anchor="end"
+      font-family="DM Mono, monospace" font-size="9" fill="#7a7890">${v.toFixed(1)}</text>`;
+  }
+
+  // arms
+  for (let i = 0; i < k; i++) {
+    const cx = padL + slotW * i + slotW / 2;
+    const isChosen = i === chosen;
+    const isOptimal = i === optimalArm;
+    const isLastChosen = i === lastChosen;
+
+    // bar color
+    let barColor = 'rgba(201,106,40,0.7)';
+    if (isOptimal) barColor = 'rgba(76,175,130,0.75)';
+    if (isLastChosen && !isOptimal) barColor = 'rgba(90,156,248,0.75)';
+    if (isChosen && !isOptimal) barColor = '#5a9cf8';
+    if (isChosen && isOptimal) barColor = '#4caf82';
+
+    const glowColor = isOptimal ? '#4caf82' : '#5a9cf8';
+
+    // Q estimate bar
+    const qY = yScale(qEst[i]);
+    const barTop = Math.min(qY, y0);
+    const barH = Math.abs(y0 - qY);
+    const barX = cx - barW / 2;
+
+    if (isChosen) {
+      svg += `<rect x="${barX - 2}" y="${barTop - 2}" width="${barW + 4}" height="${Math.max(barH + 4, 6)}"
+        rx="5" fill="none" stroke="${glowColor}" stroke-width="2" opacity="0.7"/>`;
+    }
+
+    svg += `<rect x="${barX}" y="${barTop}" width="${barW}" height="${Math.max(barH, 3)}"
+      rx="4" fill="${barColor}" opacity="${isChosen ? 1.0 : 0.65}"
+      class="${isChosen ? 'arm-bar-selected' : ''}"/>`;
+
+    // true value dashed line
+    const qTrueY = yScale(qTrue[i]);
+    svg += `<line x1="${cx - barW * 0.7}" y1="${qTrueY}" x2="${cx + barW * 0.7}" y2="${qTrueY}"
+      stroke="rgba(201,106,40,0.6)" stroke-width="2" stroke-dasharray="4,3"/>`;
+
+    // annotation: count
+    if (nArm[i] > 0) {
+      svg += `<text x="${cx}" y="${H - padB + 14}" text-anchor="middle"
+        font-family="DM Mono, monospace" font-size="10" fill="#7a7890">n=${nArm[i]}</text>`;
+    }
+
+    // arm label
+    svg += `<text x="${cx}" y="${H - padB + 26}" text-anchor="middle"
+      font-family="DM Mono, monospace" font-size="11"
+      fill="${isOptimal ? '#4caf82' : isLastChosen ? '#5a9cf8' : '#7a7890'}">a${i + 1}</text>`;
+
+    // Q value label above bar
+    const labelY = Math.min(qY, y0) - 5;
+    if (labelY > padT) {
+      svg += `<text x="${cx}" y="${labelY}" text-anchor="middle"
+        font-family="DM Mono, monospace" font-size="9"
+        fill="${isChosen ? '#e8e6f0' : '#7a7890'}">${qEst[i].toFixed(2)}</text>`;
+    }
+  }
+
+  svg += '</svg>';
+  container.innerHTML = svg;
+}
+
+// ════════════════════════════════════════════════════════
+//  Reward Chart (Canvas)
+// ════════════════════════════════════════════════════════
+function renderChart() {
+  const canvas = document.getElementById('rewardChart');
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.parentElement.clientWidth - 40;
+  const H = 150;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#0e0e11';
+  ctx.fillRect(0, 0, W, H);
+
+  const padL = 40, padR = 10, padT = 10, padB = 30;
+
+  if (rewardHistory.length < 2) {
+    ctx.fillStyle = '#7a7890';
+    ctx.font = '11px DM Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Noch keine Daten — klicke "Schritt"', W / 2, H / 2);
+    return;
+  }
+
+  // compute rolling average
+  const smooth = [];
+  const win = CHART_WINDOW;
+  for (let i = 0; i < rewardHistory.length; i++) {
+    const start = Math.max(0, i - win + 1);
+    let s = 0;
+    for (let j = start; j <= i; j++) s += rewardHistory[j];
+    smooth.push(s / (i - start + 1));
+  }
+
+  const minR = Math.min(...smooth) - 0.2;
+  const maxR = Math.max(...smooth) + 0.2;
+  const rangeR = maxR - minR || 1;
+
+  const innerW = W - padL - padR;
+  const innerH = H - padT - padB;
+
+  function xp(i) { return padL + (i / (smooth.length - 1)) * innerW; }
+  function yp(v) { return padT + innerH * (1 - (v - minR) / rangeR); }
+
+  // grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const v = minR + (rangeR / 4) * i;
+    const yy = yp(v);
+    ctx.beginPath(); ctx.moveTo(padL, yy); ctx.lineTo(W - padR, yy); ctx.stroke();
+    ctx.fillStyle = '#7a7890';
+    ctx.font = '9px DM Mono, monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(v.toFixed(1), padL - 4, yy + 3);
+  }
+
+  // zero line
+  if (minR < 0 && maxR > 0) {
+    const y0 = yp(0);
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(padL, y0); ctx.lineTo(W - padR, y0); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // area fill
+  ctx.beginPath();
+  ctx.moveTo(xp(0), yp(smooth[0]));
+  for (let i = 1; i < smooth.length; i++) ctx.lineTo(xp(i), yp(smooth[i]));
+  ctx.lineTo(xp(smooth.length - 1), H - padB);
+  ctx.lineTo(xp(0), H - padB);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, padT, 0, H - padB);
+  grad.addColorStop(0, 'rgba(201,106,40,0.3)');
+  grad.addColorStop(1, 'rgba(201,106,40,0.02)');
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // line
+  ctx.beginPath();
+  ctx.strokeStyle = '#c96a28';
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.moveTo(xp(0), yp(smooth[0]));
+  for (let i = 1; i < smooth.length; i++) ctx.lineTo(xp(i), yp(smooth[i]));
+  ctx.stroke();
+
+  // x axis labels
+  ctx.fillStyle = '#7a7890';
+  ctx.font = '9px DM Mono, monospace';
+  ctx.textAlign = 'center';
+  const nLabels = Math.min(10, smooth.length);
+  for (let i = 0; i < nLabels; i++) {
+    const idx = Math.round(i * (smooth.length - 1) / (nLabels - 1));
+    ctx.fillText('t=' + (idx + 1), xp(idx), H - padB + 14);
+  }
+
+  // axis labels
+  ctx.fillStyle = '#7a7890';
+  ctx.font = '9px DM Mono, monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText('R̄', padL - 2, padT + 4);
+}
+
+// ════════════════════════════════════════════════════════
+//  Helpers
+// ════════════════════════════════════════════════════════
+function randn() {
+  // Box-Muller
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+}
+
+function argmax(arr) {
+  let best = -Infinity, idx = 0;
+  for (let i = 0; i < arr.length; i++) {
+    if (arr[i] > best) { best = arr[i]; idx = i; }
+  }
+  return idx;
+}
+
+// ════════════════════════════════════════════════════════
+//  Event Listeners
+// ════════════════════════════════════════════════════════
+document.getElementById('kSlider').addEventListener('input', function() {
+  k = +this.value;
+  document.getElementById('kVal').textContent = k;
+  reset();
+});
+
+document.getElementById('epsSlider').addEventListener('input', function() {
+  eps = +this.value;
+  document.getElementById('epsVal').textContent = eps.toFixed(2);
+});
+
+document.getElementById('ucbCSlider').addEventListener('input', function() {
+  ucbC = +this.value;
+  document.getElementById('ucbCVal').textContent = ucbC.toFixed(1);
+});
+
+document.getElementById('optInitSlider').addEventListener('input', function() {
+  optInitVal = +this.value;
+  document.getElementById('optInitVal').textContent = optInitVal.toFixed(1);
+  reset();
+});
+
+document.getElementById('stratSelect').addEventListener('change', function() {
+  strategy = this.value;
+  updateFormula();
+  reset();
+});
+
+document.getElementById('stepsSelect').addEventListener('change', function() {
+  stepsPerClick = +this.value;
+  document.getElementById('stepsVal').textContent = stepsPerClick;
+});
+
+document.getElementById('btnStep').addEventListener('click', function() {
+  runNSteps(stepsPerClick);
+});
+
+document.getElementById('btnAuto').addEventListener('click', toggleAuto);
+
+document.getElementById('btnReset').addEventListener('click', function() {
+  if (autoPlay) toggleAuto();
+  reset();
+});
+
+// ════════════════════════════════════════════════════════
+//  Resize
+// ════════════════════════════════════════════════════════
+window.addEventListener('resize', () => {
+  renderArms(lastChosen);
+  renderChart();
+});
+
+// ════════════════════════════════════════════════════════
+//  Bootstrap
+// ════════════════════════════════════════════════════════
+// Show eps group initially since default strategy is egreedy
+document.querySelectorAll('.eps-only').forEach(el => el.style.display = '');
+
+reset();
+</script>
+</body>
+</html>

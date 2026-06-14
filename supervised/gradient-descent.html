@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gradient Descent</title>
+<script>
+  MathJax = {
+    tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+    options: { skipHtmlTags: ['script','noscript','style','textarea'] }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0e11;
+    --bg2: #16161b;
+    --bg3: #1e1e26;
+    --border: rgba(255,255,255,0.08);
+    --text: #e8e6f0;
+    --muted: #7a7890;
+    --accent: #2970c4;
+    --accent2: #4ecdc4;
+    --warn: #ffd93d;
+    --danger: #ff6b6b;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem;
+  }
+
+  header {
+    width: 100%;
+    max-width: 860px;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  h1 {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.05rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+  }
+
+  .subtitle {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .main {
+    width: 100%;
+    max-width: 860px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+  }
+
+  button {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    letter-spacing: 0.02em;
+  }
+  button:hover { background: rgba(41,112,196,0.12); border-color: var(--accent); color: var(--accent); }
+  button.primary { background: rgba(41,112,196,0.15); border-color: var(--accent); color: var(--accent); }
+  button:active { transform: scale(0.97); }
+
+  label {
+    font-size: 0.75rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  select {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    color: var(--text);
+    cursor: pointer;
+  }
+
+  input[type=range] {
+    accent-color: var(--accent);
+    width: 90px;
+  }
+
+  .stats {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+  .stat span { color: var(--text); font-weight: 500; }
+  .stat span.bad { color: var(--danger); }
+  .stat span.warn { color: var(--warn); }
+
+  .phase-box {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 0.6rem 1rem;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: var(--muted);
+    min-height: 2.4rem;
+  }
+  .phase-box b { color: var(--text); font-weight: 500; }
+
+  canvas {
+    display: block;
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    cursor: crosshair;
+  }
+
+  .hint {
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    text-align: center;
+    margin-top: 0.25rem;
+  }
+
+  /* explanation */
+  .explanation {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .explanation h2 {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .explanation p {
+    font-size: 0.82rem;
+    line-height: 1.65;
+    color: var(--muted);
+  }
+  .explanation p b { color: var(--text); font-weight: 500; }
+
+  .steps { display: flex; flex-direction: column; gap: 0.75rem; }
+
+  .step {
+    display: grid;
+    grid-template-columns: 1.6rem 1fr;
+    gap: 0.5rem 0.75rem;
+    align-items: start;
+  }
+
+  .step-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    padding-top: 0.1rem;
+  }
+
+  .step-body { display: flex; flex-direction: column; gap: 0.35rem; }
+  .step-title { font-size: 0.82rem; font-weight: 500; color: var(--text); }
+  .step-desc { font-size: 0.78rem; color: var(--muted); line-height: 1.55; }
+  .step-desc b { color: var(--text); font-weight: 500; }
+
+  .formula-box {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.4rem 1rem;
+    color: var(--text);
+    overflow-x: auto;
+  }
+
+  .formula-box mjx-container { color: var(--text) !important; }
+
+  .variant-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 8px;
+  }
+
+  .variant-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.9rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+  .variant-card .vc-title { font-size: 0.8rem; font-weight: 500; color: var(--text); }
+  .variant-card .vc-desc  { font-size: 0.73rem; color: var(--muted); line-height: 1.5; }
+
+  .src-note {
+    font-size: 0.7rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    border-top: 1px solid var(--border);
+    padding-top: 0.75rem;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>gradient-descent.js</h1>
+  <span class="subtitle">// Optimierung — interaktive Visualisierung</span>
+</header>
+
+<div class="main">
+
+  <div class="controls">
+    <button onclick="reset()" class="primary">↺ neu</button>
+    <label>Funktion
+      <select id="fn-sel" onchange="reset()">
+        <option value="quad">Parabel (quadratisch)</option>
+        <option value="rosenbrock">Rosenbrock-ähnlich</option>
+        <option value="bumpy">wellig (lokale Minima)</option>
+      </select>
+    </label>
+    <label>α =
+      <input type="range" id="lr-slider" min="-3" max="0" step="0.05" value="-1"
+             oninput="updateLR()">
+      <span id="lr-val">0.100</span>
+    </label>
+    <button onclick="step()">schritt →</button>
+    <button onclick="autoRun()" id="auto-btn">▶ auto</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat">schritt <span id="st-iter">0</span></div>
+    <div class="stat">θ <span id="st-theta">—</span></div>
+    <div class="stat">J(θ) <span id="st-j">—</span></div>
+    <div class="stat">Gradient <span id="st-grad">—</span></div>
+    <div class="stat">α <span id="st-lr">0.100</span></div>
+  </div>
+
+  <div class="phase-box" id="desc">Klicke <b>schritt →</b> um zu starten, oder klicke auf die Leinwand um θ manuell zu setzen.</div>
+
+  <canvas id="c"></canvas>
+  <div class="hint">klick auf leinwand → θ setzen &nbsp;·&nbsp; lernrate α mit dem Slider anpassen</div>
+
+  <div class="explanation">
+    <h2>// gradient descent — erklärung</h2>
+
+    <p>
+      <b>Gradient Descent</b> ist ein iterativer Optimierungsalgorithmus, der eine Kostenfunktion
+      \(J(\theta)\) minimiert, indem er den Parameter \(\theta\) schrittweise in Richtung des
+      steilsten Abstiegs verschiebt — d.h. entgegen dem Gradienten.
+    </p>
+
+    <div class="steps">
+
+      <div class="step">
+        <span class="step-num">01</span>
+        <div class="step-body">
+          <span class="step-title">Update-Regel</span>
+          <span class="step-desc">
+            In jedem Schritt wird \(\theta\) um einen Bruchteil des Gradienten verschoben:
+          </span>
+          <div class="formula-box">
+            \[ \theta \leftarrow \theta - \alpha \cdot \frac{\partial J(\theta)}{\partial \theta} \]
+          </div>
+          <span class="step-desc">
+            <b>\(\alpha\)</b> ist die <b>Lernrate</b> (Schrittweite), <b>\(\nabla J\)</b> die Richtung
+            des stärksten Anstiegs. Das Minus kehrt die Richtung um — wir gehen bergab.
+          </span>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">02</span>
+        <div class="step-body">
+          <span class="step-title">Gradient für MSE (Lineare Regression)</span>
+          <span class="step-desc">
+            Für den mittleren quadratischen Fehler \(J(\theta) = \frac{1}{n}\sum_i(h_\theta(x_i)-y_i)^2\)
+            ergibt sich der Gradient als:
+          </span>
+          <div class="formula-box">
+            \[
+              \frac{\partial J}{\partial \theta_0} = \frac{2}{n} \sum_{i=1}^n \bigl(h_\theta(x_i) - y_i\bigr)
+              \qquad
+              \frac{\partial J}{\partial \theta_1} = \frac{2}{n} \sum_{i=1}^n \bigl(h_\theta(x_i) - y_i\bigr) \cdot x_i
+            \]
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">03</span>
+        <div class="step-body">
+          <span class="step-title">Wahl der Lernrate α</span>
+          <span class="step-desc">
+            Die Lernrate bestimmt das Konvergenzverhalten entscheidend:
+          </span>
+          <div class="variant-grid" style="margin-top:0.3rem">
+            <div class="variant-card">
+              <span class="vc-title">α zu klein</span>
+              <span class="vc-desc">Sehr langsame Konvergenz — viele Iterationen nötig, aber stabil.</span>
+            </div>
+            <div class="variant-card">
+              <span class="vc-title">α optimal</span>
+              <span class="vc-desc">Schnelle, stabile Konvergenz zum Minimum.</span>
+            </div>
+            <div class="variant-card">
+              <span class="vc-title">α zu groß</span>
+              <span class="vc-desc">Überschießen — J(θ) divergiert statt zu konvergieren.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">04</span>
+        <div class="step-body">
+          <span class="step-title">Varianten</span>
+          <div class="variant-grid" style="margin-top:0.3rem">
+            <div class="variant-card">
+              <span class="vc-title">Batch GD</span>
+              <span class="vc-desc">Gradient über den gesamten Datensatz — stabil, aber teuer bei großen Daten.</span>
+            </div>
+            <div class="variant-card">
+              <span class="vc-title">Stochastic GD (SGD)</span>
+              <span class="vc-desc">Gradient pro einzelnem Datenpunkt — schnell, aber rauschig.</span>
+            </div>
+            <div class="variant-card">
+              <span class="vc-title">Mini-Batch GD</span>
+              <span class="vc-desc">Kompromiss: Gradient über kleine Batches (z.B. 32–256). Standard in der Praxis.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">05</span>
+        <div class="step-body">
+          <span class="step-title">Konvergenzgarantie</span>
+          <span class="step-desc">
+            Für <b>konvexe</b> Funktionen (z.B. MSE der linearen Regression) konvergiert Gradient Descent
+            bei geeignetem \(\alpha\) garantiert zum globalen Minimum.
+            Bei <b>nicht-konvexen</b> Funktionen (z.B. neuronale Netze) können lokale Minima und
+            Sattelpunkte auftreten — hier helfen Varianten wie Adam oder Momentum.
+          </span>
+        </div>
+      </div>
+
+    </div>
+
+    <p class="src-note">// Quelle: Foliensatz 02 — Predicting Numeric Values (ML SS2026)</p>
+  </div>
+
+</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+
+// ── cost functions ──────────────────────────────────────────
+const FUNCTIONS = {
+  quad: {
+    J:  t => 0.8*(t-0.55)**2 + 0.04,
+    dJ: t => 1.6*(t-0.55),
+    label: 'J(θ) = 0.8(θ−0.55)² + 0.04',
+  },
+  rosenbrock: {
+    J:  t => 0.6*(t-0.3)**4 - 0.4*(t-0.3)**2 + 0.5*(t-0.3)**2 * 2 + 0.05 + 0.5*(t-0.7)**2*0.3,
+    dJ: t => 2.4*(t-0.3)**3 - 0.8*(t-0.3) + 2*(t-0.3) + 0.3*(t-0.7),
+    label: 'J(θ) — Rosenbrock-ähnlich',
+  },
+  bumpy: {
+    J:  t => 0.3*Math.sin(t*14) * Math.exp(-3*(t-0.5)**2) + 0.35*(t-0.5)**2 + 0.15,
+    dJ: t => {
+      const g = Math.exp(-3*(t-0.5)**2);
+      return 0.3*(14*Math.cos(t*14)*g + Math.sin(t*14)*(-6*(t-0.5))*g) + 0.7*(t-0.5);
+    },
+    label: 'J(θ) — wellig (lokale Minima)',
+  },
+};
+
+let lr       = 0.1;
+let theta    = 0.1;
+let history  = [];
+let autoTimer = null;
+let converged = false;
+let fn;
+
+function getFn() { return FUNCTIONS[document.getElementById('fn-sel').value]; }
+
+function updateLR() {
+  lr = Math.pow(10, parseFloat(document.getElementById('lr-slider').value));
+  document.getElementById('lr-val').textContent = lr.toFixed(3);
+  document.getElementById('st-lr').textContent  = lr.toFixed(3);
+}
+
+function resize() {
+  const W = Math.min(860, window.innerWidth - 32);
+  canvas.width  = W;
+  canvas.height = Math.round(W * 0.48);
+  draw();
+}
+window.addEventListener('resize', resize);
+
+// ── coordinate transforms ────────────────────────────────────
+// θ ∈ [0,1], J ∈ [0, 0.8] mapped to canvas
+const PAD = { l:50, r:20, t:20, b:40 };
+
+function cx(t) {
+  return PAD.l + t * (canvas.width  - PAD.l - PAD.r);
+}
+function cy(j) {
+  const H = canvas.height;
+  return H - PAD.b - j / 0.8 * (H - PAD.t - PAD.b);
+}
+function fromCx(px) {
+  return (px - PAD.l) / (canvas.width - PAD.l - PAD.r);
+}
+
+// ── draw ─────────────────────────────────────────────────────
+function draw() {
+  fn = getFn();
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = '#16161b';
+  ctx.fillRect(0,0,W,H);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 8; i++) {
+    const y = PAD.t + i*(H-PAD.t-PAD.b)/8;
+    ctx.beginPath(); ctx.moveTo(PAD.l, y); ctx.lineTo(W-PAD.r, y); ctx.stroke();
+  }
+  for (let i = 0; i <= 10; i++) {
+    const x = PAD.l + i*(W-PAD.l-PAD.r)/10;
+    ctx.beginPath(); ctx.moveTo(x, PAD.t); ctx.lineTo(x, H-PAD.b); ctx.stroke();
+  }
+
+  // Axes
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(PAD.l, PAD.t); ctx.lineTo(PAD.l, H-PAD.b); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(PAD.l, H-PAD.b); ctx.lineTo(W-PAD.r, H-PAD.b); ctx.stroke();
+
+  // Axis labels
+  ctx.font = '10px "DM Mono", monospace';
+  ctx.fillStyle = 'rgba(122,120,144,0.7)';
+  ctx.textAlign = 'center';
+  ctx.fillText('θ', W - PAD.r + 8, H - PAD.b + 4);
+  ctx.textAlign = 'right';
+  ctx.fillText('J', PAD.l - 6, PAD.t + 4);
+
+  // Cost curve
+  ctx.beginPath();
+  for (let px = PAD.l; px <= W-PAD.r; px++) {
+    const t = fromCx(px);
+    const j = Math.min(fn.J(t), 0.8);
+    const x = cx(t), y = cy(j);
+    px === PAD.l ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.strokeStyle = 'rgba(78,205,196,0.7)';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  // History trail
+  if (history.length > 1) {
+    for (let i = 1; i < history.length; i++) {
+      const a = history[i-1], b = history[i];
+      const alpha = (i / history.length) * 0.6;
+      ctx.beginPath();
+      ctx.moveTo(cx(a.t), cy(Math.min(a.j,0.8)));
+      ctx.lineTo(cx(b.t), cy(Math.min(b.j,0.8)));
+      ctx.strokeStyle = `rgba(41,112,196,${alpha})`;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Gradient arrow at last step
+      if (i === history.length - 1 && !converged) {
+        const grad = fn.dJ(a.t);
+        const arrLen = Math.min(Math.abs(grad) * 30, 60) * Math.sign(grad);
+        const sx = cx(a.t), sy = cy(Math.min(a.j, 0.8));
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(sx - arrLen, sy);
+        ctx.strokeStyle = 'rgba(255,217,61,0.7)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        // arrowhead
+        ctx.beginPath();
+        const tip = sx - arrLen;
+        const dir = -Math.sign(arrLen);
+        ctx.moveTo(tip, sy);
+        ctx.lineTo(tip + dir*8, sy - 4);
+        ctx.lineTo(tip + dir*8, sy + 4);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(255,217,61,0.7)';
+        ctx.fill();
+      }
+    }
+  }
+
+  // Current point
+  const j = fn.J(theta);
+  const px = cx(theta), py = cy(Math.min(j, 0.8));
+
+  // Tangent line (gradient)
+  if (history.length > 0) {
+    const grad = fn.dJ(theta);
+    const slope = grad * (canvas.width - PAD.l - PAD.r) / 0.8 * (H-PAD.t-PAD.b) * (-1);
+    const span = 0.12;
+    const x0 = cx(Math.max(0, theta-span)), x1 = cx(Math.min(1, theta+span));
+    const y0 = py - (px - x0) * grad * (canvas.width-PAD.l-PAD.r) / 0.8 * -(H-PAD.t-PAD.b)/0.8 * 0.001;
+    // simpler: draw tangent in canvas coords
+    const dydx = -grad / 0.8 * (H-PAD.t-PAD.b) / (W-PAD.l-PAD.r);
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(x0, py + (px-x0)*dydx);
+    ctx.lineTo(x1, py + (px-x1)*dydx);
+    ctx.strokeStyle = 'rgba(255,217,61,0.35)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4,4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+
+  // Glow
+  const grd = ctx.createRadialGradient(px, py, 0, px, py, 18);
+  grd.addColorStop(0, 'rgba(41,112,196,0.3)');
+  grd.addColorStop(1, 'rgba(41,112,196,0)');
+  ctx.beginPath(); ctx.arc(px, py, 18, 0, Math.PI*2);
+  ctx.fillStyle = grd; ctx.fill();
+
+  // Dot
+  ctx.beginPath(); ctx.arc(px, py, 6, 0, Math.PI*2);
+  ctx.fillStyle = converged ? 'rgba(107,203,119,0.95)' : 'rgba(41,112,196,0.95)';
+  ctx.fill();
+  ctx.strokeStyle = '#0e0e11'; ctx.lineWidth = 1.5; ctx.stroke();
+
+  // Converged label
+  if (converged) {
+    ctx.font = '500 11px "DM Mono", monospace';
+    ctx.fillStyle = 'rgba(107,203,119,0.8)';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('// konvergiert ✓', W - PAD.r, H - PAD.b - 6);
+  }
+
+  updateStats(j);
+}
+
+function updateStats(j) {
+  const grad = fn.dJ(theta);
+  const iterEl  = document.getElementById('st-iter');
+  const thetaEl = document.getElementById('st-theta');
+  const jEl     = document.getElementById('st-j');
+  const gradEl  = document.getElementById('st-grad');
+
+  iterEl.textContent  = history.length;
+  thetaEl.textContent = theta.toFixed(4);
+  jEl.textContent     = j.toFixed(5);
+  gradEl.textContent  = grad.toFixed(4);
+
+  const isExploding = Math.abs(theta) > 5 || j > 5;
+  jEl.className = isExploding ? 'bad' : '';
+}
+
+function setDesc(txt) {
+  document.getElementById('desc').innerHTML = txt;
+}
+
+function step() {
+  if (converged) { reset(); return; }
+  fn = getFn();
+  const grad  = fn.dJ(theta);
+  const j     = fn.J(theta);
+  history.push({ t: theta, j });
+
+  theta = theta - lr * grad;
+
+  const newJ   = fn.J(theta);
+  const change = Math.abs(fn.dJ(theta));
+
+  if (change < 1e-5 || history.length > 2000) {
+    converged = true;
+    if (autoTimer) { clearInterval(autoTimer); autoTimer = null; document.getElementById('auto-btn').textContent = '▶ auto'; }
+    setDesc(`<b>Konvergiert</b> nach ${history.length} Schritten — J(θ) = ${newJ.toFixed(5)}.`);
+  } else if (Math.abs(theta) > 5) {
+    converged = true;
+    if (autoTimer) { clearInterval(autoTimer); autoTimer = null; document.getElementById('auto-btn').textContent = '▶ auto'; }
+    setDesc(`<b>Divergiert!</b> θ = ${theta.toFixed(2)} — Lernrate α zu groß. ↺ neu starten und α reduzieren.`);
+  } else {
+    setDesc(`Schritt ${history.length}: θ ${(theta + lr*grad).toFixed(4)} → <b>${theta.toFixed(4)}</b> &nbsp;·&nbsp; Gradient = ${grad.toFixed(4)} &nbsp;·&nbsp; J = ${newJ.toFixed(5)}`);
+  }
+
+  draw();
+}
+
+function autoRun() {
+  if (autoTimer) {
+    clearInterval(autoTimer); autoTimer = null;
+    document.getElementById('auto-btn').textContent = '▶ auto';
+    return;
+  }
+  document.getElementById('auto-btn').textContent = '⏸ pause';
+  autoTimer = setInterval(() => {
+    if (converged) { clearInterval(autoTimer); autoTimer = null; document.getElementById('auto-btn').textContent = '▶ auto'; return; }
+    step();
+  }, 80);
+}
+
+function reset() {
+  if (autoTimer) { clearInterval(autoTimer); autoTimer = null; document.getElementById('auto-btn').textContent = '▶ auto'; }
+  fn = getFn();
+  theta     = Math.random() * 0.7 + 0.05;
+  history   = [];
+  converged = false;
+  setDesc('Klicke <b>schritt →</b> um zu starten, oder klicke auf die Leinwand um θ manuell zu setzen.');
+  draw();
+}
+
+canvas.addEventListener('click', e => {
+  const rect = canvas.getBoundingClientRect();
+  const sx   = canvas.width / rect.width;
+  const t    = fromCx((e.clientX - rect.left) * sx);
+  if (t < 0 || t > 1) return;
+  theta     = t;
+  history   = [];
+  converged = false;
+  setDesc(`θ auf <b>${theta.toFixed(3)}</b> gesetzt. Klicke <b>schritt →</b> um zu starten.`);
+  draw();
+});
+
+resize();
+reset();
+updateLR();
+</script>
+</body>
+</html>

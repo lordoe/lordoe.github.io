@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MLP-Netz — Deep Learning I</title>
+<script>
+  MathJax = {
+    tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+    options: { skipHtmlTags: ['script','noscript','style','textarea'] }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0e11;
+    --bg2: #16161b;
+    --bg3: #1e1e26;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.13);
+    --text: #e8e6f0;
+    --muted: #7a7890;
+    --accent: #167a5a;
+    --accent-dim: rgba(22,122,90,0.15);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem 3rem;
+  }
+
+  header {
+    width: 100%;
+    max-width: 860px;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  h1 {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.05rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+  }
+
+  .subtitle {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .main {
+    width: 100%;
+    max-width: 860px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .card-header {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  .card p {
+    font-size: 0.83rem;
+    line-height: 1.65;
+    color: var(--muted);
+  }
+
+  .card p b { color: var(--text); font-weight: 500; }
+
+  /* Formula blocks */
+  .formula-block {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.75rem 1.25rem;
+    text-align: center;
+    overflow-x: auto;
+  }
+
+  mjx-container { color: var(--text) !important; }
+
+  .notation-row {
+    display: flex;
+    gap: 0.5rem 1.5rem;
+    flex-wrap: wrap;
+    font-size: 0.8rem;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+  .notation-row span { white-space: nowrap; }
+
+  /* MLP SVG diagram */
+  .mlp-wrap {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .mlp-hint {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--muted);
+  }
+
+  #mlp-svg {
+    width: 100%;
+    max-width: 520px;
+    height: auto;
+  }
+
+  /* ReLU plot */
+  .relu-wrap {
+    display: flex;
+    gap: 1.25rem;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .relu-desc {
+    flex: 1;
+    min-width: 200px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .relu-plot {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+
+  /* Toggle buttons */
+  .toggle-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .tab-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.73rem;
+    font-weight: 500;
+    padding: 5px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    color: var(--muted);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    letter-spacing: 0.03em;
+  }
+  .tab-btn:hover { border-color: var(--accent); color: var(--text); }
+  .tab-btn.active {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .tab-btn:active { transform: scale(0.97); }
+
+  /* Loss panels */
+  .loss-panel { display: none; flex-direction: column; gap: 0.9rem; }
+  .loss-panel.visible { display: flex; }
+
+  .interp-box {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 0.65rem 1rem;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+  .interp-box b { color: var(--text); font-weight: 500; }
+
+  /* Softmax demo */
+  .slider-grid {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 0.55rem 0.75rem;
+    align-items: center;
+  }
+
+  .slider-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    background: var(--bg3);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+    border: 1px solid var(--border2);
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: none;
+  }
+
+  .slider-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.73rem;
+    color: var(--text);
+    min-width: 3ch;
+    text-align: right;
+  }
+
+  .bar-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .bar-row {
+    display: grid;
+    grid-template-columns: 1.5rem 1fr auto;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .bar-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    text-align: right;
+  }
+
+  .bar-track {
+    background: var(--bg3);
+    border-radius: 4px;
+    height: 20px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+
+  .bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 4px;
+    transition: width 0.15s ease;
+    min-width: 2px;
+  }
+
+  .bar-fill.dim { background: rgba(22,122,90,0.45); }
+
+  .bar-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text);
+    min-width: 4.5ch;
+    text-align: left;
+  }
+
+  .loss-display {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 0.6rem 1rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.82rem;
+    color: var(--muted);
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .loss-display .loss-val {
+    color: var(--accent);
+    font-weight: 500;
+    font-size: 0.95rem;
+  }
+
+  .demo-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  @media (max-width: 560px) { .demo-grid { grid-template-columns: 1fr; } }
+
+  .demo-section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 0.35rem;
+  }
+
+  /* KL connection note */
+  .kl-note {
+    background: var(--accent-dim);
+    border: 1px solid rgba(22,122,90,0.3);
+    border-radius: 8px;
+    padding: 0.65rem 1rem;
+    font-size: 0.8rem;
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  .src-note {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    width: 100%;
+    max-width: 860px;
+  }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  @media (max-width: 580px) { .two-col { grid-template-columns: 1fr; } }
+
+  .inline-formula {
+    display: inline-block;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>mlp-netz.js</h1>
+  <span class="subtitle">// Multi-Layer Perceptron — Deep Learning I</span>
+</header>
+
+<div class="main">
+
+  <!-- ===================== SECTION 1: MLP ===================== -->
+  <div class="card">
+    <div class="card-header">01 — Multi-Layer Perceptron (MLP)</div>
+
+    <p>
+      Ein <b>Multi-Layer Perceptron</b> ist ein vollvernetztes neuronales Netz mit \( L \) Schichten.
+      Jede Schicht transformiert die Aktivierungen der vorherigen Schicht durch eine affine Abbildung
+      gefolgt von einer elementweisen nichtlinearen Aktivierungsfunktion \( f \).
+    </p>
+
+    <!-- MLP SVG diagram -->
+    <div class="mlp-wrap">
+      <svg id="mlp-svg" viewBox="0 0 520 220" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill="rgba(255,255,255,0.12)" />
+          </marker>
+          <marker id="arr-active" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill="#167a5a" />
+          </marker>
+        </defs>
+        <!-- Will be rendered by JS -->
+      </svg>
+      <div class="mlp-hint">// Klicke auf einen Ausgabe-Knoten um den Pfad zu markieren</div>
+    </div>
+
+    <!-- Forward pass formula -->
+    <p style="font-size:0.8rem; color:var(--muted);">
+      <b style="color:var(--text);">Forward Pass</b> — Berechnung der Aktivierungen durch alle Schichten:
+    </p>
+    <div class="formula-block">
+      \[ \mathbf{z}_n^{(\ell+1)} = f\!\left(\mathbf{W}^{(\ell)}\mathbf{z}_n^{(\ell)} + \mathbf{b}^{(\ell)}\right) \]
+    </div>
+
+    <div class="notation-row">
+      <span>\( \mathbf{z}^{(0)} = \mathbf{x} \) — Eingabe</span>
+      <span>\( \mathbf{y}_n = \mathbf{z}^{(L+1)} \) — Ausgabe</span>
+      <span>\( \mathbf{W}^{(\ell)} \in \mathbb{R}^{d_{\ell+1} \times d_\ell} \) — Gewichtsmatrix</span>
+      <span>\( \mathbf{b}^{(\ell)} \in \mathbb{R}^{d_{\ell+1}} \) — Bias-Vektor</span>
+    </div>
+
+    <!-- ReLU section -->
+    <div class="relu-wrap">
+      <div class="relu-desc">
+        <p>
+          <b>Aktivierungsfunktion ReLU</b> (Rectified Linear Unit) ist die meistverwendete
+          Aktivierungsfunktion in tiefen Netzen. Sie unterdrückt negative Aktivierungen
+          und lässt positive Werte unverändert durch:
+        </p>
+        <div class="formula-block">
+          \[ f(a) = \max(0,\, a) \]
+        </div>
+        <p style="font-size:0.78rem;">
+          ReLU löst das <b>Vanishing Gradient Problem</b> der Sigmoid-Funktion:
+          der Gradient ist für \( a > 0 \) konstant gleich 1, d.h.
+          \( f'(a) = \mathbf{1}[a > 0] \).
+        </p>
+      </div>
+      <svg class="relu-plot" width="160" height="120" viewBox="0 0 160 120" xmlns="http://www.w3.org/2000/svg">
+        <!-- Grid lines -->
+        <line x1="10" y1="60" x2="150" y2="60" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+        <line x1="80" y1="10" x2="80" y2="110" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+        <!-- Axes -->
+        <line x1="10" y1="60" x2="150" y2="60" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+        <line x1="80" y1="10" x2="80" y2="110" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+        <!-- ReLU: flat for x<0, rising for x>0 -->
+        <polyline points="10,60 80,60 150,10" fill="none" stroke="#167a5a" stroke-width="2.5" stroke-linejoin="round"/>
+        <!-- Axis labels -->
+        <text x="148" y="57" font-family="DM Mono,monospace" font-size="9" fill="#7a7890">a</text>
+        <text x="83" y="15" font-family="DM Mono,monospace" font-size="9" fill="#7a7890">f(a)</text>
+        <text x="74" y="72" font-family="DM Mono,monospace" font-size="8" fill="#7a7890">0</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ===================== SECTION 2: LOSS FUNCTIONS ===================== -->
+  <div class="card">
+    <div class="card-header">02 — Verlustfunktionen</div>
+
+    <p>
+      Die Wahl der Verlustfunktion hängt von der Aufgabe ab: <b>MSE</b> für Regression,
+      <b>Cross-Entropy</b> für Klassifikation. Beide haben eine probabilistische Interpretation
+      als negative Log-Likelihood unter unterschiedlichen Modellen.
+    </p>
+
+    <div class="toggle-row">
+      <button class="tab-btn active" id="btn-mse" onclick="showLoss('mse')">MSE — Regression</button>
+      <button class="tab-btn" id="btn-ce" onclick="showLoss('ce')">Cross-Entropy — Klassifikation</button>
+    </div>
+
+    <!-- MSE panel -->
+    <div class="loss-panel visible" id="panel-mse">
+      <p>
+        Für ein Regressionsproblem mit \(N\) Datenpunkten minimiert das Netz den mittleren
+        quadratischen Fehler zwischen Vorhersage \(\mathbf{y}_n\) und Zielwert \(\mathbf{y}_n^{\text{target}}\):
+      </p>
+      <div class="formula-block">
+        \[ \mathcal{L}_{\text{MSE}} = \frac{1}{N}\sum_{n=1}^{N}\left\|\mathbf{y}_n - \mathbf{y}_n^{\text{target}}\right\|^2 \]
+      </div>
+      <div class="interp-box">
+        <b>Probabilistische Interpretation:</b> Minimierung des MSE entspricht
+        Maximum-Likelihood-Schätzung unter einem <b>Gauß'schen Ausgangsmodell</b>:
+        <br>
+        \[ p_\theta(\mathbf{y} \mid \mathbf{x}) = \mathcal{N}\!\left(\mathbf{y};\;\mathrm{MLP}_\theta(\mathbf{x}),\;\sigma^2 \mathbf{I}\right) \]
+        Die negative Log-Likelihood \( -\log p_\theta(\mathbf{y}_n \mid \mathbf{x}_n) \) ergibt (bis auf Konstante)
+        genau den quadratischen Term \( \|\mathbf{y}_n - \mathrm{MLP}_\theta(\mathbf{x}_n)\|^2 \).
+      </div>
+    </div>
+
+    <!-- Cross-Entropy panel -->
+    <div class="loss-panel" id="panel-ce">
+      <p>
+        Für Klassifikation mit \(N\) Samples \((\mathbf{x}_n, c_n)\), \( c_n \in \{1,\ldots,K\} \).
+        Das Netz gibt <b>Logits</b> aus: \(\mathbf{y}_n = \mathrm{MLP}(\mathbf{x}_n) \in \mathbb{R}^K\).
+      </p>
+
+      <div class="two-col">
+        <div>
+          <p style="font-size:0.78rem; margin-bottom:0.5rem;"><b>Softmax</b> — Logits → Wahrscheinlichkeiten:</p>
+          <div class="formula-block">
+            \[ p_{n,k} = \frac{e^{y_{n,k}}}{\displaystyle\sum_{j=1}^{K} e^{y_{n,j}}} \]
+          </div>
+          <p style="font-size:0.77rem; margin-top:0.5rem;">
+            Softmax normiert alle Klassen-Logits auf eine gültige
+            Wahrscheinlichkeitsverteilung: \(\sum_k p_{n,k} = 1\), \(p_{n,k} > 0\).
+          </p>
+        </div>
+        <div>
+          <p style="font-size:0.78rem; margin-bottom:0.5rem;"><b>Cross-Entropy Loss</b>:</p>
+          <div class="formula-block">
+            \[ \mathcal{L}_{\text{CE}} = -\frac{1}{N}\sum_{n=1}^{N} \log p_{n,\,c_n} \]
+          </div>
+          <p style="font-size:0.77rem; margin-top:0.5rem;">
+            Nur die Wahrscheinlichkeit der wahren Klasse \(c_n\) geht in den Loss ein —
+            sie soll maximiert (d.h. der Verlust minimiert) werden.
+          </p>
+        </div>
+      </div>
+
+      <div class="interp-box">
+        <b>Probabilistische Interpretation:</b> Minimierung des Cross-Entropy-Verlusts entspricht
+        Maximum-Likelihood unter einem <b>kategorischen Modell</b>:
+        <br><br>
+        \( p_\theta(c \mid \mathbf{x}) = \mathrm{softmax}(\mathrm{MLP}_\theta(\mathbf{x}))_c \)
+        <br><br>
+        Der negative Log-Likelihood \(-\frac{1}{N}\sum_n \log p_\theta(c_n \mid \mathbf{x}_n)\)
+        ist exakt \(\mathcal{L}_{\text{CE}}\).
+      </div>
+
+      <div class="kl-note">
+        <b>KL-Divergenz — Verbindung:</b>&nbsp;
+        Minimierung der KL-Divergenz \( D_{\text{KL}}(q \| p_\theta) \) zwischen empirischer
+        Verteilung \(q\) und Modell \(p_\theta\)
+        &nbsp;\(\Longleftrightarrow\)&nbsp; Minimierung von \(\mathcal{L}_{\text{CE}}\)
+        &nbsp;\(\Longleftrightarrow\)&nbsp; Maximierung der Log-Likelihood.
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== SECTION 3: SOFTMAX DEMO ===================== -->
+  <div class="card">
+    <div class="card-header">03 — Interaktive Softmax-Demo</div>
+
+    <p>
+      Drei Logits \(z_1, z_2, z_3\) werden durch Softmax in Wahrscheinlichkeiten
+      \(p_1, p_2, p_3\) umgerechnet. Der Cross-Entropy-Verlust bezieht sich auf
+      Klasse 1 als wahre Klasse: \(\mathcal{L} = -\log p_1\).
+    </p>
+
+    <div class="demo-grid">
+      <!-- Sliders -->
+      <div>
+        <div class="demo-section-label">Logits</div>
+        <div class="slider-grid">
+          <span class="slider-label">\(z_1\)</span>
+          <input type="range" id="z1" min="-3" max="3" step="0.1" value="1" oninput="updateDemo()">
+          <span class="slider-val" id="z1-val">1.0</span>
+
+          <span class="slider-label">\(z_2\)</span>
+          <input type="range" id="z2" min="-3" max="3" step="0.1" value="0" oninput="updateDemo()">
+          <span class="slider-val" id="z2-val">0.0</span>
+
+          <span class="slider-label">\(z_3\)</span>
+          <input type="range" id="z3" min="-3" max="3" step="0.1" value="-1" oninput="updateDemo()">
+          <span class="slider-val" id="z3-val">-1.0</span>
+        </div>
+
+        <div class="formula-block" style="margin-top:0.75rem; text-align:left; padding: 0.5rem 0.9rem;">
+          \( \mathcal{L} = -\log p_1 = \) <span id="loss-inline" style="color:var(--accent); font-family:'DM Mono',monospace; font-weight:500;">—</span>
+        </div>
+      </div>
+
+      <!-- Bar chart -->
+      <div>
+        <div class="demo-section-label">Softmax-Wahrscheinlichkeiten</div>
+        <div class="bar-chart" id="bar-chart">
+          <div class="bar-row">
+            <span class="bar-name">\(p_1\)</span>
+            <div class="bar-track">
+              <div class="bar-fill" id="bar1" style="width:50%"></div>
+            </div>
+            <span class="bar-val" id="p1-val">—</span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-name">\(p_2\)</span>
+            <div class="bar-track">
+              <div class="bar-fill dim" id="bar2" style="width:30%"></div>
+            </div>
+            <span class="bar-val" id="p2-val">—</span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-name">\(p_3\)</span>
+            <div class="bar-track">
+              <div class="bar-fill dim" id="bar3" style="width:20%"></div>
+            </div>
+            <span class="bar-val" id="p3-val">—</span>
+          </div>
+        </div>
+
+        <div class="loss-display" style="margin-top:0.75rem;">
+          <span>Cross-Entropy (Klasse 1):</span>
+          <span class="loss-val" id="loss-val">—</span>
+        </div>
+      </div>
+    </div>
+
+    <p style="font-size:0.77rem;">
+      Beobachte: wenn \(z_1 \gg z_2, z_3\), wird \(p_1 \to 1\) und \(\mathcal{L} \to 0\).
+      Wenn alle Logits gleich sind, ist \(p_1 = \tfrac{1}{3}\) und \(\mathcal{L} = \log 3 \approx 1.099\).
+    </p>
+  </div>
+
+</div><!-- .main -->
+
+<p class="src-note">// Quelle: Foliensatz 03 — Deep Learning I (ML SS2026)</p>
+
+<script>
+/* ------------------------------------------------------------------ */
+/*  MLP diagram                                                        */
+/* ------------------------------------------------------------------ */
+(function buildMLP() {
+  const svg = document.getElementById('mlp-svg');
+  const ns = 'http://www.w3.org/2000/svg';
+
+  const layers = [
+    { x: 80,  nodes: 4, label: 'Eingabe',  sublabel: 'z⁽⁰⁾ = x' },
+    { x: 220, nodes: 4, label: 'Hidden',   sublabel: 'z⁽¹⁾' },
+    { x: 360, nodes: 4, label: 'Hidden',   sublabel: 'z⁽²⁾' },
+    { x: 480, nodes: 2, label: 'Ausgabe',  sublabel: 'y = z⁽³⁾' }
+  ];
+
+  const W = 520, H = 220;
+  const nodeR = 13;
+  const accent = '#167a5a';
+  const dimEdge = 'rgba(255,255,255,0.07)';
+  const dimNode = '#1e1e26';
+  const dimStroke = 'rgba(255,255,255,0.18)';
+  const textMuted = '#7a7890';
+
+  // Compute node positions
+  function nodePositions(layer) {
+    const n = layer.nodes;
+    const totalH = (n - 1) * 44;
+    const startY = (H - totalH) / 2;
+    return Array.from({length: n}, (_, i) => ({
+      x: layer.x,
+      y: startY + i * 44
+    }));
+  }
+
+  const positions = layers.map(nodePositions);
+
+  // Draw edges
+  const edgeGroup = document.createElementNS(ns, 'g');
+  edgeGroup.id = 'mlp-edges';
+  svg.appendChild(edgeGroup);
+
+  for (let l = 0; l < layers.length - 1; l++) {
+    const from = positions[l];
+    const to   = positions[l + 1];
+    from.forEach((fp, fi) => {
+      to.forEach((tp, ti) => {
+        const line = document.createElementNS(ns, 'line');
+        line.setAttribute('x1', fp.x + nodeR);
+        line.setAttribute('y1', fp.y);
+        line.setAttribute('x2', tp.x - nodeR);
+        line.setAttribute('y2', tp.y);
+        line.setAttribute('stroke', dimEdge);
+        line.setAttribute('stroke-width', '1');
+        line.dataset.from = l + ':' + fi;
+        line.dataset.to   = (l+1) + ':' + ti;
+        edgeGroup.appendChild(line);
+      });
+    });
+  }
+
+  // Draw nodes
+  const nodeGroup = document.createElementNS(ns, 'g');
+  nodeGroup.id = 'mlp-nodes';
+  svg.appendChild(nodeGroup);
+
+  positions.forEach((layerPos, li) => {
+    const layer = layers[li];
+    layerPos.forEach((pos, ni) => {
+      const circle = document.createElementNS(ns, 'circle');
+      circle.setAttribute('cx', pos.x);
+      circle.setAttribute('cy', pos.y);
+      circle.setAttribute('r', nodeR);
+      circle.setAttribute('fill', dimNode);
+      circle.setAttribute('stroke', dimStroke);
+      circle.setAttribute('stroke-width', '1.5');
+      circle.dataset.layer = li;
+      circle.dataset.node  = ni;
+      if (li === layers.length - 1) {
+        circle.style.cursor = 'pointer';
+        circle.addEventListener('click', () => highlightPath(li, ni));
+      }
+      nodeGroup.appendChild(circle);
+    });
+
+    // Layer label
+    const labelY = Math.min(...layerPos.map(p => p.y)) - 26;
+    const lbl = document.createElementNS(ns, 'text');
+    lbl.setAttribute('x', layer.x);
+    lbl.setAttribute('y', labelY);
+    lbl.setAttribute('text-anchor', 'middle');
+    lbl.setAttribute('font-family', 'DM Mono,monospace');
+    lbl.setAttribute('font-size', '9');
+    lbl.setAttribute('fill', textMuted);
+    lbl.textContent = layer.label;
+    svg.appendChild(lbl);
+
+    const sub = document.createElementNS(ns, 'text');
+    sub.setAttribute('x', layer.x);
+    sub.setAttribute('y', labelY + 13);
+    sub.setAttribute('text-anchor', 'middle');
+    sub.setAttribute('font-family', 'DM Mono,monospace');
+    sub.setAttribute('font-size', '8');
+    sub.setAttribute('fill', textMuted);
+    sub.setAttribute('opacity', '0.7');
+    sub.textContent = layer.sublabel;
+    svg.appendChild(sub);
+  });
+
+  // W labels between layers
+  [[1,2],[2,3],[3,4]].forEach(([from, to], idx) => {
+    const midX = (layers[idx].x + layers[idx+1].x) / 2;
+    const wlbl = document.createElementNS(ns, 'text');
+    wlbl.setAttribute('x', midX);
+    wlbl.setAttribute('y', 12);
+    wlbl.setAttribute('text-anchor', 'middle');
+    wlbl.setAttribute('font-family', 'DM Mono,monospace');
+    wlbl.setAttribute('font-size', '9');
+    wlbl.setAttribute('fill', textMuted);
+    wlbl.setAttribute('opacity', '0.6');
+    wlbl.textContent = 'W⁺⁰ / b⁺⁰'.replace(/⁺⁰/, `⁽${idx}⁾`);
+    svg.appendChild(wlbl);
+  });
+
+  let activeOutput = null;
+
+  function highlightPath(outLayer, outNode) {
+    // Reset all
+    edgeGroup.querySelectorAll('line').forEach(l => {
+      l.setAttribute('stroke', dimEdge);
+      l.setAttribute('stroke-width', '1');
+    });
+    nodeGroup.querySelectorAll('circle').forEach(c => {
+      c.setAttribute('fill', dimNode);
+      c.setAttribute('stroke', dimStroke);
+      c.setAttribute('stroke-width', '1.5');
+    });
+
+    if (activeOutput === outLayer + ':' + outNode) {
+      activeOutput = null;
+      return;
+    }
+    activeOutput = outLayer + ':' + outNode;
+
+    // Trace back through all layers
+    let active = new Set([outLayer + ':' + outNode]);
+
+    for (let l = layers.length - 1; l >= 0; l--) {
+      // highlight nodes at layer l that are active
+      active.forEach(key => {
+        const [kl, kn] = key.split(':').map(Number);
+        if (kl === l) {
+          const circle = nodeGroup.querySelector(`circle[data-layer="${l}"][data-node="${kn}"]`);
+          if (circle) {
+            circle.setAttribute('fill', 'rgba(22,122,90,0.25)');
+            circle.setAttribute('stroke', accent);
+            circle.setAttribute('stroke-width', '2');
+          }
+        }
+      });
+
+      if (l === 0) break;
+
+      // Find edges leading into active nodes at layer l from layer l-1
+      const nextActive = new Set();
+      active.forEach(key => {
+        const [kl, kn] = key.split(':').map(Number);
+        if (kl === l) {
+          edgeGroup.querySelectorAll(`line[data-to="${l}:${kn}"]`).forEach(line => {
+            line.setAttribute('stroke', accent);
+            line.setAttribute('stroke-width', '1.5');
+            const fromKey = line.dataset.from;
+            nextActive.add(fromKey);
+          });
+        }
+      });
+      nextActive.forEach(k => active.add(k));
+    }
+
+    // Highlight input nodes
+    active.forEach(key => {
+      const [kl, kn] = key.split(':').map(Number);
+      if (kl === 0) {
+        const circle = nodeGroup.querySelector(`circle[data-layer="0"][data-node="${kn}"]`);
+        if (circle) {
+          circle.setAttribute('fill', 'rgba(22,122,90,0.25)');
+          circle.setAttribute('stroke', accent);
+          circle.setAttribute('stroke-width', '2');
+        }
+      }
+    });
+  }
+})();
+
+/* ------------------------------------------------------------------ */
+/*  Loss function toggle                                               */
+/* ------------------------------------------------------------------ */
+function showLoss(which) {
+  ['mse', 'ce'].forEach(id => {
+    document.getElementById('panel-' + id).classList.toggle('visible', id === which);
+    document.getElementById('btn-' + id).classList.toggle('active', id === which);
+  });
+}
+
+/* ------------------------------------------------------------------ */
+/*  Softmax demo                                                       */
+/* ------------------------------------------------------------------ */
+function softmax(z) {
+  const max = Math.max(...z);
+  const exp = z.map(v => Math.exp(v - max));
+  const sum = exp.reduce((a, b) => a + b, 0);
+  return exp.map(v => v / sum);
+}
+
+function updateDemo() {
+  const z1 = parseFloat(document.getElementById('z1').value);
+  const z2 = parseFloat(document.getElementById('z2').value);
+  const z3 = parseFloat(document.getElementById('z3').value);
+
+  document.getElementById('z1-val').textContent = z1.toFixed(1);
+  document.getElementById('z2-val').textContent = z2.toFixed(1);
+  document.getElementById('z3-val').textContent = z3.toFixed(1);
+
+  const p = softmax([z1, z2, z3]);
+
+  // Update bar chart
+  ['bar1','bar2','bar3'].forEach((id, i) => {
+    document.getElementById(id).style.width = (p[i] * 100).toFixed(1) + '%';
+  });
+  ['p1-val','p2-val','p3-val'].forEach((id, i) => {
+    document.getElementById(id).textContent = p[i].toFixed(3);
+  });
+
+  // Cross-entropy loss for true class 1
+  const loss = -Math.log(p[0]);
+  document.getElementById('loss-val').textContent = loss.toFixed(4);
+  document.getElementById('loss-inline').textContent = loss.toFixed(4);
+}
+
+// Init
+updateDemo();
+</script>
+
+</body>
+</html>

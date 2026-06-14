@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Backpropagation — Deep Learning I</title>
+<script>
+  MathJax = {
+    tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+    options: { skipHtmlTags: ['script','noscript','style','textarea'] }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0e11;
+    --bg2: #16161b;
+    --bg3: #1e1e26;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.13);
+    --text: #e8e6f0;
+    --muted: #7a7890;
+    --accent: #167a5a;
+    --accent-dim: rgba(22,122,90,0.15);
+  }
+
+  mjx-container { color: var(--text) !important; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem 5rem;
+  }
+
+  header {
+    width: 100%;
+    max-width: 900px;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  h1 {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.05rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+  }
+
+  .subtitle {
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .main {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+  }
+
+  /* ── cards ── */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.4rem 1.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .card-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid rgba(22,122,90,0.2);
+  }
+
+  .prose {
+    font-size: 0.88rem;
+    line-height: 1.75;
+    color: #c0bdd0;
+  }
+  .prose + .prose { margin-top: 0.3rem; }
+
+  /* ── formula boxes ── */
+  .formula-box {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 0.9rem 1.2rem;
+    font-size: 0.92rem;
+    overflow-x: auto;
+  }
+  .formula-box.accent {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-dim);
+  }
+  .formula-box.result {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-dim);
+    text-align: center;
+    font-size: 1.05rem;
+  }
+  .formula-box.neutral {
+    border-left: 3px solid var(--border2);
+  }
+
+  /* ── buttons ── */
+  button {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 6px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+  button:hover {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  button.primary {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  button:active { transform: scale(0.97); }
+
+  /* ── computational graph SVG area ── */
+  .graph-area {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .graph-controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  #graph-status {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    padding: 5px 10px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    min-width: 200px;
+  }
+
+  #comp-graph {
+    width: 100%;
+    min-width: 420px;
+    height: 280px;
+    overflow: visible;
+  }
+
+  /* node highlight states via JS class toggling */
+  .gnode-circle {
+    fill: var(--bg3);
+    stroke: var(--border2);
+    stroke-width: 1.5;
+    transition: fill 0.3s, stroke 0.3s, filter 0.3s;
+  }
+  .gnode-label {
+    fill: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    text-anchor: middle;
+    dominant-baseline: central;
+    pointer-events: none;
+  }
+  .gnode-sublabel {
+    fill: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 10px;
+    text-anchor: middle;
+    dominant-baseline: central;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.25s;
+  }
+  .gnode.fwd .gnode-circle {
+    fill: rgba(22,122,90,0.28);
+    stroke: #167a5a;
+    filter: drop-shadow(0 0 6px rgba(22,122,90,0.7));
+  }
+  .gnode.bwd .gnode-circle {
+    fill: rgba(232,147,74,0.28);
+    stroke: #e8934a;
+    filter: drop-shadow(0 0 6px rgba(232,147,74,0.8));
+  }
+  .gnode.fwd .gnode-sublabel,
+  .gnode.bwd .gnode-sublabel { opacity: 1; }
+
+  .gedge {
+    stroke: var(--border2);
+    stroke-width: 1.5;
+    fill: none;
+    transition: stroke 0.3s, stroke-width 0.3s;
+    marker-end: url(#arrowhead-default);
+  }
+  .gedge.fwd {
+    stroke: #167a5a;
+    stroke-width: 2.5;
+    marker-end: url(#arrowhead-fwd);
+  }
+  .gedge.bwd {
+    stroke: #e8934a;
+    stroke-width: 2.5;
+    stroke-dasharray: 5 3;
+    marker-end: url(#arrowhead-bwd);
+  }
+
+  /* ── step-through widget ── */
+  .step-widget {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .step-nav {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .step-indicator {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    padding: 5px 10px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+
+  .step-panel {
+    display: none;
+    flex-direction: column;
+    gap: 0.8rem;
+    animation: fadeIn 0.2s ease;
+  }
+  .step-panel.active { display: flex; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .step-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.04em;
+  }
+
+  /* ── complexity table ── */
+  .cplx-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+  }
+  .cplx-table th {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border2);
+    background: var(--bg3);
+  }
+  .cplx-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    color: #c0bdd0;
+    vertical-align: middle;
+    background: var(--bg3);
+  }
+  .cplx-table tr:last-child td { border-bottom: none; }
+  .cplx-table tr:hover td { background: #22222c; }
+  .cplx-table td:first-child { color: var(--text); font-weight: 400; }
+  .cplx-table .highlight-row td {
+    color: var(--accent);
+    background: var(--accent-dim);
+  }
+  .cplx-table .highlight-row td:first-child { color: var(--accent); font-weight: 500; }
+
+  /* ── memory diagram ── */
+  .mem-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .mem-block {
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    border: 1px solid var(--border2);
+    background: var(--bg3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    color: var(--muted);
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .mem-block.active-fwd {
+    background: rgba(22,122,90,0.25);
+    border-color: #167a5a;
+    color: #4ecdc4;
+  }
+  .mem-block.checkpoint {
+    background: rgba(41,112,196,0.25);
+    border-color: #2970c4;
+    color: #5ba3f5;
+  }
+  .mem-block.recompute {
+    background: rgba(232,147,74,0.2);
+    border-color: #e8934a;
+    color: #e8934a;
+  }
+  .mem-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    min-width: 60px;
+  }
+  .mem-legend {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+  }
+  .mem-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--muted);
+  }
+  .mem-legend-swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    border: 1px solid currentColor;
+  }
+
+  .src-note {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--muted);
+    margin-top: 3rem;
+    opacity: 0.6;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Backpropagation</h1>
+  <span class="subtitle">// Deep Learning I — Foliensatz 03</span>
+</header>
+
+<div class="main">
+
+  <!-- ══════════════════════════════════════════════════════════
+       SECTION 1: Computational Graph
+       ══════════════════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-title">01 — Computational Graph</div>
+
+    <p class="prose">
+      Jeder Knoten speichert seinen Ausgabewert beim <strong>Forward Pass</strong>.
+      Beim <strong>Backward Pass</strong> fließen Gradienten rückwärts durch den Graphen —
+      jede Kante multipliziert mit der lokalen partiellen Ableitung (Kettenregel).
+    </p>
+    <p class="prose">
+      Beispiel: \( \mathbf{y} = \mathbf{W}\mathbf{x} + \mathbf{b} \), dann Loss \( \mathcal{L}(\mathbf{y}, \mathbf{y}^t) \).
+    </p>
+
+    <div class="graph-area">
+      <div class="graph-controls">
+        <button id="btn-fwd" class="primary">Forward Pass</button>
+        <button id="btn-bwd">Backward Pass</button>
+        <button id="btn-reset">Reset</button>
+        <span id="graph-status">Klicke "Forward Pass" zum Starten</span>
+      </div>
+
+      <!-- SVG Computational Graph -->
+      <svg id="comp-graph" viewBox="0 0 640 260" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <!-- default arrowhead -->
+          <marker id="arrowhead-default" markerWidth="8" markerHeight="6"
+                  refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#3a3a50"/>
+          </marker>
+          <!-- forward arrowhead -->
+          <marker id="arrowhead-fwd" markerWidth="8" markerHeight="6"
+                  refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#167a5a"/>
+          </marker>
+          <!-- backward arrowhead -->
+          <marker id="arrowhead-bwd" markerWidth="8" markerHeight="6"
+                  refX="7" refY="3" orient="auto">
+            <polygon points="8 0, 0 3, 8 6" fill="#e8934a"/>
+          </marker>
+          <!-- backward arrowhead (reverse direction) -->
+          <marker id="arrowhead-bwd-rev" markerWidth="8" markerHeight="6"
+                  refX="1" refY="3" orient="auto">
+            <polygon points="8 0, 0 3, 8 6" fill="#e8934a"/>
+          </marker>
+        </defs>
+
+        <!-- ── Edges (drawn first, below nodes) ── -->
+        <!-- W -> @ -->
+        <line id="e-W-mm"  class="gedge" x1="90"  y1="80"  x2="228" y2="118"/>
+        <!-- x -> @ -->
+        <line id="e-x-mm"  class="gedge" x1="90"  y1="180" x2="228" y2="142"/>
+        <!-- @ -> + -->
+        <line id="e-mm-add" class="gedge" x1="272" y1="130" x2="358" y2="130"/>
+        <!-- b -> + -->
+        <line id="e-b-add"  class="gedge" x1="90"  y1="240" x2="358" y2="148"/>
+        <!-- + -> L -->
+        <line id="e-add-L"  class="gedge" x1="402" y1="130" x2="508" y2="130"/>
+        <!-- yt -> L -->
+        <line id="e-yt-L"   class="gedge" x1="510" y1="65"  x2="534" y2="108"/>
+
+        <!-- ── Nodes ── -->
+        <!-- W -->
+        <g class="gnode" id="node-W">
+          <circle class="gnode-circle" cx="60" cy="80" r="28"/>
+          <text class="gnode-label" x="60" y="80">W</text>
+          <text class="gnode-sublabel" x="60" y="96" style="font-size:8px;">weight</text>
+        </g>
+
+        <!-- x -->
+        <g class="gnode" id="node-x">
+          <circle class="gnode-circle" cx="60" cy="180" r="28"/>
+          <text class="gnode-label" x="60" y="180">x</text>
+          <text class="gnode-sublabel" x="60" y="196" style="font-size:8px;">input</text>
+        </g>
+
+        <!-- @ (matmul) -->
+        <g class="gnode" id="node-mm">
+          <circle class="gnode-circle" cx="250" cy="130" r="28"/>
+          <text class="gnode-label" x="250" y="130">@</text>
+          <text class="gnode-sublabel" x="250" y="148" style="font-size:8px;">matmul</text>
+        </g>
+
+        <!-- b -->
+        <g class="gnode" id="node-b">
+          <circle class="gnode-circle" cx="60" cy="240" r="28"/>
+          <text class="gnode-label" x="60" y="240">b</text>
+          <text class="gnode-sublabel" x="60" y="256" style="font-size:8px;">bias</text>
+        </g>
+
+        <!-- + (add) -->
+        <g class="gnode" id="node-add">
+          <circle class="gnode-circle" cx="380" cy="130" r="28"/>
+          <text class="gnode-label" x="380" y="130">+</text>
+          <text class="gnode-sublabel" x="380" y="148" style="font-size:8px;">add</text>
+        </g>
+
+        <!-- y^t (target) -->
+        <g class="gnode" id="node-yt">
+          <circle class="gnode-circle" cx="510" cy="55" r="28"/>
+          <text class="gnode-label" x="510" y="51">y</text>
+          <text class="gnode-label" x="510" y="63" style="font-size:9px;fill:#7a7890;">target</text>
+          <text class="gnode-sublabel" x="510" y="78" style="font-size:8px;">label</text>
+        </g>
+
+        <!-- L (loss) -->
+        <g class="gnode" id="node-L">
+          <circle class="gnode-circle" cx="540" cy="130" r="32"/>
+          <text class="gnode-label" x="540" y="127" style="font-size:14px;">L</text>
+          <text class="gnode-sublabel" x="540" y="149" style="font-size:8px;">MSE loss</text>
+        </g>
+
+        <!-- Arrow labels on edges -->
+        <text x="165" y="92" font-family="DM Mono, monospace" font-size="9" fill="#7a7890">Wx</text>
+        <text x="300" y="120" font-family="DM Mono, monospace" font-size="9" fill="#7a7890">Wx+b</text>
+      </svg>
+    </div>
+
+    <div class="formula-box accent">
+      \[
+        \mathbf{y} = \mathbf{W}\mathbf{x} + \mathbf{b} \quad \longrightarrow \quad \mathcal{L}(\mathbf{y},\, \mathbf{y}^t) = \frac{1}{N}\sum_{n=1}^{N}\|\mathbf{y}_n - \mathbf{y}_n^t\|^2
+      \]
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       SECTION 2: Mathematical Derivation — Single Hidden Layer
+       ══════════════════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-title">02 — Mathematische Herleitung — Einzelne versteckte Schicht</div>
+
+    <p class="prose">
+      Betrachte ein Netz mit zwei Schichten. Der Forward Pass ist definiert als:
+    </p>
+
+    <div class="formula-box neutral">
+      \[
+        \mathbf{z}^{(0)} = \mathbf{x}_n, \qquad
+        \mathbf{z}^{(\ell+1)} = f\!\left(\mathbf{W}^{(\ell)}\mathbf{z}^{(\ell)} + \mathbf{b}^{(\ell)}\right), \qquad
+        \mathbf{y}_n = \mathbf{z}^{(2)}
+      \]
+    </div>
+
+    <p class="prose">
+      Dabei ist \(f\) die Aktivierungsfunktion (z. B. ReLU), \(\mathbf{a}_n^{(\ell)} = \mathbf{W}^{(\ell)}\mathbf{z}^{(\ell)} + \mathbf{b}^{(\ell)}\)
+      die Pre-Activation.
+    </p>
+
+    <!-- Step-through widget -->
+    <div class="step-widget">
+      <div class="step-nav">
+        <button id="step-prev" disabled>&#8592; Zurück</button>
+        <span class="step-indicator" id="step-indicator">Schritt 1 / 3</span>
+        <button id="step-next">Weiter &#8594;</button>
+      </div>
+
+      <!-- Step 1 -->
+      <div class="step-panel active" id="step-1">
+        <div class="step-title">Schritt 1 — Gradient bzgl. Ausgabe</div>
+        <p class="prose">
+          Ableitung des MSE-Loss nach dem Ausgabevektor \(\mathbf{y}_{n,k}\):
+        </p>
+        <div class="formula-box accent">
+          \[
+            \frac{\partial \mathcal{L}_{\text{MSE}}}{\partial y_{n,k}}
+            = \frac{2}{N}\left(y_{n,k} - y_{n,k}^{\text{target}}\right)
+          \]
+        </div>
+        <p class="prose">
+          In Vektorform: \(\dfrac{\partial \mathcal{L}}{\partial \mathbf{y}_n} = \dfrac{2}{N}\!\left(\mathbf{y}_n - \mathbf{y}_n^{\text{target}}\right) \in \mathbb{R}^{d_L}\).
+          Dies ist der Startgradient am Ausgang — er wird rückwärts weiterpropagiert.
+        </p>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="step-panel" id="step-2">
+        <div class="step-title">Schritt 2 — Gradient bzgl. versteckter Schicht (Kettenregel)</div>
+        <p class="prose">
+          Durch die Kettenregel propagiert der Gradient über die Gewichtsmatrix \(\mathbf{W}^{(1)}\)
+          in die erste versteckte Schicht:
+        </p>
+        <div class="formula-box accent">
+          \[
+            \frac{\partial \mathcal{L}_{\text{MSE}}}{\partial z_{n,i}^{(1)}}
+            = \sum_{k=1}^{d_2} \frac{\partial \mathcal{L}}{\partial y_{n,k}} \cdot W^{(1)}_{k,i}
+          \]
+        </div>
+        <p class="prose">
+          In Matrixform:
+          \(\dfrac{\partial \mathcal{L}}{\partial \mathbf{z}_n^{(1)}}
+          = \bigl(\mathbf{W}^{(1)}\bigr)^T \cdot \dfrac{\partial \mathcal{L}}{\partial \mathbf{y}_n}
+          \in \mathbb{R}^{d_1}\).
+        </p>
+        <p class="prose">
+          Die Transposition von \(\mathbf{W}^{(1)}\) kehrt die Informationsrichtung um —
+          jetzt fließt der Gradient von Schicht 2 zurück in Schicht 1.
+        </p>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="step-panel" id="step-3">
+        <div class="step-title">Schritt 3 — Gradient bzgl. Gewichte (Backprop-Delta)</div>
+        <p class="prose">
+          Definiere das <em>Backpropagation-Delta</em> als Gradient bzgl. der Pre-Activation:
+        </p>
+        <div class="formula-box neutral">
+          \[
+            \boldsymbol{\delta}_n^{(\ell)}
+            \;=\; \frac{\partial \mathcal{L}}{\partial \mathbf{a}_n^{(\ell)}}
+            \;=\; \frac{\partial \mathcal{L}}{\partial \mathbf{z}_n^{(\ell+1)}} \odot f'\!\left(\mathbf{a}_n^{(\ell)}\right)
+          \]
+        </div>
+        <p class="prose">
+          Dabei ist \(\odot\) das elementweise Produkt und
+          \(\mathbf{D}_{f'}^{(\ell)} = \operatorname{diag}\!\left(f'(a_{n,1}^{(\ell)}),\dots,f'(a_{n,d_{\ell+1}}^{(\ell)})\right)\)
+          die Jacobi-Diagonalmatrix der Aktivierung.
+          Der Gradient bzgl. der Gewichtsmatrix ergibt sich dann als:
+        </p>
+        <div class="formula-box accent">
+          \[
+            \frac{\partial \mathcal{L}_{\text{MSE}}}{\partial \mathbf{W}^{(\ell)}}
+            = \sum_{n=1}^{N} \boldsymbol{\delta}_n^{(\ell)} \left(\mathbf{z}_n^{(\ell)}\right)^T
+          \]
+        </div>
+        <p class="prose">
+          Allgemeine Delta-Formel für Tiefe \(L\) — Produkt von \((L+1-\ell)\) Matrizen von Schicht \(\ell\) bis zur Ausgabe:
+        </p>
+        <div class="formula-box result">
+          \[
+            \boldsymbol{\delta}_n^{(\ell)}
+            = \mathbf{D}_{f'}^{(\ell)}
+              \left(\mathbf{W}^{(\ell+1)}\right)^T
+              \mathbf{D}_{f'}^{(\ell+1)}
+              \cdots
+              \left(\mathbf{W}^{(L)}\right)^T
+              \frac{\partial \mathcal{L}}{\partial \mathbf{y}_n}
+          \]
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       SECTION 3: Complexity Comparison
+       ══════════════════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-title">03 — Komplexitätsvergleich</div>
+
+    <p class="prose">
+      Annahme: \(L\) versteckte Schichten, einheitliche Breite \(d\).
+      Backpropagation kostet nur <strong>2×</strong> so viel wie ein Forward Pass —
+      aber benötigt \(2L \cdot d\) Speicher für alle Aktivierungen.
+    </p>
+
+    <div style="overflow-x: auto;">
+      <table class="cplx-table">
+        <thead>
+          <tr>
+            <th>Methode</th>
+            <th>Skalar-Mult. (pro Sample)</th>
+            <th>Peak-Speicher</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Inference (Forward Pass)</td>
+            <td>\(L \cdot d^2\)</td>
+            <td>\(d\)</td>
+          </tr>
+          <tr class="highlight-row">
+            <td>Backpropagation</td>
+            <td>\(2L \cdot d^2\)</td>
+            <td>\(2L \cdot d\)</td>
+          </tr>
+          <tr>
+            <td>Backprop + Checkpointing \((S = \sqrt{L})\)</td>
+            <td>\(3L \cdot d^2\)</td>
+            <td>\(2\sqrt{L} \cdot d\)</td>
+          </tr>
+          <tr>
+            <td>Finite Differences</td>
+            <td>\(2L^2 \cdot d^4\)</td>
+            <td>\(d\)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="prose">
+      Backpropagation ist im Vergleich zu Finite Differences um den Faktor \(L \cdot d^2\) effizienter —
+      bei typischen Netzen (z. B. \(L = 50\), \(d = 1024\)) ein Faktor von über \(5 \times 10^7\).
+    </p>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       SECTION 4: Memory Optimization
+       ══════════════════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-title">04 — Speicheroptimierung</div>
+
+    <p class="prose">
+      Backpropagation muss alle Aktivierungen \(\mathbf{a}^{(\ell)}\) und
+      \(\mathbf{z}^{(\ell)}\) aus dem Forward Pass zwischenspeichern, um die Gradienten
+      im Backward Pass berechnen zu können. Peak-Speicher: \(2L \cdot d\).
+    </p>
+
+    <div class="formula-box neutral">
+      <strong style="color: var(--text); font-size: 0.85rem;">Gradient Checkpointing</strong>
+      <p class="prose" style="margin-top: 0.5rem;">
+        Idee: Speichere nur \(S\) Checkpoints gleichmäßig verteilt.
+        Zwischen zwei Checkpoints wird der Forward Pass lokal wiederholt.
+        Optimale Wahl: \(S = \sqrt{L}\) Checkpoints.
+      </p>
+      \[
+        \text{Speicher} \approx 2\sqrt{L} \cdot d, \qquad
+        \text{Kosten} \approx 3L \cdot d^2 \quad (+1 \text{ extra Forward Pass})
+      \]
+    </div>
+
+    <!-- Memory visualization -->
+    <div>
+      <p class="prose" style="margin-bottom: 0.8rem; font-size: 0.8rem;">
+        Visualisierung für \(L = 9\) Schichten, \(S = 3 = \sqrt{9}\) Checkpoints:
+      </p>
+      <div class="mem-row" id="mem-vis-full">
+        <span class="mem-label">Backprop:</span>
+        <!-- all 9 layers stored -->
+        <div class="mem-block active-fwd">z¹</div>
+        <div class="mem-block active-fwd">a¹</div>
+        <div class="mem-block active-fwd">z²</div>
+        <div class="mem-block active-fwd">a²</div>
+        <div class="mem-block active-fwd">z³</div>
+        <div class="mem-block active-fwd">a³</div>
+        <div class="mem-block active-fwd">z⁴</div>
+        <div class="mem-block active-fwd">a⁴</div>
+        <div class="mem-block active-fwd">z⁵</div>
+        <div class="mem-block active-fwd">a⁵</div>
+        <div class="mem-block active-fwd">z⁶</div>
+        <div class="mem-block active-fwd">a⁶</div>
+        <div class="mem-block active-fwd">z⁷</div>
+        <div class="mem-block active-fwd">a⁷</div>
+        <div class="mem-block active-fwd">z⁸</div>
+        <div class="mem-block active-fwd">a⁸</div>
+        <div class="mem-block active-fwd">z⁹</div>
+        <div class="mem-block active-fwd">a⁹</div>
+      </div>
+      <div class="mem-row" style="margin-top: 8px;" id="mem-vis-ckpt">
+        <span class="mem-label">Checkpt.:</span>
+        <!-- only 3 checkpoints stored, rest recomputed -->
+        <div class="mem-block recompute">z¹</div>
+        <div class="mem-block recompute">a¹</div>
+        <div class="mem-block recompute">z²</div>
+        <div class="mem-block recompute">a²</div>
+        <div class="mem-block checkpoint">z³</div>
+        <div class="mem-block checkpoint">a³</div>
+        <div class="mem-block recompute">z⁴</div>
+        <div class="mem-block recompute">a⁴</div>
+        <div class="mem-block recompute">z⁵</div>
+        <div class="mem-block recompute">a⁵</div>
+        <div class="mem-block checkpoint">z⁶</div>
+        <div class="mem-block checkpoint">a⁶</div>
+        <div class="mem-block recompute">z⁷</div>
+        <div class="mem-block recompute">a⁷</div>
+        <div class="mem-block recompute">z⁸</div>
+        <div class="mem-block recompute">a⁸</div>
+        <div class="mem-block checkpoint">z⁹</div>
+        <div class="mem-block checkpoint">a⁹</div>
+      </div>
+      <div class="mem-legend" style="margin-top: 10px;">
+        <div class="mem-legend-item">
+          <div class="mem-legend-swatch" style="background: rgba(22,122,90,0.25); border-color: #167a5a;"></div>
+          Gespeichert (Backprop)
+        </div>
+        <div class="mem-legend-item">
+          <div class="mem-legend-swatch" style="background: rgba(41,112,196,0.25); border-color: #2970c4;"></div>
+          Checkpoint gespeichert
+        </div>
+        <div class="mem-legend-item">
+          <div class="mem-legend-swatch" style="background: rgba(232,147,74,0.2); border-color: #e8934a;"></div>
+          Neu berechnet (backward)
+        </div>
+      </div>
+    </div>
+
+    <div class="formula-box accent">
+      <strong style="color: var(--text); font-size: 0.85rem;">ReLU-Trick</strong>
+      <p class="prose" style="margin-top: 0.5rem;">
+        Für \(\text{ReLU}(a) = \max(0, a)\) gilt \(f'(a) \in \{0, 1\}\) —
+        es genügt, ein einziges Bit pro Dimension zu speichern
+        (ob die Aktivierung positiv war), statt eines vollen Float-Werts.
+        Das ergibt eine \(\times 32\)-Kompression des Aktivierungsspeichers.
+      </p>
+      \[
+        \text{ReLU}: \quad f'(a) = \mathbf{1}[a > 0]
+        \quad \Rightarrow \quad \text{1 Bit statt 32 Bit pro Eintrag}
+      \]
+    </div>
+  </div>
+
+</div><!-- /.main -->
+
+<p class="src-note">// Quelle: Foliensatz 03 — Deep Learning I (ML SS2026)</p>
+
+<script>
+// ────────────────────────────────────────────────────────────
+// Computational Graph Animation
+// ────────────────────────────────────────────────────────────
+
+const nodes = ['node-W', 'node-x', 'node-mm', 'node-b', 'node-add', 'node-yt', 'node-L'];
+const edges = {
+  fwd: ['e-W-mm', 'e-x-mm', 'e-mm-add', 'e-b-add', 'e-add-L', 'e-yt-L'],
+  bwd: ['e-yt-L', 'e-add-L', 'e-b-add', 'e-mm-add', 'e-x-mm', 'e-W-mm']
+};
+
+// Forward pass order: W, x, @ (matmul), b, + (add), y^t, L
+const fwdOrder = ['node-W', 'node-x', 'node-mm', 'node-b', 'node-add', 'node-yt', 'node-L'];
+// Forward edge highlights in order
+const fwdEdgeOrder = [
+  ['e-W-mm'],
+  ['e-x-mm'],
+  ['e-mm-add'],
+  ['e-b-add'],
+  ['e-add-L'],
+  ['e-yt-L'],
+  []
+];
+
+// Backward pass order: L, +, b, @, x, W
+const bwdOrder = ['node-L', 'node-yt', 'node-add', 'node-b', 'node-mm', 'node-x', 'node-W'];
+const bwdEdgeOrder = [
+  ['e-yt-L'],
+  [],
+  ['e-add-L'],
+  ['e-b-add'],
+  ['e-mm-add'],
+  ['e-x-mm'],
+  ['e-W-mm']
+];
+
+const statusLabels = {
+  fwd: [
+    'W: Gewichtsmatrix geladen',
+    'x: Eingabevektor geladen',
+    '@ : Matrixmultiplikation W·x',
+    'b: Bias-Vektor geladen',
+    '+ : Addition Wx + b → y',
+    'yᵗ: Zielwert bereitgestellt',
+    'L: MSE-Loss berechnet'
+  ],
+  bwd: [
+    'L: ∂L/∂y berechnet (Start)',
+    'yᵗ: kein Gradient nötig',
+    '+ : ∂L/∂(Wx+b) = ∂L/∂y',
+    'b: ∂L/∂b = ∂L/∂y (sum)',
+    '@ : ∂L/∂(Wx) = ∂L/∂(Wx+b)',
+    'x: ∂L/∂x = Wᵀ · δ',
+    'W: ∂L/∂W = δ · xᵀ ← done'
+  ]
+};
+
+let animTimer = null;
+
+function clearAllHighlights() {
+  nodes.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.classList.remove('fwd', 'bwd'); }
+  });
+  [...edges.fwd, ...edges.bwd].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.classList.remove('fwd', 'bwd'); }
+  });
+  document.getElementById('graph-status').textContent = 'Klicke "Forward Pass" zum Starten';
+}
+
+function runAnimation(order, edgeOrder, mode, labels, endMsg) {
+  if (animTimer) clearTimeout(animTimer);
+  clearAllHighlights();
+  let i = 0;
+
+  function step() {
+    if (i >= order.length) {
+      document.getElementById('graph-status').textContent = endMsg;
+      return;
+    }
+    const nodeEl = document.getElementById(order[i]);
+    if (nodeEl) nodeEl.classList.add(mode);
+    if (edgeOrder[i]) {
+      edgeOrder[i].forEach(eid => {
+        const edgeEl = document.getElementById(eid);
+        if (edgeEl) edgeEl.classList.add(mode);
+      });
+    }
+    document.getElementById('graph-status').textContent = labels[i];
+    i++;
+    animTimer = setTimeout(step, 520);
+  }
+  step();
+}
+
+document.getElementById('btn-fwd').addEventListener('click', () => {
+  runAnimation(fwdOrder, fwdEdgeOrder, 'fwd', statusLabels.fwd, 'Forward Pass abgeschlossen');
+});
+
+document.getElementById('btn-bwd').addEventListener('click', () => {
+  runAnimation(bwdOrder, bwdEdgeOrder, 'bwd', statusLabels.bwd, 'Backward Pass abgeschlossen — Gradienten berechnet');
+});
+
+document.getElementById('btn-reset').addEventListener('click', () => {
+  if (animTimer) clearTimeout(animTimer);
+  clearAllHighlights();
+});
+
+
+// ────────────────────────────────────────────────────────────
+// Step-through widget
+// ────────────────────────────────────────────────────────────
+
+const totalSteps = 3;
+let currentStep = 1;
+
+function showStep(n) {
+  for (let i = 1; i <= totalSteps; i++) {
+    const panel = document.getElementById('step-' + i);
+    if (panel) panel.classList.toggle('active', i === n);
+  }
+  document.getElementById('step-indicator').textContent = 'Schritt ' + n + ' / ' + totalSteps;
+  document.getElementById('step-prev').disabled = (n === 1);
+  document.getElementById('step-next').disabled = (n === totalSteps);
+
+  // trigger MathJax re-render on newly shown panel
+  if (window.MathJax && window.MathJax.typesetPromise) {
+    const panel = document.getElementById('step-' + n);
+    if (panel) MathJax.typesetPromise([panel]).catch(() => {});
+  }
+}
+
+document.getElementById('step-prev').addEventListener('click', () => {
+  if (currentStep > 1) { currentStep--; showStep(currentStep); }
+});
+document.getElementById('step-next').addEventListener('click', () => {
+  if (currentStep < totalSteps) { currentStep++; showStep(currentStep); }
+});
+</script>
+
+</body>
+</html>

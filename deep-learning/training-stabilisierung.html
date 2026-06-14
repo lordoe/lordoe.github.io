@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Training-Stabilisierung — Deep Learning</title>
+<script>
+  MathJax = {
+    tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+    options: { skipHtmlTags: ['script','noscript','style','textarea'] }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:         #0e0e11;
+    --bg2:        #16161b;
+    --bg3:        #1e1e26;
+    --border:     rgba(255,255,255,0.08);
+    --border2:    rgba(255,255,255,0.13);
+    --text:       #e8e6f0;
+    --muted:      #7a7890;
+    --accent:     #167a5a;
+    --accent-dim: rgba(22,122,90,0.15);
+    --accent-dim2: rgba(22,122,90,0.24);
+  }
+
+  mjx-container { color: var(--text) !important; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem 3rem;
+  }
+
+  /* ── header ──────────────────────────────────────── */
+  header {
+    width: 100%;
+    max-width: 900px;
+    margin-bottom: 1.75rem;
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  h1 {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.05rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+  }
+
+  .subtitle {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* ── main layout ─────────────────────────────────── */
+  .main {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  /* ── section cards ───────────────────────────────── */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.4rem 1.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+
+  .card-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.76rem;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .card p {
+    font-size: 0.85rem;
+    line-height: 1.75;
+    color: #b8b6c8;
+  }
+
+  .card p b { color: var(--text); font-weight: 500; }
+
+  /* ── formula box ─────────────────────────────────── */
+  .formula-box {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 0.9rem 1.2rem;
+    font-size: 0.88rem;
+    line-height: 1.8;
+    overflow-x: auto;
+  }
+
+  .formula-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--muted);
+    margin-bottom: 0.4rem;
+    letter-spacing: 0.04em;
+  }
+
+  /* ── info grid ───────────────────────────────────── */
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 10px;
+  }
+
+  .info-item {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 1rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    border-top: 2px solid var(--accent);
+  }
+
+  .info-item .item-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .info-item .item-desc {
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* ── svg wrap ────────────────────────────────────── */
+  .svg-wrap {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: auto;
+  }
+
+  svg text {
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* ── slider row ──────────────────────────────────── */
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .slider-row label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  input[type=range] {
+    accent-color: var(--accent);
+    width: 130px;
+    cursor: pointer;
+  }
+
+  .slider-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--accent);
+    min-width: 28px;
+  }
+
+  /* ── init selector buttons ───────────────────────── */
+  .btn-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .btn-sel {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    padding: 5px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border2);
+    background: none;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.12s;
+    letter-spacing: 0.02em;
+  }
+  .btn-sel:hover { color: var(--text); }
+  .btn-sel.active {
+    background: var(--accent-dim2);
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  /* ── canvas ──────────────────────────────────────── */
+  canvas {
+    width: 100%;
+    display: block;
+    border-radius: 8px;
+    background: var(--bg3);
+  }
+
+  /* ── comparison table ────────────────────────────── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+  }
+
+  thead th {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    padding: 0.6rem 0.9rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+
+  tbody td {
+    padding: 0.65rem 0.9rem;
+    color: #b8b6c8;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    line-height: 1.55;
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+
+  tbody td:first-child {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--text);
+    white-space: nowrap;
+  }
+
+  tbody tr:hover td { background: rgba(22,122,90,0.05); }
+
+  /* ── dropout network SVG ─────────────────────────── */
+  .dropout-controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .btn-mode {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.74rem;
+    padding: 6px 18px;
+    border-radius: 7px;
+    border: 1px solid var(--border2);
+    background: none;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-mode:hover { color: var(--text); }
+  .btn-mode.active {
+    background: var(--accent-dim2);
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  #dropout-svg-wrap {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+    display: flex;
+    justify-content: center;
+  }
+
+  /* ── source note ─────────────────────────────────── */
+  .src-note {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-top: 1rem;
+    opacity: 0.6;
+    text-align: right;
+    width: 100%;
+    max-width: 900px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>// deep-learning — Training-Stabilisierung</h1>
+  <span class="subtitle">Foliensatz 03 · Slides 41–52</span>
+</header>
+
+<div class="main">
+
+  <!-- ═══════════════════════════════════════════════════════════
+       SECTION 1 — Weight Initialization
+  ════════════════════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-title">01 — Gewichtsinitialisierung</div>
+
+    <p>
+      Initialisierung der Gewichte i.i.d.: \(W_{i,j}^{(\ell)} \sim \mathcal{N}(0,\sigma^2)\).
+      Welches \(\sigma\) soll gewählt werden?
+    </p>
+
+    <div>
+      <div class="formula-label">Lineares Netz — Varianzfortpflanzung</div>
+      <div class="formula-box">
+        \[
+          \operatorname{Var}\!\left[z_i^{(\ell+1)}\right]
+          = \sum_{j=1}^{d} \operatorname{Var}\!\left[W_{i,j}^{(\ell)}\right]
+            \cdot \operatorname{Var}\!\left[z_j^{(\ell)}\right]
+          = d\,\sigma^2\,\operatorname{Var}\!\left[z_j^{(\ell)}\right]
+        \]
+      </div>
+      <p style="margin-top:0.5rem;">
+        Damit die Varianz von Schicht zu Schicht erhalten bleibt, muss
+        \(d\cdot\sigma^2 = 1\), also \(\sigma = 1/\sqrt{d}\).
+      </p>
+    </div>
+
+    <div>
+      <div class="formula-label">He-Initialisierung (ReLU-Netze, He et al. 2015)</div>
+      <div class="formula-box">
+        \[
+          \mathbb{E}\!\left[\operatorname{ReLU}(a)^2\right]
+          = \tfrac{1}{2}\operatorname{Var}[a]
+          \quad\Longrightarrow\quad
+          d\cdot\frac{\sigma^2}{2} = 1
+          \quad\Longrightarrow\quad
+          \sigma = \sqrt{\tfrac{2}{d}}
+        \]
+      </div>
+      <p style="margin-top:0.5rem;">
+        ReLU setzt ca. die Hälfte der Aktivierungen auf null — das halbiert die effektive Varianz.
+        Die Korrektur \(\sqrt{2/d}\) gleicht dies aus.
+      </p>
+    </div>
+
+    <!-- Interactive Demo -->
+    <div class="formula-label" style="margin-bottom:0;">Demo — Varianzpropagation durch Schichten</div>
+    <div class="slider-row">
+      <label>
+        Schichten \(L\)
+        <input type="range" id="sl-layers" min="1" max="20" value="10" step="1">
+        <span class="slider-val" id="val-layers">10</span>
+      </label>
+    </div>
+    <div class="btn-row" id="init-btns">
+      <button class="btn-sel" data-init="bad">σ = 1 (zu groß)</button>
+      <button class="btn-sel active" data-init="glorot">σ = 1/√d (Xavier)</button>
+      <button class="btn-sel" data-init="he">σ = √(2/d) (He, ReLU)</button>
+    </div>
+    <canvas id="var-canvas" height="180"></canvas>
+    <p style="font-size:0.75rem; color:var(--muted);">
+      Jeder Balken zeigt die empirische Varianz nach Schicht \(\ell\). Simuliert mit zufälligen Matrizen \(d=64\), gemittelt über 8 Durchläufe.
+    </p>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       SECTION 2 — Residual Connections
+  ════════════════════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-title">02 — Residual Connections (ResNet, He et al. 2015)</div>
+
+    <p>
+      Bei sehr tiefen Netzen tritt das <b>Degradierungsproblem</b> auf: mehr Schichten verschlechtern
+      das Training, obwohl mehr Kapazität vorhanden ist. Lösung: Skip-Verbindungen, die den Input
+      direkt zur Ausgabe eines Blocks addieren.
+    </p>
+
+    <div class="formula-box">
+      \[
+        \mathbf{z}^{(\ell+1)} = \mathbf{z}^{(\ell)} + g\!\left(\mathbf{z}^{(\ell)}\right)
+      \]
+    </div>
+
+    <p>
+      \(g\) ist ein kleines Teilnetz (z.B. Linear → ReLU → Linear).
+      <b>Schlüsselidee:</b> Initialisiert man \(W_2^{(\ell)} = 0\), gilt \(g(\mathbf{z}^{(\ell)}) = 0\)
+      und damit \(\mathbf{z}^{(\ell+1)} = \mathbf{z}^{(\ell)}\) — das Netz startet als Identität.
+      Das vereinfacht das Training erheblich.
+    </p>
+
+    <!-- SVG ResNet Block -->
+    <div class="svg-wrap">
+      <svg id="resnet-svg" width="560" height="200" viewBox="0 0 560 200" fill="none"
+           xmlns="http://www.w3.org/2000/svg">
+        <!-- Nodes -->
+        <!-- z^(l) input -->
+        <circle cx="48" cy="100" r="22" fill="#1e1e26" stroke="#167a5a" stroke-width="1.5"/>
+        <text x="48" y="97" text-anchor="middle" fill="#e8e6f0" font-size="11">z</text>
+        <text x="48" y="110" text-anchor="middle" fill="#7a7890" font-size="8">(ℓ)</text>
+
+        <!-- W1 box -->
+        <rect x="100" y="82" width="70" height="36" rx="7" fill="#16161b" stroke="rgba(255,255,255,0.13)" stroke-width="1"/>
+        <text x="135" y="104" text-anchor="middle" fill="#b8b6c8" font-size="11">W₁ → ReLU</text>
+
+        <!-- W2 box -->
+        <rect x="210" y="82" width="60" height="36" rx="7" fill="#16161b" stroke="rgba(255,255,255,0.13)" stroke-width="1"/>
+        <text x="240" y="104" text-anchor="middle" fill="#b8b6c8" font-size="11">W₂</text>
+
+        <!-- Add node -->
+        <circle cx="320" cy="100" r="20" fill="#1e1e26" stroke="#167a5a" stroke-width="1.5"/>
+        <text x="320" y="106" text-anchor="middle" fill="#167a5a" font-size="18" font-weight="bold">+</text>
+
+        <!-- ReLU box -->
+        <rect x="360" y="82" width="60" height="36" rx="7" fill="#16161b" stroke="rgba(255,255,255,0.13)" stroke-width="1"/>
+        <text x="390" y="104" text-anchor="middle" fill="#b8b6c8" font-size="11">ReLU</text>
+
+        <!-- z^(l+1) output -->
+        <circle cx="488" cy="100" r="22" fill="#1e1e26" stroke="#167a5a" stroke-width="1.5"/>
+        <text x="488" y="97" text-anchor="middle" fill="#e8e6f0" font-size="11">z</text>
+        <text x="488" y="110" text-anchor="middle" fill="#7a7890" font-size="8">(ℓ+1)</text>
+
+        <!-- Main path arrows -->
+        <line x1="70" y1="100" x2="99" y2="100" stroke="#7a7890" stroke-width="1.5" marker-end="url(#arr)"/>
+        <line x1="170" y1="100" x2="209" y2="100" stroke="#7a7890" stroke-width="1.5" marker-end="url(#arr)"/>
+        <line x1="270" y1="100" x2="299" y2="100" stroke="#7a7890" stroke-width="1.5" marker-end="url(#arr)"/>
+        <line x1="340" y1="100" x2="359" y2="100" stroke="#7a7890" stroke-width="1.5" marker-end="url(#arr)"/>
+        <line x1="420" y1="100" x2="465" y2="100" stroke="#7a7890" stroke-width="1.5" marker-end="url(#arr)"/>
+
+        <!-- Skip connection (curved) -->
+        <path d="M 48 78 C 48 38, 320 38, 320 79" stroke="#167a5a" stroke-width="1.8"
+              fill="none" stroke-dasharray="5,3" marker-end="url(#arr-green)"/>
+        <text x="184" y="26" text-anchor="middle" fill="#167a5a" font-size="9.5" font-family="'DM Mono', monospace">skip connection</text>
+
+        <!-- g(z) label -->
+        <text x="240" y="74" text-anchor="middle" fill="#7a7890" font-size="9" font-family="'DM Mono', monospace">g(z⁽ˡ⁾)</text>
+
+        <!-- Arrow markers -->
+        <defs>
+          <marker id="arr" viewBox="0 0 8 8" refX="7" refY="4"
+                  markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L8,4 L0,8 Z" fill="#7a7890"/>
+          </marker>
+          <marker id="arr-green" viewBox="0 0 8 8" refX="7" refY="4"
+                  markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L8,4 L0,8 Z" fill="#167a5a"/>
+          </marker>
+        </defs>
+      </svg>
+    </div>
+
+    <p style="font-size:0.78rem; color:var(--muted);">
+      Die gestrichelte grüne Linie ist die Skip-Verbindung. Sie umgeht \(g\) komplett und addiert
+      \(\mathbf{z}^{(\ell)}\) direkt zum Ausgang des Blocks.
+    </p>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       SECTION 3 — Batch Normalization
+  ════════════════════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-title">03 — Batch Normalization (Ioffe &amp; Szegedy, 2015)</div>
+
+    <p>
+      BatchNorm normalisiert die Aktivierungen innerhalb eines Mini-Batches,
+      um den <b>internal covariate shift</b> zu reduzieren und das Training
+      gegenüber der Gewichtsinitialisierung robuster zu machen.
+    </p>
+
+    <div>
+      <div class="formula-label">Algorithmus — Mini-Batch \(\mathcal{B} = \{x_1,\ldots,x_m\}\)</div>
+      <div class="formula-box">
+        \[\begin{aligned}
+          \mu_\mathcal{B} &\leftarrow \frac{1}{m}\sum_{i=1}^m x_i
+          &\quad&\text{(Batch-Mittelwert)}\\[4pt]
+          \sigma^2_\mathcal{B} &\leftarrow \frac{1}{m}\sum_{i=1}^m (x_i - \mu_\mathcal{B})^2
+          &\quad&\text{(Batch-Varianz)}\\[4pt]
+          \hat{x}_i &\leftarrow \frac{x_i - \mu_\mathcal{B}}{\sqrt{\sigma^2_\mathcal{B} + \varepsilon}}
+          &\quad&\text{(Normalisierung)}\\[4pt]
+          y_i &\leftarrow \gamma\,\hat{x}_i + \beta
+          &\quad&\text{(Skalierung & Verschiebung, lernbar)}
+        \end{aligned}\]
+      </div>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="item-label">Training</div>
+        <div class="item-desc">Batch-Statistiken \(\mu_\mathcal{B},\,\sigma^2_\mathcal{B}\) werden direkt aus dem aktuellen Mini-Batch berechnet.</div>
+      </div>
+      <div class="info-item">
+        <div class="item-label">Inferenz</div>
+        <div class="item-desc">
+          Laufende Statistiken: \(\bar{\mu}_k \leftarrow \alpha\bar{\mu}_k + (1-\alpha)\mu_k\),
+          die während des Trainings akkumuliert werden.
+        </div>
+      </div>
+      <div class="info-item">
+        <div class="item-label">Skaleninvarianz</div>
+        <div class="item-desc">
+          \(\mathrm{BN}(Wz) = \mathrm{BN}(\alpha Wz)\) — Gradienten
+          bzgl. \(z\) sind unabhängig von der Skalierung der Gewichte.
+        </div>
+      </div>
+    </div>
+
+    <p>
+      Die Skalenin­varianz bedeutet: \(\partial\,\mathrm{BN}(Wz)/\partial z = \partial\,\mathrm{BN}(\alpha Wz)/\partial z\).
+      Das reduziert die Empfindlichkeit gegenüber der Gewichtsinitialisierung erheblich.
+    </p>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       SECTION 4 — Layer Norm & RMS Norm
+  ════════════════════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-title">04 — Layer Normalization &amp; RMS Normalization</div>
+
+    <p>
+      Alternativen zu BatchNorm, die <b>keine Abhängigkeit von der Batch-Größe</b> haben
+      und sich besonders für sequenzielle Modelle (Transformer) eignen.
+    </p>
+
+    <div>
+      <div class="formula-label">Layer Norm (Ba et al., 2016) — normalisiert über Features</div>
+      <div class="formula-box">
+        \[
+          \mu_n = \frac{1}{d}\sum_{k=1}^{d} z_{n,k}^{(\ell)},
+          \qquad
+          \sigma_n^2 = \frac{1}{d}\sum_{k=1}^{d}\!\left(z_{n,k}^{(\ell)} - \mu_n\right)^2
+        \]
+        \[
+          \hat{z}_{n,k}^{(\ell)} = \frac{z_{n,k}^{(\ell)} - \mu_n}{\sqrt{\sigma_n^2 + \varepsilon}}
+        \]
+      </div>
+    </div>
+
+    <div>
+      <div class="formula-label">RMS Norm (Zhang &amp; Sennrich, 2019) — ohne Mittelwertzentrierung</div>
+      <div class="formula-box">
+        \[
+          \mathrm{RMS}_n = \sqrt{\frac{1}{d}\sum_{k=1}^{d}\!\left(z_{n,k}^{(\ell)}\right)^2},
+          \qquad
+          \hat{z}_{n,k}^{(\ell)} = \frac{z_{n,k}^{(\ell)}}{\mathrm{RMS}_n}
+        \]
+      </div>
+      <p style="margin-top:0.5rem;">
+        Einfacher und schneller als LayerNorm — kein Mittelwert berechnet.
+        Verwendet in <b>LLaMA</b>, Gemma, Mistral.
+      </p>
+    </div>
+
+    <!-- Comparison table -->
+    <div class="formula-label">Vergleich der Normalisierungsmethoden</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Methode</th>
+          <th>Normalisiert über</th>
+          <th>Batch-abhängig</th>
+          <th>Typischer Einsatz</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>BatchNorm</td>
+          <td>Batch-Dimension (pro Feature)</td>
+          <td>Ja — braucht \(m \geq 2\)</td>
+          <td>CNNs, tiefe Feed-Forward-Netze</td>
+        </tr>
+        <tr>
+          <td>LayerNorm</td>
+          <td>Feature-Dimension (pro Sample)</td>
+          <td>Nein</td>
+          <td>Transformer, RNNs, NLP</td>
+        </tr>
+        <tr>
+          <td>RMSNorm</td>
+          <td>Feature-Dimension, nur RMS</td>
+          <td>Nein</td>
+          <td>LLMs (LLaMA, Gemma, Mistral)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       SECTION 5 — Dropout
+  ════════════════════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-title">05 — Dropout (Srivastava et al., 2014)</div>
+
+    <p>
+      Während des Trainings wird jede Aktivierung mit Wahrscheinlichkeit \(p\)
+      auf null gesetzt. Die verbleibenden Aktivierungen werden mit \(1/(1-p)\) skaliert,
+      damit der Erwartungswert erhalten bleibt.
+    </p>
+
+    <div class="formula-box">
+      \[
+        \tilde{z}_{n,k}^{(\ell)} = \frac{m_k}{1-p}\,z_{n,k}^{(\ell)},
+        \qquad m_k \sim \operatorname{Bernoulli}(1-p)
+      \]
+    </div>
+
+    <p>
+      Bei <b>Inferenz</b> kein Dropout — alle Neuronen sind aktiv, Gewichte unverändert.
+      Dropout wirkt als <b>Regularisierung</b>: es verhindert die Ko-Adaptation von Neuronen
+      und erzwingt redundante Repräsentationen.
+    </p>
+
+    <!-- Interactive dropout demo -->
+    <div class="formula-label">Demo — Netz im Training vs. Inferenz (p = 0.5)</div>
+    <div class="dropout-controls">
+      <button class="btn-mode active" id="btn-train">Training</button>
+      <button class="btn-mode" id="btn-infer">Inferenz</button>
+      <button class="btn-mode" id="btn-resample" style="border-color:rgba(22,122,90,0.4); color:var(--muted);">neu würfeln</button>
+    </div>
+    <div id="dropout-svg-wrap"></div>
+    <p style="font-size:0.75rem; color:var(--muted);">
+      Graue Neuronen sind durch Dropout deaktiviert (während des Trainings).
+      Bei Inferenz sind alle Neuronen aktiv.
+    </p>
+  </div>
+
+</div><!-- /.main -->
+
+<p class="src-note">// Quelle: Foliensatz 03 — Deep Learning I (ML SS2026)</p>
+
+<script>
+/* ================================================================
+   SECTION 1 — Variance propagation demo
+   ================================================================ */
+
+const varCanvas = document.getElementById('var-canvas');
+const varCtx    = varCanvas.getContext('2d');
+const slLayers  = document.getElementById('sl-layers');
+const valLayers = document.getElementById('val-layers');
+
+const DIM = 64; // layer width
+
+// Simple seeded RNG (xorshift32)
+function makeRng(seed) {
+  let s = seed >>> 0;
+  return function() {
+    s ^= s << 13; s ^= s >>> 17; s ^= s << 5;
+    return ((s >>> 0) / 4294967296);
+  };
+}
+
+// Box-Muller normal sample
+function randn(rng) {
+  const u = 1 - rng(), v = rng();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+// Compute variance at each layer for the chosen init
+function simulateVariances(L, initMode) {
+  const RUNS = 8;
+  const varPerLayer = new Array(L + 1).fill(0);
+
+  for (let r = 0; r < RUNS; r++) {
+    const rng = makeRng(42 + r * 7919);
+
+    // Input: unit-variance
+    let z = Array.from({length: DIM}, () => randn(rng));
+
+    for (let i = 0; i < DIM; i++) {
+      varPerLayer[0] += z[i] * z[i];
+    }
+
+    for (let ell = 0; ell < L; ell++) {
+      let sigma;
+      if (initMode === 'bad')    sigma = 1.0;
+      else if (initMode === 'glorot') sigma = 1.0 / Math.sqrt(DIM);
+      else                       sigma = Math.sqrt(2.0 / DIM); // He
+
+      // Build weight matrix W ∈ R^{DIM x DIM} and compute W z
+      // To avoid O(d²) cost we use the scaled variance formula directly
+      // but we simulate properly for visual correctness
+      let z2 = new Array(DIM);
+      for (let i = 0; i < DIM; i++) {
+        let acc = 0;
+        for (let j = 0; j < DIM; j++) {
+          acc += sigma * randn(rng) * z[j];
+        }
+        z2[i] = acc;
+      }
+
+      // Apply ReLU only for He mode
+      if (initMode === 'he') {
+        for (let i = 0; i < DIM; i++) z2[i] = Math.max(0, z2[i]);
+      }
+
+      z = z2;
+      for (let i = 0; i < DIM; i++) {
+        varPerLayer[ell + 1] += z[i] * z[i];
+      }
+    }
+  }
+
+  // Normalize: variance = mean of z²
+  return varPerLayer.map(v => v / (RUNS * DIM));
+}
+
+let currentInit = 'glorot';
+
+function drawVarChart() {
+  const L = parseInt(slLayers.value);
+  valLayers.textContent = L;
+
+  const dpr  = window.devicePixelRatio || 1;
+  const rect = varCanvas.getBoundingClientRect();
+  varCanvas.width  = rect.width * dpr;
+  varCanvas.height = 180 * dpr;
+  varCtx.scale(dpr, dpr);
+
+  const W = rect.width, H = 180;
+  const pad = { l: 48, r: 16, t: 20, b: 32 };
+  const iW  = W - pad.l - pad.r;
+  const iH  = H - pad.t - pad.b;
+
+  varCtx.clearRect(0, 0, W, H);
+
+  const variances = simulateVariances(L, currentInit);
+
+  // Y-scale: log scale clamped to [1e-8, 1e8]
+  const LOG_MIN = -8, LOG_MAX = 8;
+  const toY = v => {
+    const logV = Math.log10(Math.max(1e-9, Math.min(1e9, v)));
+    const norm  = (logV - LOG_MIN) / (LOG_MAX - LOG_MIN);
+    return pad.t + (1 - norm) * iH;
+  };
+
+  // Grid lines at log powers
+  varCtx.strokeStyle = 'rgba(255,255,255,0.04)';
+  varCtx.lineWidth = 1;
+  for (let exp = LOG_MIN; exp <= LOG_MAX; exp += 2) {
+    const y = toY(Math.pow(10, exp));
+    varCtx.beginPath();
+    varCtx.moveTo(pad.l, y);
+    varCtx.lineTo(W - pad.r, y);
+    varCtx.stroke();
+
+    if (exp % 4 === 0) {
+      varCtx.fillStyle = 'rgba(122,120,144,0.6)';
+      varCtx.font = '9px "DM Mono", monospace';
+      varCtx.textAlign = 'right';
+      varCtx.fillText('10^' + exp, pad.l - 5, y + 3);
+    }
+  }
+
+  // Target line y = 1
+  varCtx.strokeStyle = 'rgba(22,122,90,0.35)';
+  varCtx.lineWidth = 1;
+  varCtx.setLineDash([4, 4]);
+  varCtx.beginPath();
+  const y1 = toY(1);
+  varCtx.moveTo(pad.l, y1);
+  varCtx.lineTo(W - pad.r, y1);
+  varCtx.stroke();
+  varCtx.setLineDash([]);
+  varCtx.fillStyle = 'rgba(22,122,90,0.6)';
+  varCtx.font = '9px "DM Mono", monospace';
+  varCtx.textAlign = 'left';
+  varCtx.fillText('Var = 1', pad.l + 4, y1 - 3);
+
+  // Bars
+  const n     = variances.length; // L+1 bars
+  const bW    = iW / n;
+  const bPad  = bW * 0.2;
+
+  const colorMap = {
+    'bad':    '#e05a5a',
+    'glorot': '#167a5a',
+    'he':     '#2970c4',
+  };
+  const barColor = colorMap[currentInit] || '#167a5a';
+
+  variances.forEach((v, i) => {
+    const x = pad.l + i * bW + bPad / 2;
+    const w = bW - bPad;
+    const y = toY(v);
+    const barH = Math.max(1, (H - pad.b) - y);
+
+    varCtx.fillStyle = barColor + (i === 0 ? 'ff' : 'cc');
+    varCtx.beginPath();
+    varCtx.roundRect(x, y, w, barH, [3, 3, 0, 0]);
+    varCtx.fill();
+  });
+
+  // X-axis labels
+  varCtx.fillStyle = 'rgba(122,120,144,0.7)';
+  varCtx.font = '9px "DM Mono", monospace';
+  varCtx.textAlign = 'center';
+  const step = Math.max(1, Math.floor(n / 10));
+  for (let i = 0; i < n; i += step) {
+    const x = pad.l + i * bW + bW / 2;
+    varCtx.fillText(i, x, H - pad.b + 12);
+  }
+  // always label last
+  const xLast = pad.l + (n - 1) * bW + bW / 2;
+  varCtx.fillText(n - 1, xLast, H - pad.b + 12);
+
+  varCtx.fillStyle = 'rgba(122,120,144,0.5)';
+  varCtx.textAlign = 'center';
+  varCtx.font = '9px "DM Mono", monospace';
+  varCtx.fillText('Schicht ℓ', pad.l + iW / 2, H - 2);
+}
+
+// Init buttons
+document.getElementById('init-btns').addEventListener('click', e => {
+  const btn = e.target.closest('.btn-sel');
+  if (!btn) return;
+  currentInit = btn.dataset.init;
+  document.querySelectorAll('#init-btns .btn-sel').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  drawVarChart();
+});
+
+slLayers.addEventListener('input', drawVarChart);
+window.addEventListener('resize', drawVarChart);
+
+// Defer first draw until fonts + MathJax settle
+setTimeout(drawVarChart, 400);
+
+
+/* ================================================================
+   SECTION 5 — Dropout network SVG
+   ================================================================ */
+
+const LAYERS   = [3, 5, 5, 3]; // neurons per layer (input, hidden×2, output)
+const DROP_P   = 0.5;
+const SVG_NS   = 'http://www.w3.org/2000/svg';
+
+let isTraining = true;
+let droppedSet = new Set();
+
+function generateDropped() {
+  droppedSet = new Set();
+  if (!isTraining) return;
+  LAYERS.forEach((n, li) => {
+    if (li === 0 || li === LAYERS.length - 1) return; // keep input/output
+    for (let ni = 0; ni < n; ni++) {
+      if (Math.random() < DROP_P) droppedSet.add(li + '-' + ni);
+    }
+  });
+}
+
+function buildDropoutSVG() {
+  const W  = 480, H = 200;
+  const padX = 50, padY = 28;
+
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('width', W);
+  svg.setAttribute('height', H);
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+  const positions = [];
+
+  LAYERS.forEach((n, li) => {
+    const x = padX + li * ((W - 2 * padX) / (LAYERS.length - 1));
+    const colPos = [];
+    for (let ni = 0; ni < n; ni++) {
+      const y = padY + (ni + (LAYERS.reduce((a,b)=>Math.max(a,b),0) - n) / 2) *
+                       ((H - 2 * padY) / (LAYERS.reduce((a,b)=>Math.max(a,b),0) - 1));
+      colPos.push({ x, y });
+    }
+    positions.push(colPos);
+  });
+
+  // Draw edges
+  for (let li = 0; li < LAYERS.length - 1; li++) {
+    for (let ni = 0; ni < LAYERS[li]; ni++) {
+      for (let ni2 = 0; ni2 < LAYERS[li + 1]; ni2++) {
+        const from = positions[li][ni];
+        const to   = positions[li + 1][ni2];
+        const fromDrop = droppedSet.has(li + '-' + ni);
+        const toDrop   = droppedSet.has((li + 1) + '-' + ni2);
+        const faded    = fromDrop || toDrop;
+
+        const line = document.createElementNS(SVG_NS, 'line');
+        line.setAttribute('x1', from.x);
+        line.setAttribute('y1', from.y);
+        line.setAttribute('x2', to.x);
+        line.setAttribute('y2', to.y);
+        line.setAttribute('stroke', faded ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.12)');
+        line.setAttribute('stroke-width', '1');
+        svg.appendChild(line);
+      }
+    }
+  }
+
+  // Draw nodes
+  LAYERS.forEach((n, li) => {
+    positions[li].forEach((pos, ni) => {
+      const key  = li + '-' + ni;
+      const drop = droppedSet.has(key);
+
+      const circle = document.createElementNS(SVG_NS, 'circle');
+      circle.setAttribute('cx', pos.x);
+      circle.setAttribute('cy', pos.y);
+      circle.setAttribute('r', 13);
+
+      if (drop) {
+        circle.setAttribute('fill', '#1e1e26');
+        circle.setAttribute('stroke', 'rgba(255,255,255,0.1)');
+        circle.setAttribute('stroke-width', '1');
+        circle.setAttribute('stroke-dasharray', '3,2');
+      } else {
+        const isInputOutput = (li === 0 || li === LAYERS.length - 1);
+        circle.setAttribute('fill', isInputOutput ? 'rgba(22,122,90,0.2)' : '#1e1e26');
+        circle.setAttribute('stroke', isInputOutput ? '#167a5a' : 'rgba(22,122,90,0.6)');
+        circle.setAttribute('stroke-width', '1.5');
+      }
+
+      svg.appendChild(circle);
+
+      if (drop) {
+        // X mark
+        const t = document.createElementNS(SVG_NS, 'text');
+        t.setAttribute('x', pos.x);
+        t.setAttribute('y', pos.y + 4);
+        t.setAttribute('text-anchor', 'middle');
+        t.setAttribute('fill', 'rgba(122,120,144,0.5)');
+        t.setAttribute('font-size', '12');
+        t.setAttribute('font-family', "'DM Mono', monospace");
+        t.textContent = '×';
+        svg.appendChild(t);
+      }
+    });
+  });
+
+  // Layer labels
+  const labels = ['x', 'h⁽¹⁾', 'h⁽²⁾', 'ŷ'];
+  LAYERS.forEach((_, li) => {
+    const x = positions[li][0].x;
+    const t = document.createElementNS(SVG_NS, 'text');
+    t.setAttribute('x', x);
+    t.setAttribute('y', H - 5);
+    t.setAttribute('text-anchor', 'middle');
+    t.setAttribute('fill', '#7a7890');
+    t.setAttribute('font-size', '9');
+    t.setAttribute('font-family', "'DM Mono', monospace");
+    t.textContent = labels[li] || '';
+    svg.appendChild(t);
+  });
+
+  return svg;
+}
+
+function renderDropout() {
+  const wrap = document.getElementById('dropout-svg-wrap');
+  wrap.innerHTML = '';
+  wrap.appendChild(buildDropoutSVG());
+}
+
+document.getElementById('btn-train').addEventListener('click', () => {
+  isTraining = true;
+  document.getElementById('btn-train').classList.add('active');
+  document.getElementById('btn-infer').classList.remove('active');
+  generateDropped();
+  renderDropout();
+});
+
+document.getElementById('btn-infer').addEventListener('click', () => {
+  isTraining = false;
+  document.getElementById('btn-infer').classList.add('active');
+  document.getElementById('btn-train').classList.remove('active');
+  generateDropped();
+  renderDropout();
+});
+
+document.getElementById('btn-resample').addEventListener('click', () => {
+  generateDropped();
+  renderDropout();
+});
+
+// Initial render
+generateDropped();
+renderDropout();
+</script>
+</body>
+</html>

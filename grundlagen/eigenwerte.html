@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eigenwerte & Eigenvektoren</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script>
+  MathJax = {
+    tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+    options: { skipHtmlTags: ['script','noscript','style','textarea'] }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #0f0f11;
+    --surface:  #17171a;
+    --surface2: #1e1e22;
+    --border:   rgba(255,255,255,0.07);
+    --border2:  rgba(255,255,255,0.13);
+    --text:     #e8e6e0;
+    --muted:    #6a6866;
+    --accent:   #4ecdc4;
+    --vec:      #e8e6e0;
+    --avec:     #EF9F27;
+    --eig1:     #4ecdc4;
+    --eig2:     #378ADD;
+    --mono:     'DM Mono', monospace;
+    --sans:     'DM Sans', sans-serif;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 40px 24px 80px;
+    max-width: 860px;
+    margin: 0 auto;
+  }
+
+  header { margin-bottom: 40px; }
+  header .tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  header h1 {
+    font-size: clamp(22px, 3.5vw, 32px);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 10px;
+  }
+  header p { color: var(--muted); font-size: 14px; max-width: 600px; line-height: 1.7; }
+
+  .section-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  section { margin-bottom: 44px; }
+
+  p.body { font-size: 14px; color: var(--muted); line-height: 1.7; }
+  p.body strong { color: var(--text); font-weight: 500; }
+
+  /* ── demo ── */
+  .demo-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 24px;
+  }
+
+  .mat-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+  .mat-tab {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border2);
+    background: none;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .mat-tab:hover { color: var(--text); }
+  .mat-tab.active { background: var(--surface2); color: var(--accent); border-color: var(--accent); }
+
+  canvas { width: 100%; display: block; border-radius: 8px; background: var(--bg); cursor: grab; touch-action: none; }
+  canvas:active { cursor: grabbing; }
+
+  .hint { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 10px; }
+
+  .legend {
+    display: flex;
+    gap: 20px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .legend-line { width: 18px; height: 2px; flex-shrink: 0; border-radius: 2px; }
+
+  .stats-row {
+    display: flex;
+    gap: 24px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .stat {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .stat span.v { color: var(--text); }
+  .stat .label { font-size: 10px; display: block; margin-bottom: 2px; }
+  .stat .v.hit { color: var(--accent); }
+
+  /* ── cards ── */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .card .card-head { font-family: var(--mono); font-size: 11px; margin-bottom: 8px; }
+  .card p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .card strong { color: var(--text); }
+
+  /* ── formula ── */
+  .formula-block {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin: 12px 0;
+  }
+  .formula-block .fl { font-size: 11px; color: var(--muted); margin-bottom: 8px; font-family: var(--sans); }
+
+  mjx-container { color: var(--text) !important; }
+
+  /* ── link box ── */
+  .link-box {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    text-decoration: none;
+    transition: border-color 0.12s, background 0.12s;
+    cursor: pointer;
+  }
+  .link-box:hover { border-color: rgba(41,112,196,0.6); background: var(--surface2); }
+  .link-box .lb-icon { font-size: 20px; flex-shrink: 0; }
+  .link-box .lb-title { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+  .link-box .lb-desc  { font-size: 12px; color: var(--muted); }
+  .link-box .lb-badge {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: rgba(41,112,196,0.8);
+    flex-shrink: 0;
+  }
+
+  .src-note {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--mono);
+    border-top: 0.5px solid var(--border);
+    padding-top: 16px;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="tag">// grundlagen</div>
+  <h1>Eigenwerte & Eigenvektoren</h1>
+  <p>Eine Matrix \(A\) verformt jeden Vektor — sie dreht und streckt ihn. Für fast jeden Vektor ändert sich dabei die Richtung. Eigenvektoren sind die besonderen Richtungen, die \(A\) <strong>nicht dreht</strong>: sie werden nur um einen Faktor \(\lambda\) — den Eigenwert — gestreckt.</p>
+</header>
+
+<!-- DEFINITION -->
+<section>
+  <div class="section-title">Definition</div>
+  <div class="formula-block">
+    <div class="fl">Ein Vektor \(\mathbf{v} \neq \mathbf{0}\) heißt Eigenvektor von \(A\) zum Eigenwert \(\lambda\), wenn</div>
+    \[ A\,\mathbf{v} = \lambda\,\mathbf{v} \]
+  </div>
+  <p class="body">
+    In Worten: \(A\) auf \(\mathbf{v}\) anzuwenden ist dasselbe, wie \(\mathbf{v}\) einfach mit der
+    Zahl \(\lambda\) zu multiplizieren. Der Eigenvektor bleibt auf seiner Geraden — er wird nur
+    skaliert (\(|\lambda|>1\): gedehnt, \(|\lambda|<1\): gestaucht, \(\lambda<0\): zusätzlich gespiegelt).
+  </p>
+</section>
+
+<!-- INTERAKTIV -->
+<section>
+  <div class="section-title">Interaktive Demo — den Vektor drehen</div>
+  <div class="demo-wrap">
+    <div class="mat-tabs" id="tabs"></div>
+    <canvas id="c" height="380"></canvas>
+    <div class="hint">↳ Ziehe den hellen Vektor \(\mathbf{v}\) im Kreis herum. Liegt er auf einer Eigenrichtung, fällt \(A\mathbf{v}\) genau auf dieselbe Gerade.</div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-line" style="background:var(--vec)"></div>\(\mathbf{v}\) — Eingabe</div>
+      <div class="legend-item"><div class="legend-line" style="background:var(--avec)"></div>\(A\mathbf{v}\) — Ausgabe</div>
+      <div class="legend-item"><div class="legend-line" style="background:var(--eig1); border-top:1px dashed var(--eig1); height:0"></div>Eigenrichtung 1</div>
+      <div class="legend-item"><div class="legend-line" style="background:var(--eig2); border-top:1px dashed var(--eig2); height:0"></div>Eigenrichtung 2</div>
+    </div>
+    <div class="stats-row">
+      <div class="stat"><span class="label">Eigenwert λ₁</span><span class="v" id="l1">—</span></div>
+      <div class="stat"><span class="label">Eigenwert λ₂</span><span class="v" id="l2">—</span></div>
+      <div class="stat"><span class="label">Winkel(v, Av)</span><span class="v" id="ang">—</span></div>
+      <div class="stat"><span class="label">Status</span><span class="v" id="status">—</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- WIE BERECHNEN -->
+<section>
+  <div class="section-title">Wie findet man sie?</div>
+  <p class="body" style="margin-bottom:14px;">
+    \(A\mathbf{v}=\lambda\mathbf{v}\) umgestellt ergibt \((A-\lambda I)\mathbf{v}=\mathbf{0}\). Eine
+    Lösung \(\mathbf{v}\neq\mathbf{0}\) gibt es nur, wenn \(A-\lambda I\) singulär ist — also wenn die
+    Determinante verschwindet. Das ist das <strong>charakteristische Polynom</strong>:
+  </p>
+  <div class="formula-block">
+    <div class="fl">Eigenwerte = Nullstellen des charakteristischen Polynoms</div>
+    \[ \det(A - \lambda I) = 0 \]
+  </div>
+  <p class="body" style="margin-top:14px;">
+    Für eine \(2\times2\)-Matrix \(A=\bigl(\begin{smallmatrix}a&b\\c&d\end{smallmatrix}\bigr)\) wird daraus
+    \(\lambda^2 - (a{+}d)\,\lambda + (ad{-}bc)=0\). Praktisch dabei: die Summe der Eigenwerte ist die
+    <strong>Spur</strong> \(\lambda_1+\lambda_2 = a+d\), ihr Produkt die <strong>Determinante</strong>
+    \(\lambda_1\lambda_2 = ad-bc\). Den Eigenvektor bekommt man danach, indem man
+    \((A-\lambda I)\mathbf{v}=\mathbf{0}\) für das jeweilige \(\lambda\) löst.
+  </p>
+</section>
+
+<!-- INTUITION CARDS -->
+<section>
+  <div class="section-title">Bedeutung der Werte</div>
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-head" style="color:var(--eig1)">λ = Streckfaktor</div>
+      <p>Der Eigenwert sagt, <strong>wie stark</strong> entlang der Eigenrichtung gestreckt wird. Ein großes \(\lambda\) = eine Richtung, in der \(A\) viel „Wirkung“ hat.</p>
+    </div>
+    <div class="card">
+      <div class="card-head" style="color:var(--eig2)">Eigenvektor = Achse</div>
+      <p>Die Eigenvektoren spannen die natürlichen <strong>Achsen</strong> der Transformation auf — die Richtungen, die unter \(A\) erhalten bleiben.</p>
+    </div>
+    <div class="card">
+      <div class="card-head" style="color:var(--avec)">symmetrisch ⇒ orthogonal</div>
+      <p>Ist \(A\) symmetrisch (\(A=A^\top\)), sind alle \(\lambda\) reell und die Eigenvektoren stehen <strong>senkrecht</strong> aufeinander. Genau das nutzt PCA.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ANWENDUNG PCA -->
+<section>
+  <div class="section-title">Wozu in Machine Learning?</div>
+  <p class="body" style="margin-bottom:16px;">
+    Das Paradebeispiel ist <strong>PCA</strong>. Dort bildet man die empirische Kovarianzmatrix
+    \(C=\tfrac{1}{N}\sum_n (x_n-\bar x)(x_n-\bar x)^\top\) der Daten. \(C\) ist symmetrisch, also hat
+    sie reelle, orthogonale Eigenvektoren. Ihre Eigenvektoren sind die <strong>Hauptkomponenten</strong>
+    (Richtungen größter Streuung), und die zugehörigen Eigenwerte geben die
+    <strong>erklärte Varianz</strong> an:
+  </p>
+  <div class="formula-block">
+    <div class="fl">Eigenwerte \(\lambda_1 \ge \cdots \ge \lambda_d\) von \(C\) — Anteil der erklärten Varianz der Top-K Komponenten</div>
+    \[ \text{erklärte Varianz (Top-}K\text{)} \;=\; \frac{\sum_{k=1}^{K}\lambda_k}{\sum_{k=1}^{d}\lambda_k} \]
+  </div>
+  <p class="body" style="margin:16px 0;">
+    Dimensionsreduktion heißt dann: die Eigenvektoren mit den größten Eigenwerten behalten, den Rest
+    verwerfen. So bleibt möglichst viel Varianz erhalten.
+  </p>
+  <div class="link-box" onclick="openCard('unsupervized/pca_visualisierung.html','PCA Schritt für Schritt','../unsupervized/pca_visualisierung.html')">
+    <div class="lb-icon">📊</div>
+    <div>
+      <div class="lb-title">PCA Schritt für Schritt</div>
+      <div class="lb-desc">Eigenvektoren der Kovarianzmatrix als Hauptkomponenten — interaktiv.</div>
+    </div>
+    <div class="lb-badge">→ öffnen</div>
+  </div>
+</section>
+
+<p class="src-note">// Quelle: Foliensatz 04 — Unsupervised Learning (ML SS2026), Abschnitt PCA. Grunddefinition \(A\mathbf{v}=\lambda\mathbf{v}\) als allgemeine Lineare-Algebra-Grundlage ergänzt.</p>
+
+<script>
+function openCard(src, title, fallback) {
+  window.parent.postMessage({type:'open-card', src, title}, '*');
+  if (window === window.parent) window.location.href = fallback;
+}
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+// ── preset matrices (all real eigenvalues) ──
+const presets = [
+  { name: 'Diagonal',   A: [[2, 0],   [0, 0.5]] },
+  { name: 'Symmetrisch',A: [[1.6, 0.7],[0.7, 1.1]] },
+  { name: 'Scherung',   A: [[1, 0.8], [0, 1]] },
+  { name: 'Spiegelung', A: [[1.4, 0],  [0, -0.9]] },
+];
+let cur = 0;
+
+// ── 2x2 eigen-decomposition (real case) ──
+function eig2(A) {
+  const a = A[0][0], b = A[0][1], c = A[1][0], d = A[1][1];
+  const tr = a + d, det = a * d - b * c;
+  const disc = tr * tr - 4 * det;
+  if (disc < 0) return null; // complex — not used by presets
+  const s = Math.sqrt(disc);
+  const l1 = (tr + s) / 2, l2 = (tr - s) / 2;
+  const vecFor = (l) => {
+    // solve (A - l I) v = 0
+    let vx, vy;
+    if (Math.abs(b) > 1e-9 || Math.abs(a - l) > 1e-9) { vx = b; vy = l - a; }
+    else { vx = l - d; vy = c; }
+    if (Math.abs(vx) < 1e-9 && Math.abs(vy) < 1e-9) { vx = 1; vy = 0; }
+    const n = Math.hypot(vx, vy);
+    return [vx / n, vy / n];
+  };
+  return { l1, l2, v1: vecFor(l1), v2: vecFor(l2) };
+}
+
+function apply(A, v) {
+  return [A[0][0] * v[0] + A[0][1] * v[1], A[1][0] * v[0] + A[1][1] * v[1]];
+}
+
+// input vector angle (radians), drawn on unit-length
+let theta = Math.PI / 6;
+
+// ── tabs ──
+const tabsEl = document.getElementById('tabs');
+presets.forEach((p, i) => {
+  const btn = document.createElement('button');
+  btn.className = 'mat-tab' + (i === 0 ? ' active' : '');
+  btn.textContent = p.name;
+  btn.onclick = () => {
+    cur = i;
+    document.querySelectorAll('.mat-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    draw();
+  };
+  tabsEl.appendChild(btn);
+});
+
+function draw() {
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  const W = rect.width, H = 380;
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+
+  const cx = W / 2, cy = H / 2;
+  const scale = Math.min(W, H) / 5.6; // world units → px
+
+  const toPx = (v) => [cx + v[0] * scale, cy - v[1] * scale];
+
+  // grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  for (let g = -3; g <= 3; g++) {
+    let p1 = toPx([g, -3]), p2 = toPx([g, 3]);
+    ctx.beginPath(); ctx.moveTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]); ctx.stroke();
+    p1 = toPx([-3, g]); p2 = toPx([3, g]);
+    ctx.beginPath(); ctx.moveTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]); ctx.stroke();
+  }
+  // axes
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  let p1 = toPx([-3, 0]), p2 = toPx([3, 0]);
+  ctx.beginPath(); ctx.moveTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]); ctx.stroke();
+  p1 = toPx([0, -3]); p2 = toPx([0, 3]);
+  ctx.beginPath(); ctx.moveTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]); ctx.stroke();
+
+  const A = presets[cur].A;
+  const e = eig2(A);
+
+  // eigen-direction lines (full lines through origin)
+  if (e) {
+    [[e.v1, getCss('--eig1')], [e.v2, getCss('--eig2')]].forEach(([v, col]) => {
+      const a = toPx([v[0] * 4, v[1] * 4]);
+      const b = toPx([-v[0] * 4, -v[1] * 4]);
+      ctx.strokeStyle = col;
+      ctx.globalAlpha = 0.5;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([6, 6]);
+      ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+    });
+  }
+
+  // input vector v (unit length in world units, scaled up by 1.5 for visibility)
+  const vLen = 1.5;
+  const v = [Math.cos(theta) * vLen, Math.sin(theta) * vLen];
+  const Av = apply(A, v);
+
+  arrow(toPx([0, 0]), toPx(Av), getCss('--avec'), 2.5);   // Av (under)
+  arrow(toPx([0, 0]), toPx(v),  getCss('--vec'),  2.5);    // v (over)
+
+  // draggable handle on v
+  const hp = toPx(v);
+  ctx.beginPath(); ctx.arc(hp[0], hp[1], 6, 0, Math.PI * 2);
+  ctx.fillStyle = getCss('--vec'); ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 1.5; ctx.stroke();
+
+  // ── stats ──
+  const ang = angleBetween(v, Av);
+  document.getElementById('l1').textContent = e ? e.l1.toFixed(2) : 'komplex';
+  document.getElementById('l2').textContent = e ? e.l2.toFixed(2) : 'komplex';
+  document.getElementById('ang').textContent = (ang * 180 / Math.PI).toFixed(1) + '°';
+
+  const aligned = ang < 0.04 || Math.abs(ang - Math.PI) < 0.04;
+  const st = document.getElementById('status');
+  if (aligned) {
+    // which eigenvalue?
+    const ratio = (Math.hypot(...Av) / Math.hypot(...v)) * (ang > Math.PI / 2 ? -1 : 1);
+    st.textContent = 'auf Eigenrichtung — λ ≈ ' + ratio.toFixed(2);
+    st.classList.add('hit');
+  } else {
+    st.textContent = 'v wird gedreht';
+    st.classList.remove('hit');
+  }
+}
+
+function arrow(from, to, color, lw) {
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = lw;
+  ctx.beginPath(); ctx.moveTo(from[0], from[1]); ctx.lineTo(to[0], to[1]); ctx.stroke();
+  const a = Math.atan2(to[1] - from[1], to[0] - from[0]);
+  const hl = 11;
+  ctx.beginPath();
+  ctx.moveTo(to[0], to[1]);
+  ctx.lineTo(to[0] - hl * Math.cos(a - 0.4), to[1] - hl * Math.sin(a - 0.4));
+  ctx.lineTo(to[0] - hl * Math.cos(a + 0.4), to[1] - hl * Math.sin(a + 0.4));
+  ctx.closePath(); ctx.fill();
+}
+
+function angleBetween(a, b) {
+  const dot = a[0] * b[0] + a[1] * b[1];
+  const m = Math.hypot(...a) * Math.hypot(...b);
+  if (m < 1e-9) return 0;
+  return Math.acos(Math.max(-1, Math.min(1, dot / m)));
+}
+
+function getCss(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+// ── drag interaction ──
+let dragging = false;
+function pointAngle(ev) {
+  const rect = canvas.getBoundingClientRect();
+  const x = (ev.touches ? ev.touches[0].clientX : ev.clientX) - rect.left;
+  const y = (ev.touches ? ev.touches[0].clientY : ev.clientY) - rect.top;
+  return Math.atan2(-(y - 380 / 2), x - rect.width / 2);
+}
+function down(ev) { dragging = true; theta = pointAngle(ev); draw(); ev.preventDefault(); }
+function move(ev) { if (!dragging) return; theta = pointAngle(ev); draw(); ev.preventDefault(); }
+function up() { dragging = false; }
+canvas.addEventListener('mousedown', down);
+window.addEventListener('mousemove', move);
+window.addEventListener('mouseup', up);
+canvas.addEventListener('touchstart', down, { passive: false });
+canvas.addEventListener('touchmove', move, { passive: false });
+window.addEventListener('touchend', up);
+
+window.addEventListener('resize', draw);
+draw();
+</script>
+</body>
+</html>

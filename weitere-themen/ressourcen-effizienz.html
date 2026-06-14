@@ -1,0 +1,1497 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ressourcen-effizienz — Resource Efficient Deep Learning</title>
+<script>
+  MathJax = {
+    tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+    options: { skipHtmlTags: ['script','noscript','style','textarea'] }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f0f11;
+    --surface: #17171a;
+    --surface2: #1e1e22;
+    --border: rgba(255,255,255,0.07);
+    --text: #e8e6e0;
+    --muted: #6a6866;
+    --accent: #a0522d;
+    --accent-l: rgba(160,82,45,0.15);
+    --c0: #a0522d; --c0l: rgba(160,82,45,0.15);
+    --c1: #4ecdc4; --c1l: rgba(78,205,196,0.13);
+    --c2: #e07b54; --c2l: rgba(224,123,84,0.13);
+    --c3: #ffd93d; --c3l: rgba(255,217,61,0.13);
+    --c4: #6bcb77; --c4l: rgba(107,203,119,0.13);
+    --c5: #8b7cf8; --c5l: rgba(139,124,248,0.13);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem 3rem;
+  }
+
+  header {
+    width: 100%;
+    max-width: 900px;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  h1 {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.05rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+  }
+
+  .subtitle {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .main {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .card h2 {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .card p {
+    font-size: 0.82rem;
+    line-height: 1.65;
+    color: var(--muted);
+  }
+  .card p b { color: var(--text); font-weight: 500; }
+
+  mjx-container { color: var(--text) !important; }
+
+  .formula-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    color: var(--text);
+    overflow-x: auto;
+  }
+
+  .src-note {
+    font-size: 0.7rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    border-top: 1px solid var(--border);
+    padding-top: 0.75rem;
+  }
+
+  .chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .chip {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid;
+    letter-spacing: 0.03em;
+  }
+  .chip-brown  { color: var(--c0); border-color: var(--c0); background: var(--c0l); }
+  .chip-teal   { color: var(--c1); border-color: var(--c1); background: var(--c1l); }
+  .chip-orange { color: var(--c2); border-color: var(--c2); background: var(--c2l); }
+  .chip-yellow { color: var(--c3); border-color: var(--c3); background: var(--c3l); }
+  .chip-green  { color: var(--c4); border-color: var(--c4); background: var(--c4l); }
+  .chip-purple { color: var(--c5); border-color: var(--c5); background: var(--c5l); }
+
+  .steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .step {
+    display: grid;
+    grid-template-columns: 1.6rem 1fr;
+    gap: 0.5rem 0.75rem;
+    align-items: start;
+  }
+
+  .step-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    padding-top: 0.1rem;
+  }
+
+  .step-body { display: flex; flex-direction: column; gap: 0.35rem; }
+
+  .step-title {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .step-desc {
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+  .step-desc b { color: var(--text); font-weight: 500; }
+
+  .section-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 0.25rem 0;
+  }
+
+  .recap-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.78rem;
+  }
+
+  .recap-table th {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .recap-table td {
+    padding: 0.55rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .recap-table tr:last-child td { border-bottom: none; }
+
+  .recap-table td.cat {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .recap-table td b { color: var(--text); font-weight: 500; }
+  .recap-table .val {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text);
+  }
+
+  .flow-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .flow-node {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.3rem 0.75rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text);
+    text-align: center;
+  }
+  .flow-node.accent-brown  { border-color: var(--c0); color: var(--c0); }
+  .flow-node.accent-teal   { border-color: var(--c1); color: var(--c1); }
+  .flow-node.accent-orange { border-color: var(--c2); color: var(--c2); }
+  .flow-node.accent-green  { border-color: var(--c4); color: var(--c4); }
+  .flow-node.accent-purple { border-color: var(--c5); color: var(--c5); }
+
+  .flow-arrow {
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .hw-scale {
+    position: relative;
+    padding: 2.5rem 0 1rem;
+  }
+
+  .hw-arrow-track {
+    position: relative;
+    height: 12px;
+    background: linear-gradient(to right, #4ecdc4, #a0522d);
+    border-radius: 6px;
+    margin: 0 0.5rem;
+  }
+
+  .hw-arrow-track::after {
+    content: '';
+    position: absolute;
+    right: -10px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 6px solid transparent;
+    border-left-color: #a0522d;
+  }
+
+  .hw-devices {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.75rem;
+    gap: 0.25rem;
+    flex-wrap: nowrap;
+  }
+
+  .hw-device {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .hw-device-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    font-weight: 500;
+    color: var(--text);
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .hw-device-power {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.58rem;
+    color: var(--accent);
+    text-align: center;
+  }
+
+  .hw-device-sub {
+    font-size: 0.55rem;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.3;
+  }
+
+  .hw-label-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.25rem;
+    padding: 0 0.5rem;
+  }
+
+  .hw-label {
+    font-size: 0.58rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    text-align: center;
+    max-width: 80px;
+    line-height: 1.3;
+  }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  @media (max-width: 600px) {
+    .two-col { grid-template-columns: 1fr; }
+    .hw-devices { flex-wrap: wrap; }
+    .hw-device-name { font-size: 0.55rem; }
+  }
+
+  .inner-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .inner-card-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+  }
+
+  .inner-card-desc {
+    font-size: 0.76rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .inner-card-desc b { color: var(--text); font-weight: 500; }
+
+  .compute-chart {
+    position: relative;
+    height: 200px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.75rem 0.75rem 1.5rem 2.5rem;
+    overflow: hidden;
+  }
+
+  .compute-chart svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .chart-label {
+    position: absolute;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--muted);
+  }
+
+  .chart-y-axis {
+    position: absolute;
+    left: 0;
+    top: 0.75rem;
+    bottom: 1.5rem;
+    width: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding-right: 0.3rem;
+  }
+
+  .chart-x-axis {
+    position: absolute;
+    bottom: 0.25rem;
+    left: 2.5rem;
+    right: 0.75rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+
+  .interactive-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .btn-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .dtype-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 500;
+    padding: 0.35rem 0.9rem;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.03em;
+  }
+
+  .dtype-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .dtype-btn.active {
+    border-color: var(--accent);
+    background: var(--accent-l);
+    color: var(--accent);
+  }
+
+  .bit-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .bit-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .bit-row-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    min-width: 3rem;
+    text-align: right;
+  }
+
+  .bits-container {
+    display: flex;
+    gap: 2px;
+    flex-wrap: wrap;
+  }
+
+  .bit-cell {
+    width: 20px;
+    height: 22px;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.58rem;
+    font-weight: 500;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+  }
+
+  .bit-sign {
+    background: rgba(255, 107, 107, 0.18);
+    border-color: rgba(255, 107, 107, 0.4);
+    color: #ff6b6b;
+  }
+
+  .bit-exp {
+    background: rgba(78, 205, 196, 0.18);
+    border-color: rgba(78, 205, 196, 0.4);
+    color: #4ecdc4;
+  }
+
+  .bit-man {
+    background: rgba(107, 203, 119, 0.18);
+    border-color: rgba(107, 203, 119, 0.4);
+    color: #6bcb77;
+  }
+
+  .bit-val {
+    background: rgba(160, 82, 45, 0.18);
+    border-color: rgba(160, 82, 45, 0.4);
+    color: var(--accent);
+  }
+
+  .bit-sep {
+    width: 4px;
+  }
+
+  .bit-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.25rem;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+  }
+
+  .dtype-info-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0.5rem;
+  }
+
+  .dtype-info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .dtype-info-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .dtype-info-value {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .transformer-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  @media (max-width: 650px) {
+    .transformer-grid { grid-template-columns: 1fr; }
+  }
+
+  .transformer-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .transformer-card.enc-only { border-top: 3px solid var(--c1); }
+  .transformer-card.dec-only { border-top: 3px solid var(--c4); }
+  .transformer-card.enc-dec  { border-top: 3px solid var(--c5); }
+
+  .transformer-card-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.73rem;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+  }
+  .transformer-card-title.enc { color: var(--c1); }
+  .transformer-card-title.dec { color: var(--c4); }
+  .transformer-card-title.encdec { color: var(--c5); }
+
+  .transformer-card-example {
+    font-size: 0.68rem;
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  .transformer-card-desc {
+    font-size: 0.76rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .transformer-card-desc b { color: var(--text); font-weight: 500; }
+
+  .arch-diagram {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-start;
+    margin-top: 0.25rem;
+  }
+
+  .arch-token-row {
+    display: flex;
+    gap: 3px;
+  }
+
+  .arch-token {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.58rem;
+    padding: 3px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+  }
+  .arch-token.masked {
+    background: rgba(255,107,107,0.15);
+    border-color: rgba(255,107,107,0.4);
+    color: #ff6b6b;
+  }
+  .arch-token.out {
+    background: rgba(78,205,196,0.15);
+    border-color: rgba(78,205,196,0.4);
+    color: var(--c1);
+  }
+  .arch-token.out-gen {
+    background: rgba(107,203,119,0.15);
+    border-color: rgba(107,203,119,0.4);
+    color: var(--c4);
+  }
+  .arch-token.start-tok {
+    background: rgba(160,82,45,0.15);
+    border-color: rgba(160,82,45,0.4);
+    color: var(--accent);
+  }
+  .arch-token.audio {
+    background: rgba(139,124,248,0.15);
+    border-color: rgba(139,124,248,0.4);
+    color: var(--c5);
+  }
+
+  .arch-box {
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 500;
+    text-align: center;
+    width: 100%;
+  }
+  .arch-box.encoder-box {
+    background: rgba(78,205,196,0.12);
+    border: 1px solid rgba(78,205,196,0.35);
+    color: var(--c1);
+  }
+  .arch-box.decoder-box {
+    background: rgba(107,203,119,0.12);
+    border: 1px solid rgba(107,203,119,0.35);
+    color: var(--c4);
+  }
+  .arch-box.decoder-box-purple {
+    background: rgba(139,124,248,0.12);
+    border: 1px solid rgba(139,124,248,0.35);
+    color: var(--c5);
+  }
+
+  .arch-arrows {
+    display: flex;
+    gap: 3px;
+    align-items: center;
+  }
+
+  .arch-arrow-up {
+    font-size: 0.7rem;
+    color: var(--muted);
+  }
+
+  .arch-side-by-side {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-end;
+  }
+
+  .arch-enc-part {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+  }
+
+  .arch-dec-part {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+  }
+
+  .qat-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .qat-pass {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .qat-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    min-width: 5rem;
+  }
+
+  .qat-arrow {
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+
+  .method-badge {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--c2);
+    background: var(--c2l);
+    color: var(--c2);
+    font-weight: 500;
+  }
+
+  .method-badge.ptq { border-color: var(--c1); background: var(--c1l); color: var(--c1); }
+  .method-badge.qat { border-color: var(--c5); background: var(--c5l); color: var(--c5); }
+
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  @media (max-width: 550px) {
+    .compare-grid { grid-template-columns: 1fr; }
+    .dtype-info-box { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>ressourcen-effizienz</h1>
+  <span class="subtitle">// Resource Efficient Deep Learning</span>
+</header>
+
+<div class="main">
+
+  <!-- 1. Hardware-Landschaft: Power -->
+  <div class="card">
+    <h2>// KI-Hardware-Landschaft — Leistungsaufnahme</h2>
+
+    <p>
+      KI-Systeme existieren auf einem Spektrum von
+      <b>10 kW Rechenzentrum</b> bis <b>1 mW Embedded-Chip</b>.
+      Die Wahl der Hardware bestimmt, welche Modelle ausgeführt werden können.
+    </p>
+
+    <div class="hw-scale">
+      <div class="hw-label-row">
+        <div class="hw-label">Limit Haushaltssteckdose</div>
+        <div class="hw-label">Portable Computation Device</div>
+        <div class="hw-label">Bluetooth Low Energy: 100 mW</div>
+        <div class="hw-label">Cochlear Implants: 10 mW</div>
+        <div class="hw-label">Credit Card Encryption: 1 mW</div>
+      </div>
+      <div class="hw-arrow-track"></div>
+      <div class="hw-devices">
+        <div class="hw-device">
+          <div class="hw-device-name">DGX</div>
+          <div class="hw-device-power">10 kW</div>
+          <div class="hw-device-sub">8× H100 GPUs</div>
+        </div>
+        <div class="hw-device">
+          <div class="hw-device-name">Desktop GPU</div>
+          <div class="hw-device-power">300 W</div>
+        </div>
+        <div class="hw-device">
+          <div class="hw-device-name">Mobile CPU/GPU</div>
+          <div class="hw-device-power">3 W</div>
+        </div>
+        <div class="hw-device">
+          <div class="hw-device-name">SpiNNaker</div>
+          <div class="hw-device-power">~100 mW</div>
+          <div class="hw-device-sub">Univ. Manchester, TU Dresden</div>
+        </div>
+        <div class="hw-device">
+          <div class="hw-device-name">PSOC</div>
+          <div class="hw-device-power">~1 mW</div>
+          <div class="hw-device-sub">Infineon</div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="section-divider">
+    <h2 style="margin-top:0.25rem">// KI-Hardware-Landschaft — RAM-Kapazität</h2>
+
+    <p>
+      Die RAM-Kapazität der Hardware begrenzt direkt die Modellgrösse
+      (Anzahl Parameter). Quantisierung ermöglicht es, grössere Modelle
+      auf schwächerer Hardware zu betreiben.
+    </p>
+
+    <table class="recap-table">
+      <thead>
+        <tr>
+          <th>Hardware</th>
+          <th>RAM</th>
+          <th>Passende Modelle (Beispiele)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="cat" style="color:var(--c2)">DGX (8× H100)</td>
+          <td class="val">640 GB</td>
+          <td><b>DeepSeek R1</b> (671B), Llama 70B</td>
+        </tr>
+        <tr>
+          <td class="cat" style="color:var(--c1)">Desktop GPU</td>
+          <td class="val">48 GB</td>
+          <td><b>Llama 70B</b></td>
+        </tr>
+        <tr>
+          <td class="cat" style="color:var(--c4)">Mobile CPU/GPU</td>
+          <td class="val">8 GB</td>
+          <td><b>Llama 3B</b>, Whisper Turbo 809M</td>
+        </tr>
+        <tr>
+          <td class="cat" style="color:var(--muted)">ARM CPU</td>
+          <td class="val">128 MB</td>
+          <td><b>Bert-base</b> 110M, YOLO v8 Large 64M</td>
+        </tr>
+        <tr>
+          <td class="cat" style="color:var(--accent)">Infineon PSOC</td>
+          <td class="val">128 kB – 4 MB</td>
+          <td><b>YOLO v8 Nano</b> 3.2M, Keyword Spotting</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 2. Training Compute wächst -->
+  <div class="card">
+    <h2>// Training Compute wächst 4× pro Jahr</h2>
+
+    <p>
+      Laut <b>epoch.ai</b>-Daten steigt der Trainings-Compute (in PFLOP)
+      <b>exponentiell</b>: ca. <b>4× pro Jahr</b> seit der Deep-Learning-Ära.
+      Parallel dazu wächst auch die Datenmenge um <b>4× pro Jahr</b>.
+      Beides treibt den Energiebedarf von Rechenzentren exponentiell in die Höhe.
+    </p>
+
+    <div class="compute-chart" id="computeChart">
+      <div class="chart-y-axis">
+        <span class="chart-label" style="position:static;font-size:0.58rem;color:var(--muted)">10<sup>26</sup></span>
+        <span class="chart-label" style="position:static;font-size:0.58rem;color:var(--muted)">10<sup>22</sup></span>
+        <span class="chart-label" style="position:static;font-size:0.58rem;color:var(--muted)">10<sup>18</sup></span>
+        <span class="chart-label" style="position:static;font-size:0.58rem;color:var(--muted)">10<sup>14</sup></span>
+        <span class="chart-label" style="position:static;font-size:0.58rem;color:var(--muted)">10<sup>10</sup></span>
+        <span class="chart-label" style="position:static;font-size:0.58rem;color:var(--muted)">10<sup>6</sup></span>
+      </div>
+      <svg id="computeSvg" viewBox="0 0 400 160" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="curveGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#4ecdc4" stop-opacity="0.8"/>
+            <stop offset="100%" stop-color="#a0522d" stop-opacity="0.9"/>
+          </linearGradient>
+        </defs>
+        <polyline
+          points="0,155 40,152 80,148 120,142 160,134 200,122 240,100 280,72 320,40 360,12 400,4"
+          fill="none"
+          stroke="url(#curveGrad)"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+        <circle cx="0"   cy="155" r="3" fill="#4ecdc4" opacity="0.7"/>
+        <circle cx="160" cy="134" r="3" fill="#6bcb77" opacity="0.7"/>
+        <circle cx="280" cy="72"  r="3" fill="#e07b54" opacity="0.8"/>
+        <circle cx="360" cy="12"  r="3.5" fill="#a0522d" opacity="0.9"/>
+
+        <text x="5"   y="150" font-family="monospace" font-size="7" fill="#6a6866">~1960</text>
+        <text x="145" y="129" font-family="monospace" font-size="7" fill="#6bcb77">~1990</text>
+        <text x="254" y="67"  font-family="monospace" font-size="7" fill="#e07b54">~2015</text>
+        <text x="320" y="9"   font-family="monospace" font-size="7" fill="#a0522d">GPT-4</text>
+
+        <line x1="0" y1="0" x2="0" y2="160" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>
+        <line x1="0" y1="160" x2="400" y2="160" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>
+
+        <text x="340" y="45" font-family="monospace" font-size="8" fill="#a0522d">4×/Jahr</text>
+        <line x1="320" y1="40" x2="330" y2="30" stroke="#a0522d" stroke-width="1" opacity="0.5"/>
+      </svg>
+      <div class="chart-x-axis">
+        <span style="font-size:0.58rem;color:var(--muted)">1960</span>
+        <span style="font-size:0.58rem;color:var(--muted)">1980</span>
+        <span style="font-size:0.58rem;color:var(--muted)">2000</span>
+        <span style="font-size:0.58rem;color:var(--muted)">2010</span>
+        <span style="font-size:0.58rem;color:var(--muted)">2020</span>
+      </div>
+    </div>
+
+    <p style="font-size:0.75rem;">
+      Quelle: <b>epoch.ai</b> — Training compute (PFLOP) nach Publikationsdatum, log-skaliert.
+      Die gestrichelte Linie entspricht ~1,5×/Jahr vor der Deep-Learning-Ära,
+      danach ca. <b>4×/Jahr</b>.
+    </p>
+
+    <hr class="section-divider">
+
+    <p>
+      Der <b>Leistungsverbrauch von Rechenzentren</b> wächst entsprechend:
+      Training-Leistung steigt ca. 2,4×/Jahr. Kumulierte Inferenz-Kapazität
+      könnte bis 2026 den Peak-Verbrauch des Staates New York (31 GW) übersteigen.
+    </p>
+  </div>
+
+  <!-- 3. Inference & Training Ressourcen -->
+  <div class="card">
+    <h2>// Inference- und Training-Ressourcen für MLP</h2>
+
+    <p>
+      Für ein MLP mit \(L\) Hidden Layers, einheitlicher Breite \(d\):
+    </p>
+
+    <table class="recap-table">
+      <thead>
+        <tr>
+          <th>Methode</th>
+          <th>Skalar-Mult.</th>
+          <th>Peak Memory</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="cat">Inferenz (Forward Pass)</td>
+          <td><div class="formula-box" style="display:inline-block;padding:0.2rem 0.6rem">\(L d^2\)</div></td>
+          <td><div class="formula-box" style="display:inline-block;padding:0.2rem 0.6rem">\(d\)</div></td>
+        </tr>
+        <tr>
+          <td class="cat">Backpropagation</td>
+          <td><div class="formula-box" style="display:inline-block;padding:0.2rem 0.6rem">\(2 L d^2\)</div></td>
+          <td><div class="formula-box" style="display:inline-block;padding:0.2rem 0.6rem">\(2Ld\)</div></td>
+        </tr>
+        <tr>
+          <td class="cat">Backprop + Checkpointing \((S = \sqrt{L})\)</td>
+          <td><div class="formula-box" style="display:inline-block;padding:0.2rem 0.6rem">\(3 L d^2\)</div></td>
+          <td><div class="formula-box" style="display:inline-block;padding:0.2rem 0.6rem">\(2\sqrt{L}\,d\)</div></td>
+        </tr>
+        <tr>
+          <td class="cat">Finite Differences</td>
+          <td><div class="formula-box" style="display:inline-block;padding:0.2rem 0.6rem">\(2 L^2 d^4\)</div></td>
+          <td><div class="formula-box" style="display:inline-block;padding:0.2rem 0.6rem">\(d\)</div></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p style="font-size:0.76rem;">
+      \(L\) Hidden Layers, einheitliche Breite \(d\).
+      <b>Checkpointing</b> addiert einen Extra-Forward-Pass (\(+L d^2\)) und reduziert
+      den Peak-Memory von \(2Ld\) auf \(2\sqrt{L}\,d\).
+    </p>
+
+    <hr class="section-divider">
+    <h2 style="margin-top:0.25rem">// Training-Hardware nach Modellgrösse</h2>
+
+    <table class="recap-table">
+      <thead>
+        <tr>
+          <th>Modell</th>
+          <th>Params</th>
+          <th>Training-Ressourcen</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="cat" style="color:var(--c2)">DeepSeek R1 / Llama 70B</td>
+          <td class="val">67–671B</td>
+          <td>10 000 GPU-Stunden, 16k–2k GPUs</td>
+        </tr>
+        <tr>
+          <td class="cat" style="color:var(--c1)">Llama 3B</td>
+          <td class="val">3B</td>
+          <td>10k GPU-Stunden, 100–8× GPUs</td>
+        </tr>
+        <tr>
+          <td class="cat" style="color:var(--c4)">Bert-base / YOLO v8 Large</td>
+          <td class="val">64–110M</td>
+          <td>100 oder 10 GPU-Stunden, Desktop GPU</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 4. Interaktive Bit-Layout Demo -->
+  <div class="card">
+    <h2>// Numerische Datentypen — interaktive Bit-Layout-Visualisierung</h2>
+
+    <p>
+      Wähle einen Datentyp, um das Bit-Layout zu sehen.
+      <b>S</b> = Vorzeichen (Sign), <b>E</b> = Exponent, <b>M</b> = Mantissa/Fraction, <b>V</b> = Wert (Integer).
+    </p>
+
+    <div class="interactive-section">
+      <div class="btn-row" id="dtypeBtnRow">
+        <button class="dtype-btn active" data-dtype="float32">float32</button>
+        <button class="dtype-btn" data-dtype="bfloat16">bfloat16</button>
+        <button class="dtype-btn" data-dtype="float16">float16</button>
+        <button class="dtype-btn" data-dtype="int8">int8</button>
+        <button class="dtype-btn" data-dtype="int4">int4</button>
+      </div>
+
+      <div class="bit-layout" id="bitLayout"></div>
+
+      <div class="dtype-info-box" id="dtypeInfoBox"></div>
+
+      <div class="bit-legend">
+        <div class="legend-item">
+          <div class="legend-dot" style="background:rgba(255,107,107,0.35);border:1px solid rgba(255,107,107,0.5)"></div>
+          <span>Vorzeichen (1 Bit)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:rgba(78,205,196,0.35);border:1px solid rgba(78,205,196,0.5)"></div>
+          <span>Exponent</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:rgba(107,203,119,0.35);border:1px solid rgba(107,203,119,0.5)"></div>
+          <span>Mantissa / Fraction</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:rgba(160,82,45,0.35);border:1px solid rgba(160,82,45,0.5)"></div>
+          <span>Wert-Bits (Integer)</span>
+        </div>
+      </div>
+
+      <div class="inner-card">
+        <div class="inner-card-title" style="color:var(--muted)">int8-Beispiel: Fixed-Point-Analogie</div>
+        <div class="inner-card-desc">
+          int8-Gewichte sind nahezu äquivalent zu <b>Fixed-Point Real Values</b>.
+          Beim Fixed-Point teilen sich mehrere Variablen einen gemeinsamen Exponenten —
+          dadurch kann der Exponent einmal gespeichert und die Wert-Bits effizient genutzt werden.
+        </div>
+        <div class="flow-row">
+          <div class="flow-node">shared exponent</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node accent-brown">variable 1: sign + Wert-Bits</div>
+          <div class="flow-arrow">+</div>
+          <div class="flow-node accent-brown">variable 2: sign + Wert-Bits</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Post-Training Quantization -->
+  <div class="card">
+    <h2>// Quantisierung — PTQ und QAT</h2>
+
+    <p>
+      <b>Quantisierung</b> reduziert die numerische Präzision von Modellgewichten
+      (z.B. von float32 auf int8 oder int4). Das verringert RAM-Bedarf,
+      Modellgrösse und beschleunigt Inferenz erheblich.
+    </p>
+
+    <hr class="section-divider">
+
+    <div class="compare-grid">
+      <div class="inner-card">
+        <div class="inner-card-title">
+          <span class="method-badge ptq">PTQ</span> — Post-Training Quantization
+        </div>
+        <div class="inner-card-desc">
+          Quantisierung <b>nach</b> dem Training.
+          \(\mathbf{w}_{\text{fp}}\) sind die Full-Precision-Gewichte,
+          \(\mathbf{w}_q\) die quantisierten Gewichte (int4 oder int8).
+        </div>
+        <div class="formula-box">
+          \[ \mathbf{w}_q = \mathrm{Quantize}\!\left(\mathbf{w}_{\text{fp}} \;/\; w_{\text{scale}}\right) \]
+        </div>
+        <div class="inner-card-desc" style="margin-top:0.25rem">
+          <b>Inferenzgeschwindigkeit:</b> int8-Skalarprodukt ist ca.
+          <b>4× schneller</b> als float32.<br>
+          <b>RAM-Ersparnis:</b> Gewichte und Aktivierungen können quantisiert werden.<br>
+          <b>Download-Ersparnis:</b> Gewichtsmatrizen sind kleiner.
+        </div>
+      </div>
+
+      <div class="inner-card">
+        <div class="inner-card-title">
+          <span class="method-badge qat">QAT</span> — Quantization-Aware Training
+        </div>
+        <div class="inner-card-desc">
+          Quantisierungsfehler wird <b>während des Trainings</b> berücksichtigt.
+        </div>
+        <div class="qat-flow">
+          <div class="qat-pass">
+            <span class="qat-label">Forward:</span>
+            <div class="flow-node accent-teal" style="font-size:0.65rem">Modell mit \(\mathbf{w}_q\)</div>
+            <span class="qat-arrow">→</span>
+            <div class="flow-node" style="font-size:0.65rem">Loss \(\mathcal{L}\)</div>
+          </div>
+          <div class="qat-pass">
+            <span class="qat-label">Backward:</span>
+            <div class="flow-node accent-purple" style="font-size:0.65rem">\(\nabla_{\mathbf{w}_q} \mathcal{L}\)</div>
+            <span class="qat-arrow">→</span>
+            <div class="flow-node accent-brown" style="font-size:0.65rem">Update \(\mathbf{w}_{\text{fp}}\)</div>
+          </div>
+        </div>
+        <div class="inner-card-desc" style="margin-top:0.25rem">
+          <b>Straight-Through Estimator:</b> Der Gradient des (nicht-differenzierbaren)
+          Quantize-Operators wird als 1 angenähert — so fliessen Gradienten durch
+          die Rundungsoperation hindurch zu \(\mathbf{w}_{\text{fp}}\).
+        </div>
+      </div>
+    </div>
+
+    <hr class="section-divider">
+
+    <p>
+      <b>Quantisierung int8/int4</b> verschiebt Modelle auf der RAM-Skala nach rechts —
+      z.B. kann ein quantisiertes Llama 70B auf einer Desktop-GPU (48 GB) laufen statt
+      auf einem DGX-System.
+    </p>
+  </div>
+
+  <!-- 6. Transformer-Archetypen -->
+  <div class="card">
+    <h2>// Transformer-Archetypen für ressourceneffiziente Modelle</h2>
+
+    <p>
+      Verschiedene Transformer-Architekturen sind für unterschiedliche Aufgaben
+      optimiert. Die Wahl der Architektur beeinflusst direkt den Ressourcenbedarf.
+    </p>
+
+    <div class="transformer-grid">
+      <div class="transformer-card enc-only">
+        <div class="transformer-card-title enc">Encoder-only</div>
+        <div class="transformer-card-example">ex: BERT (Text-Klassifikation)</div>
+        <div class="arch-diagram">
+          <div class="arch-token-row">
+            <div class="arch-token out">y₁</div>
+            <div class="arch-token out">y₂</div>
+            <div class="arch-token out" style="opacity:0.5">…</div>
+            <div class="arch-token out">y<sub>T</sub></div>
+          </div>
+          <div class="arch-box encoder-box">Encoder (bidirektional)</div>
+          <div class="arch-token-row">
+            <div class="arch-token">x₁</div>
+            <div class="arch-token">x₂</div>
+            <div class="arch-token masked">[M]</div>
+            <div class="arch-token">x₄</div>
+            <div class="arch-token">x₅</div>
+          </div>
+        </div>
+        <div class="transformer-card-desc">
+          Jedes Output-Token sieht <b>alle</b> Input-Tokens (bidirektional).
+          Training via <b>Masked Language Modeling</b>: zufällige Tokens werden maskiert
+          und vorhergesagt. Effizient für <b>Klassifikation</b> und Embedding-Aufgaben.
+        </div>
+      </div>
+
+      <div class="transformer-card dec-only">
+        <div class="transformer-card-title dec">Decoder-only</div>
+        <div class="transformer-card-example">ex: GPT (Text-Generierung)</div>
+        <div class="arch-diagram">
+          <div class="arch-token-row">
+            <div class="arch-token out-gen">x₂</div>
+            <div class="arch-token out-gen">x₃</div>
+            <div class="arch-token out-gen">x₄</div>
+            <div class="arch-token out-gen">x₅</div>
+            <div class="arch-token out-gen">x₆</div>
+          </div>
+          <div class="arch-box decoder-box">Decoder (kausal)</div>
+          <div class="arch-token-row">
+            <div class="arch-token start-tok">&lt;s&gt;</div>
+            <div class="arch-token">x₁</div>
+            <div class="arch-token">x₂</div>
+            <div class="arch-token">x₃</div>
+            <div class="arch-token">x₄</div>
+            <div class="arch-token">x₅</div>
+          </div>
+        </div>
+        <div class="transformer-card-desc">
+          Jedes Token sieht nur <b>vergangene</b> Tokens (kausal/autoregressive).
+          Training: Next-Token-Prediction — Token für Token generiert.
+          Grundlage aller <b>GPT-artigen</b> Sprachmodelle.
+        </div>
+      </div>
+
+      <div class="transformer-card enc-dec">
+        <div class="transformer-card-title encdec">Encoder-Decoder</div>
+        <div class="transformer-card-example">ex: Whisper (Speech-to-Text), Übersetzung</div>
+        <div class="arch-diagram">
+          <div class="arch-token-row">
+            <div class="arch-token out-gen">I</div>
+            <div class="arch-token out-gen">can</div>
+            <div class="arch-token out-gen">…</div>
+          </div>
+          <div class="arch-side-by-side">
+            <div class="arch-enc-part">
+              <div class="arch-box encoder-box">Encoder</div>
+              <div class="arch-token-row">
+                <div class="arch-token audio" style="font-size:0.55rem">audio~</div>
+              </div>
+            </div>
+            <div style="color:var(--muted);font-size:0.8rem;align-self:center">→</div>
+            <div class="arch-dec-part">
+              <div class="arch-box decoder-box-purple">Decoder</div>
+              <div class="arch-token-row">
+                <div class="arch-token start-tok">&lt;s&gt;</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="transformer-card-desc">
+          Encoder verarbeitet den Input (z.B. Audio), Decoder generiert den Output
+          (z.B. Transkript). Ermöglicht <b>Seq2Seq</b>-Aufgaben:
+          Übersetzung, Zusammenfassung, Speech-to-Text.
+        </div>
+      </div>
+    </div>
+
+    <hr class="section-divider">
+
+    <p>
+      <b>Auto-regressive Training</b>: Beim Decoder-only-Ansatz wird das nächste Token
+      sequentiell vorhergesagt — Klassifikation nach Klassifikation.
+      Der Decoder ist <b>kausal</b> (kein Blick in die Zukunft).
+    </p>
+  </div>
+
+  <!-- 7. Übersicht / Recap -->
+  <div class="card">
+    <h2>// Recap — Ressourceneffizienz-Strategien</h2>
+
+    <table class="recap-table">
+      <thead>
+        <tr>
+          <th>Strategie</th>
+          <th>Idee</th>
+          <th>Vorteil</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="cat" style="color:var(--c1)">Post-Training Quantization (PTQ)</td>
+          <td>\(\mathbf{w}_q = \mathrm{Quantize}(\mathbf{w}_{\text{fp}} / w_{\text{scale}})\)</td>
+          <td>4× schnellere Inferenz, weniger RAM</td>
+        </tr>
+        <tr>
+          <td class="cat" style="color:var(--c5)">Quantization-Aware Training (QAT)</td>
+          <td>Forward mit \(\mathbf{w}_q\), Backward aktualisiert \(\mathbf{w}_{\text{fp}}\)</td>
+          <td>Bessere Genauigkeit als PTQ</td>
+        </tr>
+        <tr>
+          <td class="cat" style="color:var(--c4)">Gradient Checkpointing</td>
+          <td>Aktivierungen nur an \(S = \sqrt{L}\) Stellen speichern</td>
+          <td>Peak-Memory: \(2Ld \to 2\sqrt{L}\,d\)</td>
+        </tr>
+        <tr>
+          <td class="cat" style="color:var(--c3)">Architektur-Wahl</td>
+          <td>Encoder-only / Decoder-only / Enc-Dec</td>
+          <td>Aufgabenangepasster Ressourcenbedarf</td>
+        </tr>
+        <tr>
+          <td class="cat" style="color:var(--accent)">Hardware-Matching</td>
+          <td>Modell ↔ Hardware nach RAM und Leistung</td>
+          <td>Edge-Deployment bis 1 mW möglich</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="src-note">// Quelle: Foliensatz 09 — Resource Efficient Deep Learning (ML SS2026)</p>
+  </div>
+
+</div>
+
+<script>
+  const DTYPES = {
+    float32: {
+      bits: 32,
+      sign: 1,
+      exp: 8,
+      man: 23,
+      range: '~−1e⁻³⁸ bis ~3e³⁸',
+      values: '~2³² Darstellungen',
+      note: 'IEEE 754 Standard — 1 Vorz. + 8 Exp. + 23 Mantissa',
+      isFloat: true
+    },
+    bfloat16: {
+      bits: 16,
+      sign: 1,
+      exp: 8,
+      man: 7,
+      range: '~−1e⁻³⁸ bis ~3e³⁸',
+      values: '~2¹⁶ Darstellungen',
+      note: 'Gleicher Exponent wie float32, kürzere Mantissa — für ML optimiert',
+      isFloat: true
+    },
+    float16: {
+      bits: 16,
+      sign: 1,
+      exp: 5,
+      man: 10,
+      range: '~−5.9e⁻⁸ bis ~6.5e⁴',
+      values: '~2¹⁶ Darstellungen',
+      note: 'Kleinerer Exponent als bfloat16 — höhere Präzision, kleinerer Bereich',
+      isFloat: true
+    },
+    int8: {
+      bits: 8,
+      sign: 1,
+      exp: 0,
+      man: 0,
+      val: 7,
+      range: '[−128, 127]',
+      values: '2⁸ = 256 Werte',
+      note: 'Ganzzahl — fast äquivalent zu Fixed-Point Real Values',
+      isFloat: false
+    },
+    int4: {
+      bits: 4,
+      sign: 1,
+      exp: 0,
+      man: 0,
+      val: 3,
+      range: '[−8, 7]',
+      values: '2⁴ = 16 Werte',
+      note: 'Sehr kompakt — verwendet für extreme Quantisierung (z.B. GPTQ)',
+      isFloat: false
+    }
+  };
+
+  function renderBits(dtype) {
+    const d = DTYPES[dtype];
+    const container = document.getElementById('bitLayout');
+    container.innerHTML = '';
+
+    const row = document.createElement('div');
+    row.className = 'bit-row';
+
+    const label = document.createElement('div');
+    label.className = 'bit-row-label';
+    label.textContent = dtype;
+    row.appendChild(label);
+
+    const bitsWrap = document.createElement('div');
+    bitsWrap.className = 'bits-container';
+
+    const cells = [];
+
+    if (d.isFloat) {
+      for (let i = 0; i < d.sign; i++) {
+        const c = document.createElement('div');
+        c.className = 'bit-cell bit-sign';
+        c.textContent = 'S';
+        cells.push(c);
+      }
+      if (d.sign > 0 && d.exp > 0) {
+        const sep = document.createElement('div');
+        sep.className = 'bit-sep';
+        cells.push(sep);
+      }
+      for (let i = 0; i < d.exp; i++) {
+        const c = document.createElement('div');
+        c.className = 'bit-cell bit-exp';
+        c.textContent = 'E';
+        cells.push(c);
+      }
+      if (d.exp > 0 && d.man > 0) {
+        const sep = document.createElement('div');
+        sep.className = 'bit-sep';
+        cells.push(sep);
+      }
+      for (let i = 0; i < d.man; i++) {
+        const c = document.createElement('div');
+        c.className = 'bit-cell bit-man';
+        c.textContent = 'M';
+        cells.push(c);
+      }
+    } else {
+      const c = document.createElement('div');
+      c.className = 'bit-cell bit-sign';
+      c.textContent = 'S';
+      cells.push(c);
+      const sep = document.createElement('div');
+      sep.className = 'bit-sep';
+      cells.push(sep);
+      for (let i = 0; i < d.val; i++) {
+        const cv = document.createElement('div');
+        cv.className = 'bit-cell bit-val';
+        cv.textContent = 'V';
+        cells.push(cv);
+      }
+    }
+
+    cells.forEach(c => bitsWrap.appendChild(c));
+    row.appendChild(bitsWrap);
+
+    const totalLabel = document.createElement('div');
+    totalLabel.style.fontFamily = 'DM Mono, monospace';
+    totalLabel.style.fontSize = '0.65rem';
+    totalLabel.style.color = 'var(--muted)';
+    totalLabel.style.marginLeft = '0.5rem';
+    totalLabel.textContent = d.bits + ' Bits';
+    row.appendChild(totalLabel);
+
+    container.appendChild(row);
+
+    if (d.isFloat) {
+      const breakdown = document.createElement('div');
+      breakdown.style.cssText = 'font-size:0.72rem;color:var(--muted);padding-left:3.5rem;font-family:DM Mono,monospace;';
+      let parts = [];
+      if (d.sign) parts.push(`<span style="color:#ff6b6b">1 Vorzeichen</span>`);
+      if (d.exp) parts.push(`<span style="color:#4ecdc4">${d.exp} Exponent</span>`);
+      if (d.man) parts.push(`<span style="color:#6bcb77">${d.man} Mantissa</span>`);
+      breakdown.innerHTML = parts.join(' + ') + ' = ' + d.bits + ' Bits';
+      container.appendChild(breakdown);
+    } else {
+      const breakdown = document.createElement('div');
+      breakdown.style.cssText = 'font-size:0.72rem;color:var(--muted);padding-left:3.5rem;font-family:DM Mono,monospace;';
+      breakdown.innerHTML = `<span style="color:#ff6b6b">1 Vorzeichen</span> + <span style="color:var(--accent)">${d.val} Wert-Bits</span> = ${d.bits} Bits`;
+      container.appendChild(breakdown);
+    }
+
+    const noteEl = document.createElement('div');
+    noteEl.style.cssText = 'font-size:0.73rem;color:var(--muted);padding-left:3.5rem;';
+    noteEl.textContent = d.note;
+    container.appendChild(noteEl);
+
+    const infoBox = document.getElementById('dtypeInfoBox');
+    infoBox.innerHTML = `
+      <div class="dtype-info-item">
+        <div class="dtype-info-label">Wertebereich</div>
+        <div class="dtype-info-value">${d.range}</div>
+      </div>
+      <div class="dtype-info-item">
+        <div class="dtype-info-label">Anzahl Werte</div>
+        <div class="dtype-info-value">${d.values}</div>
+      </div>
+      <div class="dtype-info-item">
+        <div class="dtype-info-label">Bits gesamt</div>
+        <div class="dtype-info-value">${d.bits} Bits</div>
+      </div>
+    `;
+  }
+
+  document.getElementById('dtypeBtnRow').addEventListener('click', function(e) {
+    const btn = e.target.closest('.dtype-btn');
+    if (!btn) return;
+    document.querySelectorAll('.dtype-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderBits(btn.dataset.dtype);
+  });
+
+  renderBits('float32');
+</script>
+</body>
+</html>

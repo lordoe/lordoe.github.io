@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kovarianz & Kovarianzmatrix</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script>
+  MathJax = {
+    tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+    options: { skipHtmlTags: ['script','noscript','style','textarea'] }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #0f0f11;
+    --surface:  #17171a;
+    --surface2: #1e1e22;
+    --border:   rgba(255,255,255,0.07);
+    --border2:  rgba(255,255,255,0.13);
+    --text:     #e8e6e0;
+    --muted:    #6a6866;
+    --accent:   #4ecdc4;
+    --c1:       #4ecdc4;
+    --c2:       #378ADD;
+    --cov-pos:  #4ecdc4;
+    --cov-neg:  #e05a5a;
+    --cov-zero: #6a6866;
+    --mono:     'DM Mono', monospace;
+    --sans:     'DM Sans', sans-serif;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 40px 24px 80px;
+    max-width: 860px;
+    margin: 0 auto;
+  }
+
+  header { margin-bottom: 40px; }
+  header .tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  header h1 {
+    font-size: clamp(22px, 3.5vw, 32px);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 10px;
+  }
+  header p { color: var(--muted); font-size: 14px; max-width: 600px; line-height: 1.7; }
+
+  .section-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  section { margin-bottom: 44px; }
+  p.body { font-size: 14px; color: var(--muted); line-height: 1.7; }
+  p.body strong { color: var(--text); font-weight: 500; }
+  p.body + p.body { margin-top: 10px; }
+
+  /* ── demo ── */
+  .demo-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 24px;
+  }
+
+  /* preset tabs */
+  .preset-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .preset-tab {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border2);
+    background: none;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .preset-tab:hover { color: var(--text); }
+  .preset-tab.active { background: var(--surface2); color: var(--accent); border-color: var(--accent); }
+
+  .demo-cols {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 20px;
+    align-items: start;
+  }
+  @media (max-width: 600px) { .demo-cols { grid-template-columns: 1fr; } }
+
+  canvas#scatter { width: 100%; border-radius: 8px; background: var(--bg); display: block; }
+
+  /* cov matrix display */
+  .cov-matrix-box {
+    min-width: 190px;
+  }
+  .cov-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .mat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .mat-cell {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 10px 12px;
+    text-align: center;
+  }
+  .mat-cell .cell-idx {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .mat-cell .cell-val {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--text);
+    font-weight: 500;
+  }
+  .mat-cell.pos .cell-val { color: var(--cov-pos); }
+  .mat-cell.neg .cell-val { color: var(--cov-neg); }
+  .mat-cell.diag .cell-val { color: #EF9F27; }
+
+  /* ellipse legend */
+  .ellipse-note {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 10px;
+    line-height: 1.6;
+  }
+
+  /* slider row */
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .slider-row label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+    min-width: 180px;
+  }
+  .slider-row label span { color: var(--text); }
+  input[type=range] {
+    flex: 1;
+    min-width: 80px;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
+  /* ── formula ── */
+  .formula-block {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin: 12px 0;
+  }
+  .formula-block .fl { font-size: 11px; color: var(--muted); margin-bottom: 8px; font-family: var(--sans); }
+
+  mjx-container { color: var(--text) !important; }
+
+  /* ── cards ── */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .card .card-head { font-family: var(--mono); font-size: 11px; margin-bottom: 8px; }
+  .card p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .card strong { color: var(--text); }
+
+  /* ── matrix visual — d×d heatmap ── */
+  .heatmap-wrap {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    margin-top: 12px;
+  }
+  #heatmap-canvas { border-radius: 8px; display: block; }
+  .heatmap-desc {
+    flex: 1;
+    min-width: 200px;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.7;
+    padding-top: 4px;
+  }
+  .heatmap-desc strong { color: var(--text); }
+
+  /* ── link box ── */
+  .link-box {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    text-decoration: none;
+    transition: border-color 0.12s, background 0.12s;
+    cursor: pointer;
+    margin-top: 12px;
+  }
+  .link-box:hover { border-color: rgba(41,112,196,0.6); background: var(--surface2); }
+  .link-box .lb-icon { font-size: 20px; flex-shrink: 0; }
+  .link-box .lb-title { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+  .link-box .lb-desc  { font-size: 12px; color: var(--muted); }
+  .link-box .lb-badge {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: rgba(41,112,196,0.8);
+    flex-shrink: 0;
+  }
+
+  .src-note {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--mono);
+    border-top: 0.5px solid var(--border);
+    padding-top: 16px;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="tag">// grundlagen</div>
+  <h1>Kovarianz &amp; Kovarianzmatrix</h1>
+  <p>Kovarianz misst, wie stark zwei Merkmale <em>gemeinsam</em> schwanken. Die Kovarianzmatrix fasst alle paarweisen Kovarianzen der Daten zusammen — und steckt im Herzen von PCA.</p>
+</header>
+
+<!-- SETUP -->
+<section>
+  <div class="section-title">Schritt 1 — Der Datenraum</div>
+  <p class="body">
+    Wir haben <strong>\(N\) Datenpunkte</strong>, jeder beschrieben durch <strong>\(d\) Merkmale</strong>
+    (auch Features oder Dimensionen genannt). Ein einzelner Datenpunkt ist ein Vektor
+  </p>
+  <div class="formula-block">
+    <div class="fl">Ein Datenpunkt \(x_n\) im \(d\)-dimensionalen Merkmalsraum</div>
+    \[
+      x_n = \begin{pmatrix} x_{n,1} \\ x_{n,2} \\ \vdots \\ x_{n,d} \end{pmatrix} \in \mathbb{R}^d,
+      \qquad n = 1, \dots, N
+    \]
+  </div>
+  <p class="body">
+    Der Index <strong>\(n\)</strong> nummeriert die Datenpunkte (Beobachtungen), der Index
+    <strong>\(i\) oder \(j\)</strong> wählt eine bestimmte Koordinate — also ein bestimmtes Merkmal.
+    \(x_{n,i}\) ist daher der Wert von Merkmal \(i\) beim \(n\)-ten Datenpunkt.
+  </p>
+  <p class="body" style="margin-top:10px;">
+    <strong>Beispiel:</strong> Jeder Datenpunkt ist ein Haus (\(d=3\)): \(x_{n,1}=\) Wohnfläche,
+    \(x_{n,2}=\) Zimmeranzahl, \(x_{n,3}=\) Baujahr. Dann ist \(x_{47,1}\) die Wohnfläche des 47. Hauses.
+  </p>
+</section>
+
+<!-- MITTELWERT -->
+<section>
+  <div class="section-title">Schritt 2 — Empirischer Mittelwert \(\bar x\)</div>
+  <p class="body">
+    Bevor wir Streuung messen können, brauchen wir das <strong>Zentrum</strong> der Daten —
+    den empirischen Mittelwert. Er ist einfach der komponentenweise Durchschnitt über alle
+    \(N\) Datenpunkte:
+  </p>
+  <div class="formula-block">
+    <div class="fl">Empirischer Mittelwert — ein Vektor in \(\mathbb{R}^d\)</div>
+    \[
+      \bar x = \frac{1}{N}\sum_{n=1}^{N} x_n \;\in\; \mathbb{R}^d
+    \]
+  </div>
+  <p class="body">
+    \(\bar x\) ist <em>kein Skalar</em>, sondern selbst ein \(d\)-dimensionaler Vektor.
+    Seine \(i\)-te Komponente \(\bar x_i = \tfrac{1}{N}\sum_n x_{n,i}\) ist der gewöhnliche
+    Durchschnitt von Merkmal \(i\) über alle Datenpunkte.
+    Die Differenz \((x_n - \bar x)\) heißt <strong>zentrierter Datenpunkt</strong> — sie misst,
+    wie weit Datenpunkt \(n\) vom Mittelpunkt entfernt liegt.
+  </p>
+</section>
+
+<!-- KOVARIANZ SKALAR -->
+<section>
+  <div class="section-title">Schritt 3 — Kovarianz zweier Merkmale</div>
+  <p class="body">
+    Die <strong>Kovarianz</strong> zwischen Merkmal \(i\) und Merkmal \(j\) misst, ob die beiden
+    Merkmale <em>gemeinsam</em> vom Mittelwert abweichen. Man multipliziert für jeden Datenpunkt
+    die beiden Abweichungen und mittelt über alle \(N\) Punkte:
+  </p>
+  <div class="formula-block">
+    <div class="fl">Empirische Kovarianz zwischen Merkmal \(i\) und Merkmal \(j\)</div>
+    \[
+      \mathrm{Cov}(x_i,\, x_j)
+      \;=\; \frac{1}{N}\sum_{n=1}^{N}
+        \underbrace{(x_{n,i} - \bar x_i)}_{\text{Abweichung von Merkmal }i}
+        \cdot
+        \underbrace{(x_{n,j} - \bar x_j)}_{\text{Abweichung von Merkmal }j}
+    \]
+  </div>
+  <p class="body">
+    Das Produkt der Abweichungen ist <em>positiv</em>, wenn beide Merkmale gleichzeitig über
+    oder unter ihrem Mittelwert liegen, und <em>negativ</em>, wenn sie gegenläufig schwanken.
+    Der Mittelwert dieser Produkte gibt an, wie stark dieser Zusammenhang im Schnitt ist.
+  </p>
+  <p class="body" style="margin-top:10px;">
+    Sonderfall \(i = j\): dann ist
+    \(\mathrm{Cov}(x_i, x_i) = \tfrac{1}{N}\sum_n (x_{n,i}-\bar x_i)^2 = \mathrm{Var}(x_i)\) —
+    die Kovarianz eines Merkmals mit sich selbst ist seine <strong>Varianz</strong>.
+  </p>
+</section>
+
+<!-- KOVARIANZMATRIX -->
+<section>
+  <div class="section-title">Schritt 4 — Alle Paare auf einmal: die Kovarianzmatrix</div>
+  <p class="body">
+    Für \(d\) Merkmale gibt es \(d \times d\) mögliche Paare \((i,j)\). Statt \(d^2\) einzelne
+    Kovarianzen zu notieren, fasst man sie in einer Matrix zusammen. Der Eintrag in Zeile \(i\),
+    Spalte \(j\) ist genau \(\mathrm{Cov}(x_i, x_j)\).
+    In kompakter Vektorform — wo jeder Summand das
+    <strong>äußere Produkt</strong> des zentrierten Datenpunkts mit sich selbst ist:
+  </p>
+  <div class="formula-block">
+    <div class="fl">Kovarianzmatrix \(C\) — direkt aus Foliensatz 04, Folie 20</div>
+    \[
+      C \;=\; \frac{1}{N}\sum_{n=1}^{N}(x_n - \bar x)(x_n - \bar x)^\top \;\in\; \mathbb{R}^{d\times d}
+    \]
+  </div>
+  <p class="body">
+    <strong>Warum äußeres Produkt?</strong> \((x_n - \bar x)\) ist ein Spaltenvektor in
+    \(\mathbb{R}^d\). Das Produkt
+    \((x_n-\bar x)(x_n-\bar x)^\top\) (Spalte mal Zeile) ergibt eine \(d\times d\)-Matrix,
+    deren Eintrag \((i,j)\) gerade \((x_{n,i}-\bar x_i)(x_{n,j}-\bar x_j)\) ist —
+    also genau den Summanden der Kovarianz. Summiert man über alle \(N\) Datenpunkte und
+    dividiert durch \(N\), bekommt man alle Kovarianzen gleichzeitig.
+  </p>
+  <p class="body" style="margin-top:10px;">
+    \(C\) ist immer <strong>symmetrisch</strong> (\(C_{ij} = C_{ji}\), da Multiplikation kommutativ)
+    und <strong>positiv semidefinit</strong> (\(\mathbf{v}^\top C\,\mathbf{v} \ge 0\) für alle
+    \(\mathbf{v}\)) — das garantiert reelle, nichtnegative Eigenwerte.
+    Auf der <strong>Hauptdiagonale</strong> stehen die Varianzen,
+    die <strong>Off-Diagonale</strong> enthält die paarweisen Kovarianzen.
+  </p>
+</section>
+
+<!-- INTERAKTIV -->
+<section>
+  <div class="section-title">Interaktive Demo — Streuung beobachten</div>
+  <div class="demo-wrap">
+    <div class="preset-tabs" id="tabs"></div>
+    <div class="demo-cols">
+      <div>
+        <canvas id="scatter" height="300"></canvas>
+        <div class="ellipse-note" id="ellnote"></div>
+        <div class="slider-row">
+          <label>Korrelation ρ: <span id="rho-val">0.00</span></label>
+          <input type="range" id="rho" min="-95" max="95" value="0" step="1">
+        </div>
+      </div>
+      <div class="cov-matrix-box">
+        <div class="cov-label">Kovarianzmatrix C</div>
+        <div class="mat-grid">
+          <div class="mat-cell diag"><div class="cell-idx">C₁₁ = Var(x₁)</div><div class="cell-val" id="c11">—</div></div>
+          <div class="mat-cell" id="c12-cell"><div class="cell-idx">C₁₂ = Cov(x₁,x₂)</div><div class="cell-val" id="c12">—</div></div>
+          <div class="mat-cell" id="c21-cell"><div class="cell-idx">C₂₁ = Cov(x₂,x₁)</div><div class="cell-val" id="c21">—</div></div>
+          <div class="mat-cell diag"><div class="cell-idx">C₂₂ = Var(x₂)</div><div class="cell-val" id="c22">—</div></div>
+        </div>
+        <div class="cov-label" style="margin-top:14px;">Eigenwerte</div>
+        <div class="mat-grid">
+          <div class="mat-cell"><div class="cell-idx">λ₁</div><div class="cell-val" id="lam1">—</div></div>
+          <div class="mat-cell"><div class="cell-idx">λ₂</div><div class="cell-val" id="lam2">—</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- EIGENSCHAFTEN -->
+<section>
+  <div class="section-title">Eigenschaften auf einen Blick</div>
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-head" style="color:var(--cov-pos)">Cov &gt; 0 — gleiche Richtung</div>
+      <p>Steigt \(x_i\), steigt auch \(x_j\) tendenziell. Die Punkte liegen entlang einer aufsteigenden Geraden.</p>
+    </div>
+    <div class="card">
+      <div class="card-head" style="color:var(--cov-neg)">Cov &lt; 0 — entgegengesetzt</div>
+      <p>Steigt \(x_i\), fällt \(x_j\) tendenziell. Die Punktwolke hat eine absteigende Ausrichtung.</p>
+    </div>
+    <div class="card">
+      <div class="card-head" style="color:var(--cov-zero)">Cov = 0 — unkorreliert</div>
+      <p>Kein linearer Zusammenhang — die Punktwolke ist kreisförmig (wenn auch die Varianzen gleich sind).</p>
+    </div>
+    <div class="card">
+      <div class="card-head" style="color:#EF9F27">Diagonale = Varianzen</div>
+      <p>\(C_{ii} = \mathrm{Var}(x_i)\) — immer \(\ge 0\). Breite Streuung entlang Merkmal \(i\) → großer Wert.</p>
+    </div>
+  </div>
+</section>
+
+<!-- HEATMAP FÜR d>2 -->
+<section>
+  <div class="section-title">Hochdimensional — Heatmap</div>
+  <p class="body" style="margin-bottom:16px;">
+    Für \(d > 2\) lässt sich \(C\) als Heatmap visualisieren: helle Felder = starke (positive) Kovarianz,
+    dunkle = schwache oder negative. Die Symmetrie \(C = C^\top\) ist direkt ablesbar.
+  </p>
+  <div class="heatmap-wrap">
+    <canvas id="heatmap-canvas" width="220" height="220"></canvas>
+    <div class="heatmap-desc">
+      Die <strong>Diagonale</strong> (orange) zeigt die Varianzen der einzelnen Merkmale.
+      Stark korrelierte Merkmalspaare erscheinen als helle Blöcke <strong>symmetrisch zur Diagonale</strong>.
+      In PCA ersetzt die Eigenzerlegung von \(C\) diese korrelierten Achsen durch <strong>unkorrelierte
+      Hauptkomponenten</strong> — die Kovarianzmatrix im PC-Raum ist dann diagonal.
+    </div>
+  </div>
+</section>
+
+<!-- VERBINDUNG PCA -->
+<section>
+  <div class="section-title">Verbindung zu PCA</div>
+  <p class="body">
+    PCA maximiert die erklärte Varianz der Projektionen. In Matrixform ist das äquivalent zur
+    Eigenwertzerlegung von \(C\):
+  </p>
+  <div class="formula-block">
+    <div class="fl">PCA-Optimierungsproblem in Kovarianzform (Foliensatz 04, Folie 20)</div>
+    \[
+      \max_{W \in \mathbb{R}^{d\times K}}\; \mathrm{tr}\!\left(W^\top C\, W\right)
+      \quad \text{s.t.} \quad W^\top W = I_K
+    \]
+  </div>
+  <p class="body">
+    Die <strong>Top-K-Eigenvektoren</strong> von \(C\) lösen dieses Problem in geschlossener Form —
+    sie zeigen in die Richtungen der größten Streuung.
+    Die zugehörigen <strong>Eigenwerte \(\lambda_1 \ge \cdots \ge \lambda_d\)</strong> geben die Varianz
+    an, die jede Hauptkomponente erklärt.
+  </p>
+  <div class="link-box" onclick="openCard('grundlagen/eigenwerte.html','Eigenwerte & Eigenvektoren','../grundlagen/eigenwerte.html')">
+    <div class="lb-icon">🔢</div>
+    <div>
+      <div class="lb-title">Eigenwerte &amp; Eigenvektoren</div>
+      <div class="lb-desc">Warum die Eigenvektoren von C die Hauptrichtungen der Streuung sind.</div>
+    </div>
+    <div class="lb-badge">→ öffnen</div>
+  </div>
+  <div class="link-box" onclick="openCard('unsupervized/pca_visualisierung.html','PCA Schritt für Schritt','../unsupervized/pca_visualisierung.html')">
+    <div class="lb-icon">📊</div>
+    <div>
+      <div class="lb-title">PCA Schritt für Schritt</div>
+      <div class="lb-desc">Kovarianzmatrix berechnen → Eigenzerlegung → Projektion, interaktiv.</div>
+    </div>
+    <div class="lb-badge">→ öffnen</div>
+  </div>
+</section>
+
+<p class="src-note">// Quelle: Foliensatz 04 — Unsupervised Learning (ML SS2026), Abschnitt „PCA in covariance form" (Folie 20). Grundlegende Kovarianz-Definition als allgemeines Lineare-Algebra-/Statistik-Grundlagenwissen ergänzt.</p>
+
+<script>
+function openCard(src, title, fallback) {
+  window.parent.postMessage({type:'open-card', src, title}, '*');
+  if (window === window.parent) window.location.href = fallback;
+}
+
+// ── RNG ──
+function makeRng(seed) {
+  let s = seed | 0;
+  return () => { s ^= s << 13; s ^= s >> 17; s ^= s << 5; return (s >>> 0) / 2 ** 32; };
+}
+
+// ── presets: [sigma1, sigma2, rho] ──
+const presets = [
+  { name: 'Keine Korr.',  rho: 0,    s1: 1.0, s2: 1.0 },
+  { name: 'Positiv',      rho: 0.82, s1: 1.2, s2: 0.8 },
+  { name: 'Negativ',      rho: -0.78,s1: 1.0, s2: 1.0 },
+  { name: 'Ungl. Var.',   rho: 0.5,  s1: 2.0, s2: 0.5 },
+];
+let curPreset = 0;
+let userRho = 0; // -1..1
+let sigmas = [1.0, 1.0];
+
+const tabsEl = document.getElementById('tabs');
+presets.forEach((p, i) => {
+  const btn = document.createElement('button');
+  btn.className = 'preset-tab' + (i === 0 ? ' active' : '');
+  btn.textContent = p.name;
+  btn.onclick = () => {
+    curPreset = i;
+    userRho = p.rho;
+    sigmas = [p.s1, p.s2];
+    document.getElementById('rho').value = Math.round(p.rho * 100);
+    document.getElementById('rho-val').textContent = p.rho.toFixed(2);
+    document.querySelectorAll('.preset-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    drawScatter();
+  };
+  tabsEl.appendChild(btn);
+});
+
+document.getElementById('rho').addEventListener('input', function() {
+  userRho = this.value / 100;
+  document.getElementById('rho-val').textContent = userRho.toFixed(2);
+  document.querySelectorAll('.preset-tab').forEach(b => b.classList.remove('active'));
+  curPreset = -1;
+  drawScatter();
+});
+
+// ── generate correlated 2D data ──
+function genData(N, s1, s2, rho, seed) {
+  const rng = makeRng(seed);
+  const pts = [];
+  for (let i = 0; i < N; i++) {
+    // Box-Muller
+    const u1 = rng(), u2 = rng();
+    const z1 = Math.sqrt(-2 * Math.log(u1 + 1e-12)) * Math.cos(2 * Math.PI * u2);
+    const z2 = Math.sqrt(-2 * Math.log(rng() + 1e-12)) * Math.cos(2 * Math.PI * rng());
+    const x = s1 * z1;
+    const y = s2 * (rho * z1 + Math.sqrt(1 - rho * rho) * z2);
+    pts.push([x, y]);
+  }
+  return pts;
+}
+
+// ── empirical cov ──
+function empCov(pts) {
+  const N = pts.length;
+  const mx = pts.reduce((s, p) => s + p[0], 0) / N;
+  const my = pts.reduce((s, p) => s + p[1], 0) / N;
+  let c11 = 0, c12 = 0, c22 = 0;
+  for (const [x, y] of pts) {
+    c11 += (x - mx) ** 2;
+    c12 += (x - mx) * (y - my);
+    c22 += (y - my) ** 2;
+  }
+  return { c11: c11 / N, c12: c12 / N, c21: c12 / N, c22: c22 / N };
+}
+
+// ── eig2 (symmetric 2x2) ──
+function eig2sym(c11, c12, c22) {
+  const tr = c11 + c22, det = c11 * c22 - c12 * c12;
+  const disc = Math.max(0, tr * tr / 4 - det);
+  const l1 = tr / 2 + Math.sqrt(disc);
+  const l2 = tr / 2 - Math.sqrt(disc);
+  // eigenvector for l1
+  let vx = c12, vy = l1 - c11;
+  if (Math.hypot(vx, vy) < 1e-9) { vx = 1; vy = 0; }
+  const n = Math.hypot(vx, vy);
+  return { l1, l2, v1: [vx / n, vy / n] };
+}
+
+// ── draw scatter ──
+const scatterCanvas = document.getElementById('scatter');
+const sctx = scatterCanvas.getContext('2d');
+
+function drawScatter() {
+  const s1 = sigmas[0], s2 = sigmas[1];
+  const rho = Math.max(-0.99, Math.min(0.99, userRho));
+  const pts = genData(220, s1, s2, rho, 42);
+  const cov = empCov(pts);
+  const eig = eig2sym(cov.c11, cov.c12, cov.c22);
+
+  // update matrix display
+  document.getElementById('c11').textContent = cov.c11.toFixed(2);
+  document.getElementById('c22').textContent = cov.c22.toFixed(2);
+  document.getElementById('c12').textContent = cov.c12.toFixed(2);
+  document.getElementById('c21').textContent = cov.c21.toFixed(2);
+  document.getElementById('lam1').textContent = eig.l1.toFixed(2);
+  document.getElementById('lam2').textContent = eig.l2.toFixed(2);
+
+  // color off-diagonal
+  const c12cell = document.getElementById('c12-cell');
+  const c21cell = document.getElementById('c21-cell');
+  c12cell.classList.remove('pos', 'neg');
+  c21cell.classList.remove('pos', 'neg');
+  if (cov.c12 > 0.05) { c12cell.classList.add('pos'); c21cell.classList.add('pos'); }
+  else if (cov.c12 < -0.05) { c12cell.classList.add('neg'); c21cell.classList.add('neg'); }
+
+  // ellipse note
+  const en = document.getElementById('ellnote');
+  en.textContent = rho > 0.1
+    ? '↳ Konfidenzellipse zeigt positive Korrelation — Hauptachse neigt sich nach rechts.'
+    : rho < -0.1
+    ? '↳ Konfidenzellipse zeigt negative Korrelation — Hauptachse neigt sich nach links.'
+    : '↳ Konfidenzellipse ist kreisförmig — keine lineare Korrelation.';
+
+  // canvas sizing
+  const dpr = window.devicePixelRatio || 1;
+  const rect = scatterCanvas.getBoundingClientRect();
+  const W = rect.width, H = 300;
+  scatterCanvas.width = W * dpr; scatterCanvas.height = H * dpr;
+  sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  sctx.clearRect(0, 0, W, H);
+
+  const cx = W / 2, cy = H / 2;
+  const pad = 36;
+  // find data range
+  const maxR = Math.max(...pts.map(([x, y]) => Math.hypot(x, y))) || 1;
+  const sc = Math.min((W / 2 - pad) / (maxR * 1.05), (H / 2 - pad) / (maxR * 1.05));
+  const toPx = ([x, y]) => [cx + x * sc, cy - y * sc];
+
+  // grid
+  sctx.strokeStyle = 'rgba(255,255,255,0.04)'; sctx.lineWidth = 1;
+  for (let g = -4; g <= 4; g++) {
+    const gp = toPx([g, 0]); const gn = toPx([g, 0]);
+    sctx.beginPath(); sctx.moveTo(toPx([g,-4])[0], toPx([g,-4])[1]); sctx.lineTo(toPx([g,4])[0], toPx([g,4])[1]); sctx.stroke();
+    sctx.beginPath(); sctx.moveTo(toPx([-4,g])[0], toPx([-4,g])[1]); sctx.lineTo(toPx([4,g])[0], toPx([4,g])[1]); sctx.stroke();
+  }
+  // axes
+  sctx.strokeStyle = 'rgba(255,255,255,0.12)'; sctx.lineWidth = 1.2;
+  sctx.beginPath(); sctx.moveTo(toPx([-4,0])[0], cy); sctx.lineTo(toPx([4,0])[0], cy); sctx.stroke();
+  sctx.beginPath(); sctx.moveTo(cx, toPx([0,-4])[1]); sctx.lineTo(cx, toPx([0,4])[1]); sctx.stroke();
+
+  // points
+  for (const p of pts) {
+    const [px, py] = toPx(p);
+    sctx.beginPath(); sctx.arc(px, py, 2.8, 0, Math.PI * 2);
+    sctx.fillStyle = 'rgba(78,205,196,0.45)'; sctx.fill();
+  }
+
+  // covariance ellipse (1-sigma): parametric ellipse using eigen-decomposition
+  const angle = Math.atan2(eig.v1[1], eig.v1[0]);
+  const rx = Math.sqrt(Math.max(0, eig.l1));
+  const ry = Math.sqrt(Math.max(0, eig.l2));
+
+  sctx.save();
+  sctx.translate(cx, cy);
+  sctx.rotate(-angle);
+  sctx.scale(1, 1);
+
+  // draw ellipse in world units * sc
+  sctx.beginPath();
+  sctx.ellipse(0, 0, rx * sc, ry * sc, 0, 0, 2 * Math.PI);
+  sctx.strokeStyle = 'rgba(78,205,196,0.8)';
+  sctx.lineWidth = 1.8;
+  sctx.stroke();
+  // 2-sigma
+  sctx.beginPath();
+  sctx.ellipse(0, 0, 2 * rx * sc, 2 * ry * sc, 0, 0, 2 * Math.PI);
+  sctx.strokeStyle = 'rgba(78,205,196,0.35)';
+  sctx.lineWidth = 1.2;
+  sctx.stroke();
+
+  // eigenvector axes
+  sctx.strokeStyle = 'rgba(239,159,39,0.8)'; sctx.lineWidth = 1.5;
+  sctx.setLineDash([5, 4]);
+  sctx.beginPath(); sctx.moveTo(-rx * sc * 1.8, 0); sctx.lineTo(rx * sc * 1.8, 0); sctx.stroke();
+  sctx.strokeStyle = 'rgba(55,138,221,0.6)';
+  sctx.beginPath(); sctx.moveTo(0, -ry * sc * 2.5); sctx.lineTo(0, ry * sc * 2.5); sctx.stroke();
+  sctx.setLineDash([]);
+  sctx.restore();
+}
+
+// ── heatmap (5×5 synthetic cov matrix) ──
+(function() {
+  const c = document.getElementById('heatmap-canvas');
+  const ctx = c.getContext('2d');
+  const d = 5;
+  // create a realistic "block" covariance structure
+  const labels = ['x₁','x₂','x₃','x₄','x₅'];
+  // define groups: {0,1,2} correlated, {3,4} correlated, cross low
+  const getCov = (i, j) => {
+    if (i === j) return 1;
+    if ((i <= 2 && j <= 2)) return 0.7;
+    if ((i >= 3 && j >= 3)) return 0.6;
+    return 0.08;
+  };
+  const pad = 32, cell = (c.width - pad * 2) / d;
+  ctx.clearRect(0, 0, c.width, c.height);
+
+  for (let i = 0; i < d; i++) {
+    for (let j = 0; j < d; j++) {
+      const v = getCov(i, j);
+      const x = pad + j * cell, y = pad + i * cell;
+      // color: diag = orange, positive = teal, near-zero = dark
+      let fill;
+      if (i === j) {
+        fill = `rgba(239,159,39,${0.35 + v * 0.55})`;
+      } else if (v > 0.3) {
+        fill = `rgba(78,205,196,${0.15 + v * 0.65})`;
+      } else {
+        fill = `rgba(255,255,255,${0.04 + v * 0.1})`;
+      }
+      ctx.fillStyle = fill;
+      ctx.beginPath();
+      ctx.roundRect(x + 2, y + 2, cell - 4, cell - 4, 4);
+      ctx.fill();
+
+      // value text
+      ctx.fillStyle = i === j ? 'rgba(239,159,39,0.9)' : v > 0.3 ? 'rgba(78,205,196,0.9)' : 'rgba(255,255,255,0.25)';
+      ctx.font = '11px DM Mono, monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(v.toFixed(1), x + cell / 2, y + cell / 2);
+    }
+    // row/col labels
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.font = '10px DM Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(labels[i], pad + i * cell + cell / 2, pad - 14);
+    ctx.fillText(labels[i], pad - 16, pad + i * cell + cell / 2);
+  }
+})();
+
+// initial draw
+sigmas = [presets[0].s1, presets[0].s2];
+userRho = presets[0].rho;
+drawScatter();
+window.addEventListener('resize', drawScatter);
+</script>
+</body>
+</html>

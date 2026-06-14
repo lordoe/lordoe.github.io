@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GMM & EM-Algorithmus — Gaussian Mixture Models</title>
+<script>
+  MathJax = {
+    tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+    options: { skipHtmlTags: ['script','noscript','style','textarea'] }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0e11;
+    --bg2: #16161b;
+    --bg3: #1e1e26;
+    --border: rgba(255,255,255,0.08);
+    --text: #e8e6f0;
+    --muted: #7a7890;
+    --accent: #8b7cf8;
+    --accent2: #4ecdc4;
+    --c0: #8b7cf8; --c0l: rgba(139,124,248,0.15);
+    --c1: #4ecdc4; --c1l: rgba(78,205,196,0.15);
+    --c2: #ff6b6b; --c2l: rgba(255,107,107,0.15);
+    --c3: #ffd93d; --c3l: rgba(255,217,61,0.15);
+    --c4: #6bcb77; --c4l: rgba(107,203,119,0.15);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem;
+  }
+
+  header {
+    width: 100%;
+    max-width: 860px;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  h1 {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.05rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+  }
+
+  .subtitle {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .main {
+    width: 100%;
+    max-width: 860px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+  }
+
+  button {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    letter-spacing: 0.02em;
+  }
+  button:hover { background: rgba(139,124,248,0.12); border-color: var(--accent); color: var(--accent); }
+  button.primary { background: rgba(139,124,248,0.15); border-color: var(--accent); color: var(--accent); }
+  button.e-step-active { background: rgba(78,205,196,0.15); border-color: var(--accent2); color: var(--accent2); }
+  button.m-step-active { background: rgba(255,107,107,0.15); border-color: var(--c2); color: var(--c2); }
+  button:active { transform: scale(0.97); }
+
+  .stats {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+  .stat span { color: var(--text); font-weight: 500; }
+
+  .phase-box {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 0.6rem 1rem;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: var(--muted);
+    min-height: 2.4rem;
+  }
+  .phase-box b { color: var(--text); font-weight: 500; }
+  .phase-box.e-step { border-left-color: var(--accent2); }
+  .phase-box.m-step { border-left-color: var(--c2); }
+
+  canvas {
+    display: block;
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--bg2);
+  }
+
+  .hint {
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    text-align: center;
+    margin-top: 0.25rem;
+  }
+
+  .legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    justify-content: center;
+  }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .legend-ring { width: 12px; height: 12px; border-radius: 50%; border: 2px solid; background: transparent; }
+
+  .explanation {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .explanation h2 {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .explanation p {
+    font-size: 0.82rem;
+    line-height: 1.65;
+    color: var(--muted);
+  }
+  .explanation p b { color: var(--text); font-weight: 500; }
+
+  .steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .step {
+    display: grid;
+    grid-template-columns: 1.6rem 1fr;
+    gap: 0.5rem 0.75rem;
+    align-items: start;
+  }
+
+  .step-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    padding-top: 0.1rem;
+  }
+
+  .step-body { display: flex; flex-direction: column; gap: 0.35rem; }
+
+  .step-title {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .step-desc {
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+
+  .formula-box {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.4rem 1rem;
+    color: var(--text);
+    overflow-x: auto;
+  }
+
+  .formula-box mjx-container { color: var(--text) !important; }
+
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--accent2);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.25rem;
+  }
+
+  .src-note {
+    font-size: 0.7rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    border-top: 1px solid var(--border);
+    padding-top: 0.75rem;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>gmm-em.js</h1>
+  <span class="subtitle">// Gaussian Mixture Models & EM-Algorithmus — interaktive Visualisierung</span>
+</header>
+
+<div class="main">
+  <div class="controls">
+    <button onclick="resetAll()" class="primary">↺ reset</button>
+    <button onclick="doEStep()" id="e-btn">E-step</button>
+    <button onclick="doMStep()" id="m-btn">M-step</button>
+    <button onclick="autoRun()" id="auto-btn">▶ auto</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat">iteration <span id="iter-count">0</span></div>
+    <div class="stat">phase <span id="phase-name">init</span></div>
+    <div class="stat">log-likelihood <span id="ll-val">—</span></div>
+  </div>
+
+  <div class="phase-box" id="desc">
+    Klicke <b>E-step</b> um zu starten. Der EM-Algorithmus wechselt alternierend zwischen E- und M-Schritt.
+  </div>
+
+  <canvas id="c"></canvas>
+
+  <div class="hint">// weiche Zuweisungen γ_{n,k} nach E-step — Ellipsen zeigen 1σ / 2σ der Gaußkomponenten</div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--c0)"></div><span>cluster 1 (π₁)</span></div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--c1)"></div><span>cluster 2 (π₂)</span></div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--c2)"></div><span>cluster 3 (π₃)</span></div>
+    <div class="legend-item"><div class="legend-ring" style="border-color:rgba(255,255,255,0.4)"></div><span>1σ / 2σ Ellipse</span></div>
+  </div>
+
+  <div class="explanation">
+    <h2>// gaussian mixture model — erklärung</h2>
+
+    <p>
+      Ein <b>Gaussian Mixture Model (GMM)</b> modelliert die Datenverteilung als gewichtete Summe
+      von <b>K Gaußverteilungen</b>. Jeder Datenpunkt wird durch einen latenten Cluster-Index
+      <b>c_n</b> erzeugt — ein probabilistisches Generativmodell.
+    </p>
+
+    <div class="steps">
+
+      <div class="step">
+        <span class="step-num">01</span>
+        <div class="step-body">
+          <span class="step-title">Generativmodell (Slide 12)</span>
+          <span class="step-desc">
+            Jeder Datenpunkt x_n wird in zwei Schritten generiert:
+            Zuerst wird das Cluster k aus einer kategorischen Verteilung gezogen,
+            dann der Punkt aus der zugehörigen Gaußverteilung:
+          </span>
+          <div class="formula-box">
+            \[
+              c_n \sim \mathrm{Cat}(\pi_1, \dots, \pi_K), \qquad
+              x_n \mid c_n = k \;\sim\; \mathcal{N}(\mu_k,\, \Sigma_k)
+            \]
+          </div>
+          <span class="step-desc">
+            Die <b>marginale Likelihood</b> eines Punktes ergibt sich durch Summation über alle Cluster:
+          </span>
+          <div class="formula-box">
+            \[
+              p(x_n) = \sum_{k=1}^{K} \pi_k\, \mathcal{N}(x_n;\, \mu_k,\, \Sigma_k)
+            \]
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">02</span>
+        <div class="step-body">
+          <span class="step-title">Marginale Log-Likelihood (Slide 13)</span>
+          <span class="step-desc">
+            Durch Summation über den latenten Cluster-Index c_n entsteht eine
+            nicht-konvexe Zielfunktion ohne geschlossene Lösung:
+          </span>
+          <div class="formula-box">
+            \[
+              \log p(x_n) = \log \sum_{k=1}^{K} \pi_k\, \mathcal{N}(x_n;\, \mu_k,\, \Sigma_k)
+            \]
+          </div>
+          <span class="step-desc">
+            Kein direktes Maximum — stattdessen verwenden wir den <b>EM-Algorithmus</b>.
+          </span>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">03</span>
+        <div class="step-body">
+          <span class="step-title">E-Schritt — Responsibilities</span>
+          <span class="step-desc">
+            Berechne die <b>weichen Zuweisungen</b> γ_{n,k} = p(c_n = k | x_n)
+            für jeden Punkt n und jedes Cluster k via Bayes' Theorem:
+          </span>
+          <div class="formula-box">
+            \[
+              \gamma_{n,k} = \frac{\pi_k\, \mathcal{N}(x_n;\, \mu_k,\, \Sigma_k)}
+                                   {\displaystyle\sum_{j=1}^{K} \pi_j\, \mathcal{N}(x_n;\, \mu_j,\, \Sigma_j)}
+            \]
+          </div>
+          <span class="step-desc">
+            Die Farbe jedes Punktes im Plot spiegelt die gemischten Responsibilities wider —
+            ein Punkt nahe zwei Clustern erscheint als Mischfarbe.
+          </span>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">04</span>
+        <div class="step-body">
+          <span class="step-title">M-Schritt — Parameter-Update</span>
+          <span class="step-desc">
+            Maximiere \( \mathbb{E}_{c_n \sim \gamma_n}[\log p(x_n, c_n)] \) — geschlossene Formeln
+            mit effektiver Clustergröße \( N_k = \sum_n \gamma_{n,k} \):
+          </span>
+          <div class="formula-box">
+            \[
+              \pi_k \leftarrow \frac{N_k}{N}, \qquad
+              \mu_k \leftarrow \frac{1}{N_k} \sum_{n} \gamma_{n,k}\, x_n
+            \]
+          </div>
+          <div class="formula-box">
+            \[
+              \Sigma_k \leftarrow \frac{1}{N_k} \sum_{n} \gamma_{n,k}\,
+                (x_n - \mu_k)(x_n - \mu_k)^\top
+            \]
+          </div>
+          <span class="step-desc">
+            Nach dem M-Schritt werden die Ellipsen neu gezeichnet —
+            sie repräsentieren die Kovarianzen \( \Sigma_k \) der Gaußkomponenten.
+          </span>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">05</span>
+        <div class="step-body">
+          <span class="step-title">Verbindung zu K-Means</span>
+          <span class="step-desc">
+            Im Grenzfall <b>harter Zuweisungen</b> (Σ_k → 0) degeneriert γ_{n,k}
+            zu einer 0-1-Zuweisung — der EM-Algorithmus reduziert sich auf den Lloyd-Algorithmus:
+          </span>
+          <div class="formula-box">
+            \[
+              \gamma_{n,k} \;\to\; \mathbf{1}\!\left[k = \arg\min_j \|x_n - \mu_j\|\right]
+              \quad \text{für } \Sigma_k \to 0
+            \]
+          </div>
+          <span class="step-desc">
+            K-Means ist also ein Spezialfall des GMM mit isotropen Varianzen gegen Null.
+          </span>
+        </div>
+      </div>
+
+    </div>
+
+    <div>
+      <div class="section-label">// take-home messages (Slide 15)</div>
+      <p>
+        <b>Klassisches Clustering</b> ist unsupervised ML mit diskretem Output.
+        Lösungen sind nicht eindeutig, aber klassische Algorithmen sind gut optimiert.
+        Das <b>GMM</b> ist die probabilistische Variante — es liefert weiche Zuweisungen
+        und modelliert Cluster-Formen explizit über Kovarianzmatrizen.
+      </p>
+    </div>
+
+    <p class="src-note">// Quelle: Foliensatz 04 — Unsupervised Learning (ML SS2026)</p>
+  </div>
+
+</div>
+
+<script>
+// ─── Palette ───────────────────────────────────────────────────────────────
+const COLORS = [
+  { r:139, g:124, b:248 },   // --c0 purple
+  { r:78,  g:205, b:196 },   // --c1 teal
+  { r:255, g:107, b:107 },   // --c2 red
+];
+const K = 3;
+
+// ─── Pre-generated data (80 points from 3 Gaussians in normalized [0,1]^2) ─
+// Blob centers: (0.25,0.3), (0.7,0.25), (0.5,0.72)
+// std: 0.09, 0.10, 0.08
+const RAW_DATA = (function() {
+  // Seeded pseudo-random using a simple LCG for reproducibility
+  let seed = 42;
+  function rand() { seed = (seed * 1664525 + 1013904223) & 0xffffffff; return (seed >>> 0) / 0xffffffff; }
+  function randn() {
+    let u = 0, v = 0;
+    while (u === 0) u = rand();
+    while (v === 0) v = rand();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  }
+  const blobs = [
+    { cx: 0.25, cy: 0.30, sx: 0.10, sy: 0.08, n: 27 },
+    { cx: 0.72, cy: 0.25, sx: 0.09, sy: 0.11, n: 27 },
+    { cx: 0.50, cy: 0.72, sx: 0.11, sy: 0.08, n: 26 },
+  ];
+  const pts = [];
+  for (const b of blobs) {
+    for (let i = 0; i < b.n; i++) {
+      pts.push([ b.cx + randn() * b.sx, b.cy + randn() * b.sy ]);
+    }
+  }
+  return pts;
+})();
+
+// ─── Canvas setup ──────────────────────────────────────────────────────────
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W, H;
+
+function resize() {
+  W = Math.min(860, window.innerWidth - 32);
+  H = Math.round(W * 0.58);
+  canvas.width = W;
+  canvas.height = H;
+  draw();
+}
+window.addEventListener('resize', resize);
+
+function toCanvas(nx, ny) {
+  const pad = 32;
+  return [ pad + nx * (W - 2*pad), pad + ny * (H - 2*pad) ];
+}
+
+// ─── GMM state ─────────────────────────────────────────────────────────────
+let pi, mu, sigma, gamma;   // pi: [K], mu: [K][2], sigma: [K][2] (diag variances), gamma: [N][K]
+let iterCount = 0;
+let currentPhase = 'init';  // 'init' | 'e-done' | 'm-done'
+let logLikelihood = null;
+let autoTimer = null;
+
+function gaussPDF(x, y, mux, muy, sx2, sy2) {
+  // Diagonal Gaussian PDF
+  const dx = x - mux, dy = y - muy;
+  const norm = 1 / (2 * Math.PI * Math.sqrt(sx2 * sy2));
+  return norm * Math.exp(-0.5 * (dx*dx/sx2 + dy*dy/sy2));
+}
+
+function initModel() {
+  // Randomly pick K points as initial means (use fixed indices for reproducibility)
+  const seeds = [5, 32, 62];
+  pi = Array(K).fill(1/K);
+  mu = seeds.map(i => [...RAW_DATA[i]]);
+  sigma = Array.from({length: K}, () => [0.012, 0.012]);  // identity-like variance
+  gamma = RAW_DATA.map(() => Array(K).fill(1/K));
+}
+
+function eStep() {
+  const N = RAW_DATA.length;
+  gamma = RAW_DATA.map(([x, y]) => {
+    const raw = Array.from({length: K}, (_, k) =>
+      pi[k] * gaussPDF(x, y, mu[k][0], mu[k][1], sigma[k][0], sigma[k][1])
+    );
+    const sum = raw.reduce((a, b) => a + b, 0) || 1e-300;
+    return raw.map(v => v / sum);
+  });
+}
+
+function mStep() {
+  const N = RAW_DATA.length;
+  for (let k = 0; k < K; k++) {
+    const Nk = gamma.reduce((s, g) => s + g[k], 0) || 1e-9;
+    pi[k] = Nk / N;
+    // mu update
+    let sx = 0, sy = 0;
+    for (let n = 0; n < N; n++) {
+      sx += gamma[n][k] * RAW_DATA[n][0];
+      sy += gamma[n][k] * RAW_DATA[n][1];
+    }
+    mu[k] = [sx / Nk, sy / Nk];
+    // sigma update (diagonal)
+    let vx = 0, vy = 0;
+    for (let n = 0; n < N; n++) {
+      const dx = RAW_DATA[n][0] - mu[k][0];
+      const dy = RAW_DATA[n][1] - mu[k][1];
+      vx += gamma[n][k] * dx * dx;
+      vy += gamma[n][k] * dy * dy;
+    }
+    sigma[k] = [
+      Math.max(vx / Nk, 1e-5),
+      Math.max(vy / Nk, 1e-5),
+    ];
+  }
+}
+
+function computeLL() {
+  let ll = 0;
+  for (const [x, y] of RAW_DATA) {
+    let mix = 0;
+    for (let k = 0; k < K; k++) {
+      mix += pi[k] * gaussPDF(x, y, mu[k][0], mu[k][1], sigma[k][0], sigma[k][1]);
+    }
+    ll += Math.log(mix + 1e-300);
+  }
+  return ll;
+}
+
+// ─── Drawing ───────────────────────────────────────────────────────────────
+function blendColor(gammaRow) {
+  let r = 0, g = 0, b = 0;
+  for (let k = 0; k < K; k++) {
+    r += gammaRow[k] * COLORS[k].r;
+    g += gammaRow[k] * COLORS[k].g;
+    b += gammaRow[k] * COLORS[k].b;
+  }
+  return `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
+}
+
+function drawEllipse(cx, cy, sx, sy, scale, color, alpha) {
+  // Draw axis-aligned ellipse at cx,cy with radii scale*sqrt(sx), scale*sqrt(sy)
+  const [px, py] = toCanvas(cx, cy);
+  const pad = 32;
+  const rx = scale * Math.sqrt(sx) * (W - 2*pad);
+  const ry = scale * Math.sqrt(sy) * (H - 2*pad);
+  ctx.beginPath();
+  ctx.ellipse(px, py, Math.max(rx, 2), Math.max(ry, 2), 0, 0, Math.PI * 2);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.globalAlpha = alpha;
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#16161b';
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+  for (let y = 0; y < H; y += 40) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+  // Gaussian ellipses (1σ and 2σ)
+  for (let k = 0; k < K; k++) {
+    const col = `rgb(${COLORS[k].r},${COLORS[k].g},${COLORS[k].b})`;
+    drawEllipse(mu[k][0], mu[k][1], sigma[k][0], sigma[k][1], 1, col, 0.55);
+    drawEllipse(mu[k][0], mu[k][1], sigma[k][0], sigma[k][1], 2, col, 0.25);
+  }
+
+  // Data points — colored by blended responsibility
+  for (let n = 0; n < RAW_DATA.length; n++) {
+    const [px, py] = toCanvas(RAW_DATA[n][0], RAW_DATA[n][1]);
+    const col = blendColor(gamma[n]);
+    ctx.beginPath();
+    ctx.arc(px, py, 4.5, 0, Math.PI * 2);
+    ctx.fillStyle = col;
+    ctx.globalAlpha = 0.88;
+    ctx.fill();
+    ctx.strokeStyle = '#0e0e11';
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = 0.45;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+
+  // Cluster means (crosses + rings)
+  for (let k = 0; k < K; k++) {
+    const [px, py] = toCanvas(mu[k][0], mu[k][1]);
+    const col = `rgb(${COLORS[k].r},${COLORS[k].g},${COLORS[k].b})`;
+
+    // Outer glow ring
+    ctx.beginPath(); ctx.arc(px, py, 17, 0, Math.PI*2);
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = 0.2;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // Ring
+    ctx.beginPath(); ctx.arc(px, py, 11, 0, Math.PI*2);
+    ctx.fillStyle = `rgba(${COLORS[k].r},${COLORS[k].g},${COLORS[k].b},0.15)`;
+    ctx.fill();
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Core dot
+    ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI*2);
+    ctx.fillStyle = col;
+    ctx.fill();
+
+    // Label
+    ctx.font = '500 11px "DM Mono", monospace';
+    ctx.fillStyle = col;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('μ' + (k+1), px, py - 16);
+  }
+
+  // π labels top-right
+  ctx.font = '400 10px "DM Mono", monospace';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'top';
+  for (let k = 0; k < K; k++) {
+    const col = `rgb(${COLORS[k].r},${COLORS[k].g},${COLORS[k].b})`;
+    ctx.fillStyle = col;
+    ctx.globalAlpha = 0.7;
+    ctx.fillText(`π${k+1} = ${pi[k].toFixed(2)}`, W - 10, 10 + k * 16);
+  }
+  ctx.globalAlpha = 1;
+}
+
+// ─── EM steps ──────────────────────────────────────────────────────────────
+function doEStep() {
+  eStep();
+  currentPhase = 'e-done';
+  draw();
+  updateUI();
+}
+
+function doMStep() {
+  if (currentPhase === 'init') {
+    // Do E-step first silently
+    eStep();
+  }
+  mStep();
+  logLikelihood = computeLL();
+  iterCount++;
+  currentPhase = 'm-done';
+  draw();
+  updateUI();
+}
+
+function autoRun() {
+  if (autoTimer) {
+    clearInterval(autoTimer);
+    autoTimer = null;
+    document.getElementById('auto-btn').textContent = '▶ auto';
+    return;
+  }
+  document.getElementById('auto-btn').textContent = '⏸ pause';
+  let toggle = (currentPhase === 'e-done') ? 'm' : 'e';
+  autoTimer = setInterval(() => {
+    if (toggle === 'e') { doEStep(); toggle = 'm'; }
+    else { doMStep(); toggle = 'e'; }
+    if (iterCount >= 40) {
+      clearInterval(autoTimer); autoTimer = null;
+      document.getElementById('auto-btn').textContent = '▶ auto';
+    }
+  }, 700);
+}
+
+function resetAll() {
+  if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+  document.getElementById('auto-btn').textContent = '▶ auto';
+  iterCount = 0;
+  logLikelihood = null;
+  currentPhase = 'init';
+  initModel();
+  draw();
+  updateUI();
+}
+
+const PHASE_DESCS = {
+  init: '<b>Init:</b> K=3 Gaußkomponenten mit gleichen Gewichten π_k = 1/3, initialen Mittelwerten aus den Daten. Klicke <b>E-step</b> um zu starten.',
+  'e-done': '<b>E-Schritt abgeschlossen.</b> Responsibilities γ_{n,k} = p(c_n = k | x_n) berechnet via Bayes. Punktfarben = Mischung der Cluster-Farben gewichtet mit γ. Klicke <b>M-step</b>.',
+  'm-done': '<b>M-Schritt abgeschlossen.</b> Parameter π_k, μ_k, Σ_k aktualisiert. Ellipsen = 1σ / 2σ der Gaußkomponenten. Log-Likelihood steigt monoton. Klicke <b>E-step</b> für nächste Iteration.',
+};
+
+function updateUI() {
+  document.getElementById('iter-count').textContent = iterCount;
+  document.getElementById('phase-name').textContent = currentPhase;
+  document.getElementById('ll-val').textContent = logLikelihood !== null ? logLikelihood.toFixed(2) : '—';
+
+  const desc = document.getElementById('desc');
+  desc.innerHTML = PHASE_DESCS[currentPhase] || '';
+  desc.className = 'phase-box' + (currentPhase === 'e-done' ? ' e-step' : currentPhase === 'm-done' ? ' m-step' : '');
+}
+
+// ─── Boot ──────────────────────────────────────────────────────────────────
+initModel();
+resize();   // calls draw() — mu/sigma/gamma must be ready first
+updateUI();
+</script>
+</body>
+</html>

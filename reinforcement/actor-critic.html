@@ -1,0 +1,1518 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Policy Gradient, REINFORCE &amp; Actor-Critic</title>
+<script>
+  MathJax = {
+    tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+    options: { skipHtmlTags: ['script','noscript','style','textarea'] }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #0f0f11;
+    --bg2:     #17171a;
+    --bg3:     #1e1e26;
+    --border:  rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.13);
+    --text:    #e8e6f0;
+    --muted:   #7a7890;
+    --accent:  #c96a28;
+    --accent-dim:  rgba(201,106,40,0.12);
+    --accent-dim2: rgba(201,106,40,0.22);
+    --blue:    #4a8fc1;
+    --blue-dim: rgba(74,143,193,0.15);
+    --green:   #5aab7a;
+    --green-dim: rgba(90,171,122,0.13);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem 3rem;
+  }
+
+  header {
+    width: 100%;
+    max-width: 900px;
+    margin-bottom: 1.75rem;
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  h1 {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.05rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+  }
+
+  .subtitle {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .tab-bar {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    gap: 4px;
+    margin-bottom: 1.5rem;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 4px;
+    flex-wrap: wrap;
+  }
+
+  .tab-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.73rem;
+    font-weight: 500;
+    padding: 7px 14px;
+    border-radius: 7px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+  }
+  .tab-btn:hover { color: var(--text); background: var(--bg3); }
+  .tab-btn.active {
+    background: var(--accent-dim2);
+    color: var(--accent);
+    border: 1px solid rgba(201,106,40,0.3);
+  }
+
+  .main {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .tab-panel { display: none; flex-direction: column; gap: 1.25rem; }
+  .tab-panel.active { display: flex; }
+
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.4rem 1.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+
+  .card-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.76rem;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .card p {
+    font-size: 0.85rem;
+    line-height: 1.75;
+    color: #b8b6c8;
+  }
+
+  .card p b { color: var(--text); font-weight: 500; }
+
+  .formula-box {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 0.9rem 1.2rem;
+    font-size: 0.88rem;
+    line-height: 1.8;
+    overflow-x: auto;
+  }
+
+  .formula-box.blue {
+    border-left-color: var(--blue);
+  }
+
+  .formula-box.green {
+    border-left-color: var(--green);
+  }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
+
+  .three-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+  }
+  @media (max-width: 700px) { .three-col { grid-template-columns: 1fr; } }
+
+  .info-item {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 1rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    border-top: 2px solid var(--accent);
+  }
+
+  .info-item.blue { border-top-color: var(--blue); }
+  .info-item.green { border-top-color: var(--green); }
+
+  .info-item .item-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .info-item .item-desc {
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+
+  .svg-wrap {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: auto;
+  }
+
+  svg text { font-family: 'DM Mono', monospace; }
+
+  mjx-container { color: var(--text) !important; }
+
+  .src-note {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-top: 1rem;
+    opacity: 0.6;
+    text-align: right;
+    width: 100%;
+    max-width: 900px;
+  }
+
+  .intuition-box {
+    background: rgba(201,106,40,0.07);
+    border: 1px solid rgba(201,106,40,0.25);
+    border-radius: 8px;
+    padding: 0.9rem 1.1rem;
+    font-size: 0.82rem;
+    line-height: 1.7;
+    color: #c8b8a0;
+  }
+  .intuition-box strong { color: var(--accent); }
+
+  .intuition-box.blue {
+    background: rgba(74,143,193,0.07);
+    border-color: rgba(74,143,193,0.25);
+    color: #a8c4d8;
+  }
+  .intuition-box.blue strong { color: var(--blue); }
+
+  .tag {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--accent-dim2);
+    color: var(--accent);
+    border: 1px solid rgba(201,106,40,0.3);
+    letter-spacing: 0.04em;
+  }
+
+  .tag.blue {
+    background: var(--blue-dim);
+    color: var(--blue);
+    border-color: rgba(74,143,193,0.3);
+  }
+
+  .tag.green {
+    background: var(--green-dim);
+    color: var(--green);
+    border-color: rgba(90,171,122,0.3);
+  }
+
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .slider-row label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  input[type=range] {
+    accent-color: var(--accent);
+    width: 140px;
+    cursor: pointer;
+  }
+
+  .slider-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--accent);
+    min-width: 36px;
+  }
+
+  @keyframes dash-flow {
+    to { stroke-dashoffset: -24; }
+  }
+
+  .flow-arrow {
+    stroke-dasharray: 8 4;
+    stroke-dashoffset: 0;
+    animation: dash-flow 0.9s linear infinite;
+  }
+
+  @keyframes pulse-node {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .demo-container {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .demo-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.74rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .step-indicator {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .step-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--bg2);
+    border: 2px solid var(--border2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .step-dot.active {
+    background: var(--accent-dim2);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .step-dot.done {
+    background: rgba(90,171,122,0.15);
+    border-color: var(--green);
+    color: var(--green);
+  }
+
+  .step-desc {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    font-size: 0.82rem;
+    line-height: 1.65;
+    color: #b8b6c8;
+    min-height: 64px;
+  }
+
+  .step-desc b { color: var(--text); }
+  .step-desc .formula-inline {
+    font-family: 'DM Mono', monospace;
+    color: var(--accent);
+    font-size: 0.8rem;
+  }
+
+  .demo-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.74rem;
+    padding: 7px 18px;
+    border-radius: 7px;
+    border: 1px solid rgba(201,106,40,0.35);
+    background: var(--accent-dim);
+    color: var(--accent);
+    cursor: pointer;
+    transition: background 0.15s;
+    letter-spacing: 0.03em;
+  }
+  .demo-btn:hover { background: var(--accent-dim2); }
+
+  .kstep-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 80px;
+    overflow: hidden;
+  }
+
+  .kstep-bar {
+    flex: 1;
+    min-width: 10px;
+    border-radius: 3px 3px 0 0;
+    transition: height 0.3s ease, background 0.3s ease;
+  }
+
+  .kstep-legend {
+    display: flex;
+    gap: 16px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .kstep-legend span { display: flex; align-items: center; gap: 5px; }
+
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    display: inline-block;
+  }
+
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width: 640px) { .compare-grid { grid-template-columns: 1fr; } }
+
+  .compare-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.1rem 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .compare-card h3 {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .compare-card p {
+    font-size: 0.78rem;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+
+  .compare-card .formula-box {
+    padding: 0.6rem 0.9rem;
+    font-size: 0.8rem;
+  }
+
+  .vs-badge {
+    text-align: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--muted);
+    padding: 4px 0;
+  }
+
+  .advantage-bar-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .advantage-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+  }
+
+  .advantage-row .row-label {
+    width: 60px;
+    color: var(--muted);
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .advantage-row .bar-track {
+    flex: 1;
+    height: 14px;
+    background: var(--bg2);
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .advantage-row .bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.4s ease, background 0.4s ease;
+    position: absolute;
+    left: 0;
+    top: 0;
+  }
+
+  .advantage-row .bar-val {
+    width: 52px;
+    text-align: left;
+    color: var(--text);
+    flex-shrink: 0;
+    font-size: 0.7rem;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Policy Gradient &amp; Actor-Critic</h1>
+  <span class="subtitle">// REINFORCE · Advantage-Funktion · TD-Loss · ML SS2026</span>
+</header>
+
+<div class="tab-bar" role="tablist">
+  <button class="tab-btn active" role="tab" data-tab="td-loss">TD-Loss</button>
+  <button class="tab-btn" role="tab" data-tab="kstep">K-Step Bellman</button>
+  <button class="tab-btn" role="tab" data-tab="vergleich">Q-Learning vs. AC</button>
+  <button class="tab-btn" role="tab" data-tab="reinforce">REINFORCE</button>
+  <button class="tab-btn" role="tab" data-tab="acloss">Actor-Critic Loss</button>
+  <button class="tab-btn" role="tab" data-tab="advantage">Advantage &amp; Demo</button>
+</div>
+
+<div class="main">
+
+<!-- ══════════════════════════════════════════════════════
+     TAB 1: TD-LOSS
+══════════════════════════════════════════════════════ -->
+<div class="tab-panel active" id="tab-td-loss">
+
+  <div class="card">
+    <div class="card-title">Wertfunktion mit neuronalem Netz approximieren</div>
+    <p>
+      In der Praxis sieht der Agent nicht den vollen Zustand \(s_t\), sondern nur eine
+      <b>partielle Beobachtung</b> \(\mathbf{o}_t\) (z.B. den 8-dimensionalen Lunar-Lander-Vektor).
+      Ein neuronales Netz \(v_\theta\) approximiert die Wertfunktion:
+    </p>
+    <div class="formula-box">
+      \[v_\theta(\mathbf{o}_t) \;\approx\; V^\pi(s_t)\]
+    </div>
+    <p>
+      Das Netz mit Parametern \(\theta\) erhält die Beobachtung \(\mathbf{o}_t\) als Eingabe und
+      gibt einen skalaren Schätzwert aus. Training durch Minimierung des
+      <b>Temporal-Difference-(TD)-Verlustes</b>:
+    </p>
+    <div class="formula-box">
+      \[
+        \mathcal{L}(\theta) \;=\; \bigl(\, v_\theta(\mathbf{o}_t) \;-\; r_{t+1} \;-\; \gamma\, v_\theta(\mathbf{o}_{t+1}) \,\bigr)^2
+      \]
+    </div>
+    <div class="intuition-box">
+      <strong>Bellman-Fixpunkt:</strong> Der TD(0)-Loss treibt \(v_\theta\) zum Bellman-Fixpunkt.
+      Das <strong>Target</strong> \(r_{t+1} + \gamma\, v_\theta(\mathbf{o}_{t+1})\) wird als
+      Konstante behandelt (Stop-Gradient) — man differenziert also <em>nicht</em> durch den rechten
+      Term. Ohne Stop-Gradient würde der Loss kollabieren, weil Vorhersage und Ziel sich gleichzeitig
+      verschieben.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">TD(0)-Mechanismus — Schritt für Schritt</div>
+    <div class="two-col">
+      <div class="info-item">
+        <div class="item-label">Schritt 1 — Beobachte</div>
+        <div class="item-desc">
+          Agent beobachtet \(\mathbf{o}_t\), führt Aktion aus und erhält
+          \(r_{t+1}\) sowie Folgebeobachtung \(\mathbf{o}_{t+1}\).
+        </div>
+      </div>
+      <div class="info-item">
+        <div class="item-label">Schritt 2 — Berechne Target</div>
+        <div class="item-desc">
+          TD-Target (Stop-Gradient):<br>
+          \(y_t = r_{t+1} + \gamma\, \text{sg}(v_\theta(\mathbf{o}_{t+1}))\)
+        </div>
+      </div>
+      <div class="info-item">
+        <div class="item-label">Schritt 3 — Berechne Loss</div>
+        <div class="item-desc">
+          \(\mathcal{L}(\theta) = (v_\theta(\mathbf{o}_t) - y_t)^2\)<br>
+          Gradient nur durch \(v_\theta(\mathbf{o}_t)\).
+        </div>
+      </div>
+      <div class="info-item">
+        <div class="item-label">Schritt 4 — Update</div>
+        <div class="item-desc">
+          Gradientenabstieg:<br>
+          \(\theta \leftarrow \theta - \alpha\, \nabla_\theta \mathcal{L}(\theta)\)
+        </div>
+      </div>
+    </div>
+    <div class="svg-wrap">
+      <svg width="580" height="140" viewBox="0 0 580 140" style="max-width:100%">
+        <defs>
+          <marker id="arr-td" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#c96a28"/>
+          </marker>
+          <marker id="arr-td-m" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#7a7890"/>
+          </marker>
+        </defs>
+        <rect x="20" y="45" width="100" height="50" rx="8" fill="#1e1e26" stroke="#c96a28" stroke-width="1.5"/>
+        <text x="70" y="67" text-anchor="middle" fill="#e8e6f0" font-size="11" font-weight="500">v_θ(o_t)</text>
+        <text x="70" y="84" text-anchor="middle" fill="#7a7890" font-size="9">Vorhersage</text>
+
+        <rect x="160" y="45" width="100" height="50" rx="8" fill="#1e1e26" stroke="#5a5878" stroke-width="1.5"/>
+        <text x="210" y="67" text-anchor="middle" fill="#e8e6f0" font-size="11">r_{t+1}</text>
+        <text x="210" y="84" text-anchor="middle" fill="#7a7890" font-size="9">Reward</text>
+
+        <rect x="300" y="45" width="120" height="50" rx="8" fill="#1e1e26" stroke="#5a5878" stroke-width="1.5"/>
+        <text x="360" y="67" text-anchor="middle" fill="#e8e6f0" font-size="11">γ · v_θ(o_{t+1})</text>
+        <text x="360" y="84" text-anchor="middle" fill="#7a7890" font-size="9">Stop-Gradient ▪</text>
+
+        <text x="148" y="73" text-anchor="middle" fill="#c96a28" font-size="13" font-weight="600">−</text>
+        <text x="288" y="73" text-anchor="middle" fill="#5a5878" font-size="13">−</text>
+
+        <rect x="458" y="45" width="100" height="50" rx="8" fill="rgba(201,106,40,0.15)" stroke="#c96a28" stroke-width="1.5"/>
+        <text x="508" y="65" text-anchor="middle" fill="#c96a28" font-size="11" font-weight="500">L(θ) = (…)²</text>
+        <text x="508" y="82" text-anchor="middle" fill="#c96a28" font-size="9">MSE Loss</text>
+
+        <line x1="425" y1="70" x2="455" y2="70" stroke="#c96a28" stroke-width="1.5" marker-end="url(#arr-td)"/>
+
+        <text x="290" y="125" text-anchor="middle" fill="#4a4860" font-size="9">
+          Gradient fließt nur durch linkes v_θ(o_t) — rechtes Target ist konstant
+        </text>
+      </svg>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     TAB 2: K-STEP BELLMAN
+══════════════════════════════════════════════════════ -->
+<div class="tab-panel" id="tab-kstep">
+
+  <div class="card">
+    <div class="card-title">K-Step Bellman-Gleichung (theoretisch)</div>
+    <p>
+      Statt nur einen Schritt in die Zukunft zu schauen (TD(0)), kann man
+      <b>\(K\) Schritte</b> aufrolllen. Die exakte Bellman-Gleichung für \(K\) Schritte:
+    </p>
+    <div class="formula-box">
+      \[
+        V^\pi(s_t) \;=\; \mathbb{E}_\pi\!\left[\,\sum_{k=0}^{K-1} \gamma^k r_{t+k+1} \;+\; \gamma^K V^\pi(s_{t+K}) \;\Big|\; s_t \right]
+      \]
+    </div>
+    <p>
+      Daraus ergibt sich der zugehörige <b>MSE-Verlust</b> für das neuronale Netz \(v_\theta\):
+    </p>
+    <div class="formula-box">
+      \[
+        \mathcal{L}(\theta) \;=\; \left(\, v_\theta(\mathbf{o}_t) \;-\; \sum_{k=0}^{K-1} \gamma^k r_{t+k+1} \;-\; \gamma^K v_\theta(\mathbf{o}_{t+K}) \,\right)^2
+      \]
+    </div>
+    <div class="intuition-box">
+      <strong>K=1</strong> entspricht dem standard TD(0)-Verlust.
+      <strong>Größeres K</strong>: mehr echte Rewards werden akkumuliert — weniger Bias, aber mehr
+      Varianz (da mehr Zufälligkeit in der langen Rollout-Sequenz). Das Target auf der rechten Seite
+      ist wieder ein Stop-Gradient.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Interaktiv: K-Step Return vs. 1-Step</div>
+    <p>
+      Vergleich des tatsächlich akkumulierten Reward-Anteils (aus echten Samples) vs. den
+      Bootstrapping-Anteil (aus dem Netz geschätzt) für verschiedene K.
+      Gamma \(\gamma\) = <span id="k-gamma-val" style="color:var(--accent);font-family:'DM Mono',monospace">0.95</span>.
+    </p>
+
+    <div class="slider-row">
+      <label>
+        K (Rollout-Tiefe):
+        <input type="range" id="k-slider" min="1" max="20" step="1" value="1">
+        <span class="slider-val" id="k-val">1</span>
+      </label>
+      <label>
+        γ:
+        <input type="range" id="k-gamma-slider" min="0.5" max="0.99" step="0.01" value="0.95">
+        <span class="slider-val" id="k-gamma-display">0.95</span>
+      </label>
+    </div>
+
+    <div style="display:flex; gap:12px; flex-direction:column">
+      <div>
+        <div style="font-family:'DM Mono',monospace; font-size:0.72rem; color:var(--muted); margin-bottom:6px">
+          Gewichtete Beiträge der einzelnen Reward-Schritte γ^k · r_{t+k+1}
+        </div>
+        <div class="kstep-chart" id="kstep-chart"></div>
+        <div class="kstep-legend">
+          <span><span class="legend-dot" style="background:#c96a28"></span>Echter Reward-Schritt</span>
+          <span><span class="legend-dot" style="background:#4a4860"></span>Bootstrap (γ^K · v_θ)</span>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="formula-box" style="font-size:0.8rem">
+          <b style="color:var(--accent)">Echter Return-Anteil:</b><br>
+          \(\displaystyle\sum_{k=0}^{K-1} \gamma^k r_{t+k+1}\)<br>
+          <span style="font-family:'DM Mono',monospace; font-size:0.72rem; color:var(--muted)">
+            K Reward-Terme
+          </span>
+        </div>
+        <div class="formula-box" style="font-size:0.8rem">
+          <b style="color:var(--blue)">Bootstrap-Anteil:</b><br>
+          \(\gamma^K v_\theta(\mathbf{o}_{t+K})\)<br>
+          <span id="bootstrap-weight" style="font-family:'DM Mono',monospace; font-size:0.72rem; color:var(--muted)">
+            γ^1 = 0.950
+          </span>
+        </div>
+      </div>
+
+      <div id="kstep-summary" style="font-family:'DM Mono',monospace; font-size:0.78rem; color:var(--muted); padding:8px 12px; background:var(--bg2); border-radius:6px; border:1px solid var(--border)">
+        K=1 — Standard TD(0): Bootstrap-Gewicht γ^1 = 0.950. Hoher Bias (Netz-Approximation dominiert), niedrige Varianz.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     TAB 3: Q-LEARNING VS. ACTOR-CRITIC
+══════════════════════════════════════════════════════ -->
+<div class="tab-panel" id="tab-vergleich">
+
+  <div class="card">
+    <div class="card-title">Zwei Familien von RL-Algorithmen</div>
+    <p>
+      Es gibt zwei grundlegend verschiedene Ansätze, um einen optimalen Agenten zu lernen.
+      Beide optimieren im Prinzip dasselbe Ziel — \(\mathbb{E}_\pi[R_t]\) maximieren —
+      aber auf unterschiedliche Weise.
+    </p>
+
+    <div class="compare-grid">
+      <div class="compare-card" style="border-top: 2px solid var(--blue)">
+        <h3 style="color:var(--blue)">Q-Learning</h3>
+        <p>Lerne ein Aktions-Wert-Netz \(q_\theta(\mathbf{o}, a)\), das die
+        Q-Funktion approximiert:</p>
+        <div class="formula-box blue" style="padding:0.6rem 0.9rem; font-size:0.82rem">
+          \[q_\theta(\mathbf{o}, a) \;\approx\; Q^\pi(s, a)\]
+        </div>
+        <p>Handelt dann <b>greedy</b>:</p>
+        <div class="formula-box blue" style="padding:0.6rem 0.9rem; font-size:0.82rem">
+          \[a_t \;=\; \arg\max_a\, q_\theta(\mathbf{o}_t, a)\]
+        </div>
+        <p style="margin-top:4px">Kein explizites Policy-Netz — die Policy ist implizit im Argmax.</p>
+      </div>
+
+      <div class="compare-card" style="border-top: 2px solid var(--accent)">
+        <h3 style="color:var(--accent)">Actor-Critic</h3>
+        <p>Lerne die Policy \(\pi_\theta(a \mid \mathbf{o})\) <b>direkt</b> als neuronales Netz:</p>
+        <div class="formula-box" style="padding:0.6rem 0.9rem; font-size:0.82rem">
+          \[\max_\theta\; \mathbb{E}_{\pi_\theta}\!\left[R_t\right]\]
+        </div>
+        <p>Ein Critic \(v_\phi(\mathbf{o})\) schätzt den Wert, um die Gradient-Varianz zu
+        reduzieren. Actor und Critic werden <b>gemeinsam</b> trainiert.</p>
+      </div>
+    </div>
+
+    <div class="svg-wrap" style="min-height:180px">
+      <svg width="560" height="160" viewBox="0 0 560 160" style="max-width:100%">
+        <defs>
+          <marker id="arr-cmp" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+            <path d="M0,0.5 L0,6.5 L7,3.5 z" fill="#c96a28"/>
+          </marker>
+          <marker id="arr-cmp-b" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+            <path d="M0,0.5 L0,6.5 L7,3.5 z" fill="#4a8fc1"/>
+          </marker>
+        </defs>
+        <text x="140" y="20" text-anchor="middle" fill="#4a8fc1" font-size="11" font-weight="500">Q-Learning</text>
+        <text x="420" y="20" text-anchor="middle" fill="#c96a28" font-size="11" font-weight="500">Actor-Critic</text>
+
+        <rect x="30" y="35" width="90" height="40" rx="7" fill="#1e1e26" stroke="#4a8fc1" stroke-width="1.5"/>
+        <text x="75" y="52" text-anchor="middle" fill="#4a8fc1" font-size="10">q_θ(o,a)</text>
+        <text x="75" y="65" text-anchor="middle" fill="#7a7890" font-size="8">Q-Netz</text>
+
+        <rect x="140" y="35" width="80" height="40" rx="7" fill="#1e1e26" stroke="#4a8fc1" stroke-width="1.5"/>
+        <text x="180" y="52" text-anchor="middle" fill="#4a8fc1" font-size="10">argmax_a</text>
+        <text x="180" y="65" text-anchor="middle" fill="#7a7890" font-size="8">greedy</text>
+
+        <line x1="120" y1="55" x2="138" y2="55" stroke="#4a8fc1" stroke-width="1.5" marker-end="url(#arr-cmp-b)"/>
+
+        <rect x="310" y="35" width="80" height="40" rx="7" fill="#1e1e26" stroke="#c96a28" stroke-width="1.5"/>
+        <text x="350" y="52" text-anchor="middle" fill="#c96a28" font-size="10">π_θ(a|o)</text>
+        <text x="350" y="65" text-anchor="middle" fill="#7a7890" font-size="8">Actor</text>
+
+        <rect x="420" y="35" width="80" height="40" rx="7" fill="#1e1e26" stroke="#5aab7a" stroke-width="1.5"/>
+        <text x="460" y="52" text-anchor="middle" fill="#5aab7a" font-size="10">v_φ(o)</text>
+        <text x="460" y="65" text-anchor="middle" fill="#7a7890" font-size="8">Critic</text>
+
+        <path d="M350,75 Q350,110 460,110 Q460,80 460,75" stroke="#5aab7a" stroke-width="1.2"
+              stroke-dasharray="4 3" fill="none"/>
+        <text x="420" y="125" text-anchor="middle" fill="#5aab7a" font-size="9">Critic hilft Actor (Varianzreduktion)</text>
+
+        <text x="280" y="75" text-anchor="middle" fill="#4a4860" font-size="18">vs</text>
+
+        <line x1="220" y1="55" x2="260" y2="55" stroke="#4a4860" stroke-width="1" stroke-dasharray="4 3"/>
+        <line x1="300" y1="55" x2="308" y2="55" stroke="#4a4860" stroke-width="1" stroke-dasharray="4 3"/>
+      </svg>
+    </div>
+
+    <div class="three-col">
+      <div class="info-item">
+        <div class="item-label">Ausgabe</div>
+        <div class="item-desc">
+          <b style="color:var(--blue)">Q-Learning:</b> Skalar für jede (o,a)-Kombination.<br>
+          <b style="color:var(--accent)">Actor-Critic:</b> Wahrscheinlichkeitsverteilung über Aktionen.
+        </div>
+      </div>
+      <div class="info-item">
+        <div class="item-label">Aktionsraum</div>
+        <div class="item-desc">
+          <b style="color:var(--blue)">Q-Learning:</b> Argmax — nur für diskreten Aktionsraum.<br>
+          <b style="color:var(--accent)">Actor-Critic:</b> Funktioniert auch für kontinuierliche Aktionsräume.
+        </div>
+      </div>
+      <div class="info-item">
+        <div class="item-label">Exploration</div>
+        <div class="item-desc">
+          <b style="color:var(--blue)">Q-Learning:</b> ε-greedy oder Boltzmann.<br>
+          <b style="color:var(--accent)">Actor-Critic:</b> Stochastische Policy exploriert natürlich.
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     TAB 4: REINFORCE
+══════════════════════════════════════════════════════ -->
+<div class="tab-panel" id="tab-reinforce">
+
+  <div class="card">
+    <div class="card-title">Das Ziel — Policy Gradient</div>
+    <p>
+      Die Policy \(\pi_\theta(a \mid \mathbf{o})\) ist ein neuronales Netz mit Parametern \(\boldsymbol\theta\).
+      Ziel: Maximiere den erwarteten Return:
+    </p>
+    <div class="formula-box">
+      \[
+        J(\boldsymbol\theta) \;=\; \mathbb{E}_{\pi_\theta}\!\left[R_t\right]
+        \;=\; \mathbb{E}_{\pi_\theta}\!\left[\sum_{k \geq 0} \gamma^k r_{t+k+1}\right]
+      \]
+    </div>
+    <p>
+      Wir wollen <b>Gradientenaufstieg</b> betreiben:
+      \(\boldsymbol\theta \leftarrow \boldsymbol\theta + \alpha\, \nabla_{\boldsymbol\theta} J(\boldsymbol\theta)\).
+      <b>Problem:</b> Die Erwartung wird unter \(\pi_\theta\) selbst gebildet — die
+      Trajektorienverteilung hängt von \(\boldsymbol\theta\) ab. Wie berechnen wir
+      \(\nabla_{\boldsymbol\theta} J\)?
+    </p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">REINFORCE — Log-Derivative Trick</div>
+    <p>
+      <b>Identität</b> für beliebige Funktion \(f\) und parametrisierte Verteilung \(p_\theta\):
+    </p>
+    <div class="formula-box">
+      \[
+        \nabla_{\boldsymbol\theta}\, \mathbb{E}_{x \sim p_\theta}\!\left[f(x)\right]
+        \;=\; \mathbb{E}_{x \sim p_\theta}\!\left[f(x)\;\nabla_{\boldsymbol\theta}\log p_\theta(x)\right]
+      \]
+    </div>
+    <div class="intuition-box">
+      <strong>Beweis:</strong> Es gilt \(\nabla_\theta p_\theta(x) = p_\theta(x)\,\nabla_\theta\log p_\theta(x)\)
+      (Kettenregel). Einsetzen in die Ableitung des Erwartungswertes \(\nabla_\theta \int f(x) p_\theta(x) dx\)
+      liefert die Identität. Der Erwartungswert lässt sich nun durch Sampling schätzen.
+    </div>
+    <p><b>Angewendet auf den Policy-Gradienten</b> ergibt sich:</p>
+    <div class="formula-box">
+      \[
+        \nabla_{\boldsymbol\theta} J(\boldsymbol\theta)
+        \;=\; \mathbb{E}_{\pi_\theta}\!\left[\,R_t\;\nabla_{\boldsymbol\theta}\log \pi_\theta(a_t \mid \mathbf{o}_t)\,\right]
+      \]
+    </div>
+    <p>
+      <b>Single-Trajectory-Schätzer</b> (Policy ausführen, \(R_t\) beobachten):
+    </p>
+    <div class="formula-box">
+      \[
+        \hat{g} \;=\; R_t\; \nabla_{\boldsymbol\theta}\log \pi_\theta(a_t \mid \mathbf{o}_t)
+      \]
+    </div>
+    <div class="formula-box green">
+      \[
+        \text{Update:}\quad \boldsymbol\theta \;\leftarrow\; \boldsymbol\theta + \alpha\,\hat{g}
+      \]
+    </div>
+    <div class="intuition-box">
+      <strong>Intuition:</strong> Der Gradient \(\nabla_\theta \log \pi_\theta(a_t|\mathbf{o}_t)\) zeigt
+      in die Richtung, die die Log-Wahrscheinlichkeit der Aktion \(a_t\) erhöht.
+      Dieser Gradient wird mit \(R_t\) gewichtet —
+      war der Return hoch, wird die Aktion wahrscheinlicher gemacht; war er niedrig, unwahrscheinlicher.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Log-Derivative Trick — Visualisierung</div>
+    <div class="svg-wrap">
+      <svg width="580" height="200" viewBox="0 0 580 200" style="max-width:100%">
+        <defs>
+          <marker id="arr-rf" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#c96a28"/>
+          </marker>
+          <marker id="arr-rf2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#5aab7a"/>
+          </marker>
+        </defs>
+
+        <rect x="20" y="75" width="90" height="50" rx="8" fill="#1e1e26" stroke="#c96a28" stroke-width="1.5"/>
+        <text x="65" y="96" text-anchor="middle" fill="#c96a28" font-size="10.5" font-weight="500">π_θ(a|o)</text>
+        <text x="65" y="112" text-anchor="middle" fill="#7a7890" font-size="9">Policy-Netz</text>
+
+        <path class="flow-arrow" d="M112,100 L170,100" stroke="#c96a28" stroke-width="1.5" fill="none" marker-end="url(#arr-rf)"/>
+        <text x="141" y="93" text-anchor="middle" fill="#c96a28" font-size="9">Aktion a_t</text>
+
+        <rect x="172" y="75" width="90" height="50" rx="8" fill="#1e1e26" stroke="#5a5878" stroke-width="1.5"/>
+        <text x="217" y="96" text-anchor="middle" fill="#e8e6f0" font-size="10.5" font-weight="500">Umgebung</text>
+        <text x="217" y="112" text-anchor="middle" fill="#7a7890" font-size="9">Env</text>
+
+        <path class="flow-arrow" d="M264,100 L320,100" stroke="#7a7890" stroke-width="1.5" fill="none" marker-end="url(#arr-rf)"/>
+        <text x="292" y="93" text-anchor="middle" fill="#7a7890" font-size="9">Reward R_t</text>
+
+        <rect x="322" y="75" width="110" height="50" rx="8" fill="#1e1e26" stroke="#5aab7a" stroke-width="1.5"/>
+        <text x="377" y="93" text-anchor="middle" fill="#5aab7a" font-size="10" font-weight="500">ĝ = R_t ·</text>
+        <text x="377" y="108" text-anchor="middle" fill="#5aab7a" font-size="9">∇_θ log π_θ(a_t|o_t)</text>
+
+        <path class="flow-arrow" d="M434,100 L488,100" stroke="#5aab7a" stroke-width="1.5" fill="none" marker-end="url(#arr-rf2)"/>
+
+        <rect x="490" y="75" width="80" height="50" rx="8" fill="rgba(90,171,122,0.12)" stroke="#5aab7a" stroke-width="1.5"/>
+        <text x="530" y="96" text-anchor="middle" fill="#5aab7a" font-size="10.5" font-weight="500">θ ← θ+αĝ</text>
+        <text x="530" y="112" text-anchor="middle" fill="#7a7890" font-size="9">Update</text>
+
+        <path d="M530,125 Q530,165 290,165 Q65,165 65,130"
+              stroke="#4a4860" stroke-width="1" fill="none" stroke-dasharray="4 3"/>
+        <text x="290" y="180" text-anchor="middle" fill="#4a4860" font-size="9">Schleife wiederholt sich</text>
+      </svg>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     TAB 5: ACTOR-CRITIC LOSS
+══════════════════════════════════════════════════════ -->
+<div class="tab-panel" id="tab-acloss">
+
+  <div class="card">
+    <div class="card-title">Actor-Critic Loss — Äquivalenz</div>
+    <p>
+      \(J(\boldsymbol\theta)\) <b>maximieren</b> ist äquivalent zum <b>Minimieren</b> des Actor-Verlustes:
+    </p>
+    <div class="formula-box">
+      \[
+        \mathcal{L}_\text{actor}(\boldsymbol\theta) \;=\; -\,R_t\;\log \pi_\theta(a_t \mid \mathbf{o}_t)
+      \]
+    </div>
+    <p>
+      Der Gradient ist tatsächlich \(-\hat{g}\):
+    </p>
+    <div class="formula-box">
+      \[
+        \nabla_{\boldsymbol\theta}\,\mathcal{L}_\text{actor} \;=\; -\hat{g}
+      \]
+    </div>
+    <div class="intuition-box">
+      <strong>Warum Minus?</strong> Bei Gradientenabstieg auf \(\mathcal{L}_\text{actor}\)
+      ergibt sich \(\theta \leftarrow \theta - \alpha(-\hat{g}) = \theta + \alpha\hat{g}\) —
+      das ist genau der Gradientenaufstieg auf \(J(\theta)\). Die Minimierung des negativen
+      Log-Likelihoods gewichtet mit dem Return ist die Standardform für Policy-Gradient-Implementierungen
+      (z.B. in PyTorch).
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Cross-Entropy als Actor-Loss</div>
+    <div class="two-col">
+      <div>
+        <p>
+          \(\mathcal{L}_\text{actor}\) hat dieselbe Form wie die <b>Cross-Entropy-Loss</b>
+          bei Klassifikation — nur dass die Labels durch den Return \(R_t\) gewichtet werden.
+          Im Code:
+        </p>
+        <div class="formula-box" style="margin-top:8px; font-size:0.8rem">
+          <span style="color:#5aab7a">log_probs</span> = policy.log_prob(action)<br>
+          <span style="color:#c96a28">loss</span> = −(R_t · <span style="color:#5aab7a">log_probs</span>).mean()
+        </div>
+      </div>
+      <div>
+        <p>
+          Der Critic-Loss ist separat der MSE-Loss aus dem TD-Abschnitt:
+        </p>
+        <div class="formula-box" style="margin-top:8px; font-size:0.8rem">
+          \[\mathcal{L}_\text{critic}(\phi) = (v_\phi(\mathbf{o}_t) - y_t)^2\]
+          wobei \(y_t\) das K-step Target.
+        </div>
+        <div class="intuition-box" style="margin-top:8px; font-size:0.78rem; padding:0.7rem 0.9rem">
+          Actor-Parameter \(\boldsymbol\theta\) und Critic-Parameter \(\boldsymbol\phi\) sind
+          <strong>getrennte Netzwerke</strong> (oder getrennte Köpfe).
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     TAB 6: ADVANTAGE & DEMO
+══════════════════════════════════════════════════════ -->
+<div class="tab-panel" id="tab-advantage">
+
+  <div class="card">
+    <div class="card-title">Baseline &amp; Varianzreduktion</div>
+    <p>
+      Der REINFORCE-Gradient \(\hat{g} = R_t \nabla_\theta \log \pi_\theta\) hat hohe Varianz.
+      Man kann eine beliebige <b>Baseline</b> \(b(\mathbf{o}_t)\) subtrahieren, ohne den Gradienten
+      zu verzerren, denn für jede zustandsabhängige Baseline gilt:
+    </p>
+    <div class="formula-box">
+      \[
+        \mathbb{E}_{\pi_\theta}\!\left[\,b(\mathbf{o}_t)\;\nabla_{\boldsymbol\theta}\log \pi_\theta(a_t \mid \mathbf{o}_t)\,\right] \;=\; 0
+      \]
+    </div>
+    <div class="intuition-box">
+      <strong>Beweis-Idee:</strong> Da \(b\) nicht von \(a_t\) abhängt, kann man die Summe über
+      alle Aktionen ausklammern: \(\sum_a \pi_\theta(a|\mathbf{o}) \nabla_\theta \log \pi_\theta(a|\mathbf{o}) = \nabla_\theta \sum_a \pi_\theta(a|\mathbf{o}) = \nabla_\theta 1 = 0\).
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Advantage-Funktion \(A_t\)</div>
+    <p>
+      Die <b>beste Baseline</b> ist die Wertfunktion selbst, \(b(\mathbf{o}_t) = V^\pi(s_t)\).
+      Damit ergibt sich die <b>Advantage-Funktion</b>:
+    </p>
+    <div class="formula-box">
+      \[
+        A_t \;=\; R_t - V^\pi(s_t) \;\approx\; R_t - v_\phi(\mathbf{o}_t)
+      \]
+    </div>
+    <p>
+      Der modifizierte <b>Actor-Critic-Loss mit Advantage</b>:
+    </p>
+    <div class="formula-box">
+      \[
+        \mathcal{L}_\text{actor}(\boldsymbol\theta) \;=\; -\,\bigl(R_t - v_\phi(\mathbf{o}_t)\bigr)\;\log \pi_\theta(a_t \mid \mathbf{o}_t)
+      \]
+    </div>
+    <div class="intuition-box">
+      <strong>Semantik:</strong> \(A_t > 0\) bedeutet — diese Aktion war <strong>besser als
+      erwartet</strong>, wahrscheinlicher machen. \(A_t &lt; 0\) — schlechter als erwartet,
+      unwahrscheinlicher machen. Damit lernt der Agent relativ zum eigenen aktuellen Niveau,
+      nicht absolut.
+    </div>
+    <div class="two-col">
+      <div class="info-item">
+        <div class="item-label">Actor \(\boldsymbol\theta\)</div>
+        <div class="item-desc">
+          Minimiert \(\mathcal{L}_\text{actor}\) — nutzt den Critic
+          \(v_\phi(\mathbf{o}_t)\) zur Advantage-Berechnung.
+          Critic-Parameter \(\phi\) werden <em>nicht</em> durch diesen Loss optimiert.
+        </div>
+      </div>
+      <div class="info-item green">
+        <div class="item-label">Critic \(\boldsymbol\phi\)</div>
+        <div class="item-desc">
+          Minimiert den MSE-Loss \(\mathcal{L}_\text{critic}\) mit dem K-step TD-Target.
+          Wird durch Gradientenabstieg auf \(\phi\) trainiert.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Interaktiv — Advantage-Demo: Aktionsvergleich</div>
+    <p>
+      Zeigt wie der Advantage \(A_t = R_t - V^\pi(s_t)\) das Training beeinflusst.
+      Stelle den Baseline-Wert \(V^\pi\) und den beobachteten Return \(R_t\) ein:
+    </p>
+
+    <div class="slider-row">
+      <label>
+        Return \(R_t\):
+        <input type="range" id="rt-slider" min="-5" max="15" step="0.5" value="8">
+        <span class="slider-val" id="rt-val">8.0</span>
+      </label>
+      <label>
+        Baseline \(V^\pi(s_t)\):
+        <input type="range" id="vt-slider" min="-5" max="15" step="0.5" value="5">
+        <span class="slider-val" id="vt-val">5.0</span>
+      </label>
+    </div>
+
+    <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap">
+      <div style="flex:1; min-width:200px">
+        <div style="font-family:'DM Mono',monospace; font-size:0.72rem; color:var(--muted); margin-bottom:8px">
+          Advantage \(A_t = R_t - V^\pi(s_t)\)
+        </div>
+        <div id="advantage-display" style="
+          font-family:'DM Mono',monospace;
+          font-size:2rem;
+          font-weight:500;
+          text-align:center;
+          padding:16px;
+          border-radius:10px;
+          background:var(--bg3);
+          border:1px solid var(--border);
+          transition: color 0.3s, background 0.3s;
+        ">+3.0</div>
+        <div id="advantage-label" style="
+          font-family:'DM Mono',monospace;
+          font-size:0.75rem;
+          text-align:center;
+          margin-top:6px;
+          color:var(--green);
+        ">besser als erwartet — Aktion wahrscheinlicher machen</div>
+      </div>
+
+      <div style="flex:2; min-width:260px">
+        <div style="font-family:'DM Mono',monospace; font-size:0.72rem; color:var(--muted); margin-bottom:6px">
+          Effekt auf Policy-Update
+        </div>
+        <div class="advantage-bar-wrap" id="advantage-bars">
+          <div class="advantage-row">
+            <span class="row-label">REINFORCE</span>
+            <span class="bar-track">
+              <span class="bar-fill" id="bar-reinforce"></span>
+            </span>
+            <span class="bar-val" id="barval-reinforce"></span>
+          </div>
+          <div class="advantage-row">
+            <span class="row-label">Advantage</span>
+            <span class="bar-track">
+              <span class="bar-fill" id="bar-advantage"></span>
+            </span>
+            <span class="bar-val" id="barval-advantage"></span>
+          </div>
+        </div>
+        <div style="font-family:'DM Mono',monospace; font-size:0.7rem; color:var(--muted); margin-top:8px">
+          Balken zeigt den Skalierungsfaktor für \(\nabla_\theta \log \pi_\theta\)
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Actor-Critic Algorithmus-Loop — animiert</div>
+    <p>
+      Klicke durch die Schritte des vollständigen Actor-Critic-Algorithmus:
+    </p>
+
+    <div class="demo-container">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px">
+        <div class="demo-title">// Actor-Critic Loop</div>
+        <div style="display:flex; gap:8px">
+          <button class="demo-btn" id="btn-prev">← zurück</button>
+          <button class="demo-btn" id="btn-next">weiter →</button>
+          <button class="demo-btn" id="btn-reset">reset</button>
+        </div>
+      </div>
+
+      <div class="step-indicator" id="step-indicator"></div>
+
+      <div class="svg-wrap" style="padding:0.5rem; min-height:220px">
+        <svg id="loop-svg" width="560" height="210" viewBox="0 0 560 210" style="max-width:100%">
+          <defs>
+            <marker id="arr-loop2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L8,3 z" fill="#c96a28"/>
+            </marker>
+            <marker id="arr-loop2-g" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L8,3 z" fill="#5aab7a"/>
+            </marker>
+            <marker id="arr-loop2-b" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L8,3 z" fill="#4a8fc1"/>
+            </marker>
+          </defs>
+
+          <rect id="node-actor" x="20" y="80" width="90" height="50" rx="8" fill="#1e1e26" stroke="#5a5878" stroke-width="1.5"/>
+          <text x="65" y="101" text-anchor="middle" fill="#e8e6f0" font-size="11" font-weight="500">Actor</text>
+          <text x="65" y="117" text-anchor="middle" fill="#7a7890" font-size="9">π_θ(a|o)</text>
+
+          <rect id="node-env" x="185" y="80" width="90" height="50" rx="8" fill="#1e1e26" stroke="#5a5878" stroke-width="1.5"/>
+          <text x="230" y="101" text-anchor="middle" fill="#e8e6f0" font-size="11" font-weight="500">Env</text>
+          <text x="230" y="117" text-anchor="middle" fill="#7a7890" font-size="9">s,r,s'</text>
+
+          <rect id="node-critic" x="350" y="80" width="90" height="50" rx="8" fill="#1e1e26" stroke="#5a5878" stroke-width="1.5"/>
+          <text x="395" y="101" text-anchor="middle" fill="#e8e6f0" font-size="11" font-weight="500">Critic</text>
+          <text x="395" y="117" text-anchor="middle" fill="#7a7890" font-size="9">v_φ(o)</text>
+
+          <rect id="node-update" x="455" y="80" width="90" height="50" rx="8" fill="#1e1e26" stroke="#5a5878" stroke-width="1.5"/>
+          <text x="500" y="101" text-anchor="middle" fill="#e8e6f0" font-size="10.5" font-weight="500">Update</text>
+          <text x="500" y="117" text-anchor="middle" fill="#7a7890" font-size="9">θ, φ</text>
+
+          <line id="arrow-1" x1="112" y1="105" x2="182" y2="105" stroke="#5a5878" stroke-width="1.5" marker-end="url(#arr-loop2)"/>
+          <text id="label-1" x="147" y="97" text-anchor="middle" fill="#5a5878" font-size="9">Aktion a_t</text>
+
+          <line id="arrow-2" x1="277" y1="105" x2="347" y2="105" stroke="#5a5878" stroke-width="1.5" marker-end="url(#arr-loop2)"/>
+          <text id="label-2" x="312" y="97" text-anchor="middle" fill="#5a5878" font-size="9">r, o_{t+1}</text>
+
+          <line id="arrow-3" x1="442" y1="105" x2="452" y2="105" stroke="#5a5878" stroke-width="1.5" marker-end="url(#arr-loop2)"/>
+          <text id="label-3" x="447" y="97" text-anchor="middle" fill="#5a5878" font-size="9">A_t</text>
+
+          <path id="arrow-back" d="M500,132 Q500,175 290,175 Q65,175 65,132"
+                stroke="#5a5878" stroke-width="1.2" fill="none" stroke-dasharray="5 3"/>
+          <text id="label-back" x="290" y="190" text-anchor="middle" fill="#5a5878" font-size="9">neue Episode</text>
+        </svg>
+      </div>
+
+      <div class="step-desc" id="step-desc">
+        Klicke <b>weiter</b>, um den Actor-Critic-Algorithmus Schritt für Schritt durchzugehen.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</div>
+
+<p class="src-note">// Quelle: EX3 — Assignment 3 Intro / Foliensatz 06 — Reinforcement Learning (ML SS2026)</p>
+
+<script>
+  const tabBtns   = document.querySelectorAll('.tab-btn');
+  const tabPanels = document.querySelectorAll('.tab-panel');
+
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.tab;
+      tabBtns.forEach(b => b.classList.remove('active'));
+      tabPanels.forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + target).classList.add('active');
+      if (window.MathJax && MathJax.typesetPromise) {
+        MathJax.typesetPromise();
+      }
+    });
+  });
+
+  const kSlider       = document.getElementById('k-slider');
+  const kVal          = document.getElementById('k-val');
+  const kGammaSlider  = document.getElementById('k-gamma-slider');
+  const kGammaDisplay = document.getElementById('k-gamma-display');
+  const kGammaVal     = document.getElementById('k-gamma-val');
+  const kstepChart    = document.getElementById('kstep-chart');
+  const bootstrapWeight = document.getElementById('bootstrap-weight');
+  const kstepSummary  = document.getElementById('kstep-summary');
+
+  function buildKStepChart(K, gamma) {
+    kstepChart.innerHTML = '';
+    const maxBars = 20;
+    for (let k = 0; k < K; k++) {
+      const bar = document.createElement('div');
+      bar.className = 'kstep-bar';
+      const h = Math.pow(gamma, k) * 100;
+      bar.style.height = h + '%';
+      bar.style.background = '#c96a28';
+      bar.style.opacity = (0.9 - k * 0.03).toFixed(2);
+      bar.title = `k=${k}: γ^${k} = ${Math.pow(gamma, k).toFixed(3)}`;
+      kstepChart.appendChild(bar);
+    }
+    const bootBar = document.createElement('div');
+    bootBar.className = 'kstep-bar';
+    const bh = Math.pow(gamma, K) * 100;
+    bootBar.style.height = bh + '%';
+    bootBar.style.background = '#4a4860';
+    bootBar.title = `Bootstrap: γ^${K} = ${Math.pow(gamma, K).toFixed(3)}`;
+    kstepChart.appendChild(bootBar);
+
+    const bw = Math.pow(gamma, K).toFixed(4);
+    bootstrapWeight.textContent = `γ^${K} = ${bw}`;
+
+    let summary = '';
+    if (K === 1) {
+      summary = `K=1 — Standard TD(0): Bootstrap-Gewicht γ^1 = ${Math.pow(gamma,1).toFixed(3)}. Hoher Bias (Netz-Approximation dominiert), niedrige Varianz.`;
+    } else if (K <= 4) {
+      summary = `K=${K} — Geringer K: Bootstrap-Gewicht γ^${K} = ${bw}. Moderater Bias, moderate Varianz.`;
+    } else if (K <= 10) {
+      summary = `K=${K} — Mittlerer K: Bootstrap-Gewicht γ^${K} = ${bw}. Weniger Bias, mehr Varianz durch längere Rollouts.`;
+    } else {
+      summary = `K=${K} — Großes K: Bootstrap-Gewicht γ^${K} = ${bw}. Kaum Bias, hohe Varianz — ähnlich Monte-Carlo.`;
+    }
+    kstepSummary.textContent = summary;
+  }
+
+  kSlider.addEventListener('input', () => {
+    const K = parseInt(kSlider.value);
+    const gamma = parseFloat(kGammaSlider.value);
+    kVal.textContent = K;
+    buildKStepChart(K, gamma);
+  });
+
+  kGammaSlider.addEventListener('input', () => {
+    const gamma = parseFloat(kGammaSlider.value);
+    const K = parseInt(kSlider.value);
+    kGammaDisplay.textContent = gamma.toFixed(2);
+    kGammaVal.textContent = gamma.toFixed(2);
+    buildKStepChart(K, gamma);
+  });
+
+  buildKStepChart(1, 0.95);
+
+  const rtSlider = document.getElementById('rt-slider');
+  const vtSlider = document.getElementById('vt-slider');
+  const rtVal    = document.getElementById('rt-val');
+  const vtVal    = document.getElementById('vt-val');
+  const advDisplay = document.getElementById('advantage-display');
+  const advLabel   = document.getElementById('advantage-label');
+  const barReinforce = document.getElementById('bar-reinforce');
+  const barAdvantage = document.getElementById('bar-advantage');
+  const barvalReinforce = document.getElementById('barval-reinforce');
+  const barvalAdvantage = document.getElementById('barval-advantage');
+
+  function updateAdvantage() {
+    const Rt = parseFloat(rtSlider.value);
+    const Vt = parseFloat(vtSlider.value);
+    const At = Rt - Vt;
+    rtVal.textContent = Rt.toFixed(1);
+    vtVal.textContent = Vt.toFixed(1);
+
+    const atStr = (At >= 0 ? '+' : '') + At.toFixed(1);
+    advDisplay.textContent = atStr;
+
+    if (At > 0.5) {
+      advDisplay.style.color = '#5aab7a';
+      advDisplay.style.background = 'rgba(90,171,122,0.08)';
+      advDisplay.style.borderColor = 'rgba(90,171,122,0.3)';
+      advLabel.style.color = '#5aab7a';
+      advLabel.textContent = 'besser als erwartet — Aktion wahrscheinlicher machen';
+    } else if (At < -0.5) {
+      advDisplay.style.color = '#c96a28';
+      advDisplay.style.background = 'rgba(201,106,40,0.08)';
+      advDisplay.style.borderColor = 'rgba(201,106,40,0.3)';
+      advLabel.style.color = '#c96a28';
+      advLabel.textContent = 'schlechter als erwartet — Aktion unwahrscheinlicher machen';
+    } else {
+      advDisplay.style.color = '#7a7890';
+      advDisplay.style.background = 'var(--bg3)';
+      advDisplay.style.borderColor = 'var(--border)';
+      advLabel.style.color = '#7a7890';
+      advLabel.textContent = 'etwa wie erwartet — kaum Änderung an der Policy';
+    }
+
+    const maxScale = 20;
+    const pctRt = Math.abs(Rt) / maxScale * 100;
+    const pctAt = Math.abs(At) / maxScale * 100;
+
+    barReinforce.style.width = Math.min(pctRt, 100) + '%';
+    barReinforce.style.background = Rt >= 0 ? '#5aab7a' : '#c96a28';
+    barvalReinforce.textContent = (Rt >= 0 ? '+' : '') + Rt.toFixed(1);
+    barvalReinforce.style.color = Rt >= 0 ? '#5aab7a' : '#c96a28';
+
+    barAdvantage.style.width = Math.min(pctAt, 100) + '%';
+    barAdvantage.style.background = At >= 0 ? '#5aab7a' : '#c96a28';
+    barvalAdvantage.textContent = (At >= 0 ? '+' : '') + At.toFixed(1);
+    barvalAdvantage.style.color = At >= 0 ? '#5aab7a' : '#c96a28';
+  }
+
+  rtSlider.addEventListener('input', updateAdvantage);
+  vtSlider.addEventListener('input', updateAdvantage);
+  updateAdvantage();
+
+  const loopSteps = [
+    {
+      label: '1',
+      desc: '<b>Schritt 1 — Beobachtung:</b> Agent erhält aktuelle Beobachtung <span class="formula-inline">o_t</span> aus der Umgebung. Der Actor nutzt die Policy <span class="formula-inline">π_θ(a|o_t)</span>, um eine Aktion zu sampeln.',
+      highlightNodes: ['node-actor'],
+      highlightArrows: [],
+      arrowColor: null,
+    },
+    {
+      label: '2',
+      desc: '<b>Schritt 2 — Aktion &amp; Reward:</b> Aktion <span class="formula-inline">a_t</span> wird an die Umgebung geschickt. Die Umgebung gibt Reward <span class="formula-inline">r_{t+1}</span> und Folgebeobachtung <span class="formula-inline">o_{t+1}</span> zurück.',
+      highlightNodes: ['node-actor', 'node-env'],
+      highlightArrows: ['arrow-1', 'label-1'],
+      arrowColor: '#c96a28',
+    },
+    {
+      label: '3',
+      desc: '<b>Schritt 3 — Critic schätzt V:</b> Der Critic berechnet <span class="formula-inline">v_φ(o_t)</span>. Damit wird die Advantage-Funktion bestimmt: <span class="formula-inline">A_t = R_t − v_φ(o_t)</span>.',
+      highlightNodes: ['node-env', 'node-critic'],
+      highlightArrows: ['arrow-2', 'label-2'],
+      arrowColor: '#4a8fc1',
+    },
+    {
+      label: '4',
+      desc: '<b>Schritt 4 — Advantage berechnen:</b> <span class="formula-inline">A_t = R_t − v_φ(o_t)</span>. Positiver Advantage → Aktion war besser als erwartet. Negativer Advantage → schlechter als erwartet.',
+      highlightNodes: ['node-critic', 'node-update'],
+      highlightArrows: ['arrow-3', 'label-3'],
+      arrowColor: '#5aab7a',
+    },
+    {
+      label: '5',
+      desc: '<b>Schritt 5 — Actor-Update:</b> <span class="formula-inline">L_actor = −A_t · log π_θ(a_t|o_t)</span>. Gradientenabstieg aktualisiert θ. Aktion wird wahrscheinlicher (A_t > 0) oder unwahrscheinlicher (A_t < 0).',
+      highlightNodes: ['node-update', 'node-actor'],
+      highlightArrows: ['arrow-back', 'label-back'],
+      arrowColor: '#c96a28',
+    },
+    {
+      label: '6',
+      desc: '<b>Schritt 6 — Critic-Update:</b> <span class="formula-inline">L_critic = (v_φ(o_t) − y_t)²</span> mit K-step Target. Gradientenabstieg aktualisiert φ. Schleife startet erneut.',
+      highlightNodes: ['node-update', 'node-critic'],
+      highlightArrows: ['arrow-back', 'label-back'],
+      arrowColor: '#5aab7a',
+    },
+  ];
+
+  let currentStep = -1;
+
+  const nodeIds = ['node-actor', 'node-env', 'node-critic', 'node-update'];
+  const arrowIds = ['arrow-1', 'label-1', 'arrow-2', 'label-2', 'arrow-3', 'label-3', 'arrow-back', 'label-back'];
+
+  function resetSvg() {
+    nodeIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.setAttribute('stroke', '#5a5878');
+        el.setAttribute('stroke-width', '1.5');
+        el.style.filter = '';
+      }
+    });
+    arrowIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.setAttribute('stroke', '#5a5878');
+        el.setAttribute('opacity', '0.4');
+      }
+    });
+  }
+
+  function renderLoopStep(idx) {
+    resetSvg();
+    const stepIndicator = document.getElementById('step-indicator');
+    const stepDesc = document.getElementById('step-desc');
+
+    stepIndicator.innerHTML = '';
+    loopSteps.forEach((s, i) => {
+      const dot = document.createElement('div');
+      dot.className = 'step-dot' + (i === idx ? ' active' : i < idx ? ' done' : '');
+      dot.textContent = s.label;
+      dot.addEventListener('click', () => {
+        currentStep = i;
+        renderLoopStep(i);
+      });
+      stepIndicator.appendChild(dot);
+    });
+
+    if (idx < 0 || idx >= loopSteps.length) {
+      stepDesc.innerHTML = 'Klicke <b>weiter</b>, um den Actor-Critic-Algorithmus Schritt für Schritt durchzugehen.';
+      return;
+    }
+
+    const step = loopSteps[idx];
+    stepDesc.innerHTML = step.desc;
+
+    step.highlightNodes.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        const color = step.arrowColor || '#c96a28';
+        el.setAttribute('stroke', color);
+        el.setAttribute('stroke-width', '2.5');
+      }
+    });
+
+    step.highlightArrows.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        const color = step.arrowColor || '#c96a28';
+        el.setAttribute('stroke', color);
+        el.setAttribute('opacity', '1');
+      }
+    });
+  }
+
+  document.getElementById('btn-next').addEventListener('click', () => {
+    if (currentStep < loopSteps.length - 1) {
+      currentStep++;
+      renderLoopStep(currentStep);
+    }
+  });
+
+  document.getElementById('btn-prev').addEventListener('click', () => {
+    if (currentStep > 0) {
+      currentStep--;
+      renderLoopStep(currentStep);
+    }
+  });
+
+  document.getElementById('btn-reset').addEventListener('click', () => {
+    currentStep = -1;
+    renderLoopStep(-1);
+    resetSvg();
+  });
+
+  renderLoopStep(-1);
+  resetSvg();
+</script>
+</body>
+</html>

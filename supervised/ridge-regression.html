@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ridge Regression</title>
+<script>
+  MathJax = {
+    tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+    options: { skipHtmlTags: ['script','noscript','style','textarea'] }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #0f0f11;
+    --surface:  #17171a;
+    --surface2: #1e1e22;
+    --border:   rgba(255,255,255,0.07);
+    --border2:  rgba(255,255,255,0.13);
+    --text:     #e8e6e0;
+    --muted:    #6a6866;
+    --accent:   #2970c4;
+    --accent2:  #4ecdc4;
+    --warn:     #c96a28;
+    --mono:     'DM Mono', monospace;
+    --sans:     'DM Sans', sans-serif;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 40px 24px 80px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  header { margin-bottom: 48px; }
+  header .tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  header h1 {
+    font-size: clamp(22px, 3.5vw, 34px);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 10px;
+  }
+  header p { color: var(--muted); font-size: 14px; max-width: 560px; line-height: 1.7; }
+
+  /* ── section titles ── */
+  .section-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  section { margin-bottom: 48px; }
+
+  /* ── link box ── */
+  .link-box {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: border-color 0.12s, background 0.12s;
+    margin-top: 16px;
+  }
+  .link-box:hover { border-color: rgba(78,205,196,0.5); background: var(--surface2); }
+  .link-box .lb-icon { font-size: 18px; flex-shrink: 0; }
+  .link-box .lb-title { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 3px; }
+  .link-box .lb-desc  { font-size: 12px; color: var(--muted); }
+  .link-box .lb-badge { margin-left: auto; font-family: var(--mono); font-size: 10px; color: var(--accent2); flex-shrink: 0; }
+
+  /* ── formula box ── */
+  .formula-block {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin: 12px 0;
+    font-family: var(--mono);
+    font-size: 14px;
+    line-height: 2;
+    overflow-x: auto;
+  }
+  .formula-block .formula-label {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 8px;
+    font-family: var(--sans);
+  }
+  .formula-block .main {
+    font-size: 15px;
+    color: var(--text);
+  }
+  .formula-block .highlight { color: var(--accent2); }
+  .formula-block .lambda { color: var(--warn); }
+  .formula-block mjx-container { color: var(--text) !important; }
+
+  /* ── explanation cards ── */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .card .card-head {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .card p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .card strong { color: var(--text); }
+
+  /* ── lambda info row ── */
+  .lambda-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .lambda-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .lambda-box .lhead {
+    font-family: var(--mono);
+    font-size: 12px;
+    margin-bottom: 6px;
+  }
+  .lambda-box p { font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .lambda-box.high .lhead { color: var(--warn); }
+  .lambda-box.low .lhead  { color: var(--accent2); }
+
+  /* ── comparison table ── */
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-top: 16px;
+  }
+  .compare-table th {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border2);
+  }
+  .compare-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--muted);
+    vertical-align: top;
+  }
+  .compare-table td:first-child { color: var(--text); font-weight: 500; }
+  .compare-table tr:last-child td { border-bottom: none; }
+
+  /* ── interactive demo ── */
+  .demo-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 24px;
+  }
+  .controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .ctrl-group label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 8px;
+  }
+  .ctrl-group label span {
+    color: var(--text);
+    float: right;
+  }
+  input[type=range] {
+    width: 100%;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+  canvas {
+    width: 100%;
+    border-radius: 8px;
+    display: block;
+    background: var(--bg);
+  }
+  .canvas-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 10px;
+  }
+
+  .info-row {
+    display: flex;
+    gap: 24px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+  .info-item {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .info-item span { color: var(--text); }
+
+  /* ── steps list ── */
+  ol.steps { padding-left: 0; list-style: none; counter-reset: step; }
+  ol.steps li {
+    counter-increment: step;
+    display: flex;
+    gap: 14px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  ol.steps li::before {
+    content: counter(step, decimal-leading-zero);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    flex-shrink: 0;
+    margin-top: 3px;
+  }
+  ol.steps li strong { color: var(--text); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="tag">// supervised learning</div>
+  <h1>Ridge Regression</h1>
+  <p>Lineare Regression mit L2-Regularisierung — verhindert Overfitting durch das Bestrafen großer Koeffizienten.</p>
+</header>
+
+<!-- MOTIVATION -->
+<section>
+  <div class="section-title">Motivation: Overfitting bei Polynomen</div>
+  <p style="font-size:14px; color:var(--muted); line-height:1.7; margin-bottom:16px;">
+    Polynome höherer Ordnung passen sich sehr flexibel an Trainingsdaten an. Dabei werden die Koeffizienten
+    <strong style="color:var(--text)">sehr groß</strong> — das Modell schwingt stark und generalisiert schlecht.
+    Ridge Regression begegnet diesem Problem durch eine <strong style="color:var(--text)">Penalty auf die Größe der Koeffizienten</strong>.
+  </p>
+  <div class="link-box" onclick="window.parent.postMessage({type:'open-card', src:'grundlagen/overfitting.html', title:'Overfitting bei Polynomen'}, '*'); if(window===window.parent) window.location.href='../grundlagen/overfitting.html'">
+    <div class="lb-icon">📈</div>
+    <div>
+      <div class="lb-title">Overfitting bei Polynomen</div>
+      <div class="lb-desc">Interaktive Demo — beobachte wie der Fit mit steigendem Grad instabil wird</div>
+    </div>
+    <div class="lb-badge">→ öffnen</div>
+  </div>
+
+  <div class="card-grid" style="margin-top:16px">
+    <div class="card">
+      <div class="card-head">Problem</div>
+      <p>Hochgradige Polynome passen perfekt auf Trainingsdaten, versagen aber auf neuen Daten (<strong>Overfitting</strong>).</p>
+    </div>
+    <div class="card">
+      <div class="card-head">Ursache</div>
+      <p>Die Koeffizienten w werden sehr groß, um jeden Datenpunkt zu treffen — das Modell lernt das Rauschen.</p>
+    </div>
+    <div class="card">
+      <div class="card-head">Lösung</div>
+      <p>Füge einen <strong>Regularisierungsterm</strong> zur Kostenfunktion hinzu, der große Gewichte bestraft.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FORMEL -->
+<section>
+  <div class="section-title">Kostenfunktion</div>
+
+  <div class="formula-block">
+    <div class="formula-label">Allgemeine Idee (aus den Folien)</div>
+    <div class="main">
+      \[\text{Total cost} = \underbrace{\text{measure of fit}}_{\color{#4ecdc4}{\text{RSS}}} + \color{#c96a28}{\lambda} \cdot \underbrace{\text{measure of magnitude of coefficients}}_{\color{#4ecdc4}{\|\mathbf{w}\|^2_2}}\]
+    </div>
+  </div>
+
+  <div class="formula-block">
+    <div class="formula-label">Ridge Regression — L2-Regularisierung</div>
+    <div class="main">
+      \[\text{Total cost} = \color{#4ecdc4}{\text{RSS}(\mathbf{w})} + \color{#c96a28}{\lambda} \cdot \|\mathbf{w}\|_2^2\]
+    </div>
+    <div style="margin-top:4px; font-size:13px; color:var(--muted)">
+      mit \(\;\|\mathbf{w}\|_2^2 = w_0^2 + w_1^2 + \cdots + w_n^2\)
+    </div>
+  </div>
+
+  <div class="formula-block">
+    <div class="formula-label">RSS — Residual Sum of Squares</div>
+    <div class="main">
+      \[\text{RSS}(\mathbf{w}) = \sum_{i=1}^{N}(y_i - \hat{y}_i)^2 = \sum_{i=1}^{N}(y_i - \mathbf{w}^\top \mathbf{x}_i)^2\]
+    </div>
+  </div>
+
+  <div class="card-grid" style="margin-top:16px">
+    <div class="card">
+      <div class="card-head">RSS(w)</div>
+      <p>Misst wie gut das Modell zu den Daten passt. Kleineres RSS = besserer Fit.</p>
+    </div>
+    <div class="card">
+      <div class="card-head" style="color:var(--warn)">λ (Lambda)</div>
+      <p>Hyperparameter, der den <strong>Kompromiss zwischen Fit und Koeffizientengröße</strong> steuert.</p>
+    </div>
+    <div class="card">
+      <div class="card-head">\(\|\mathbf{w}\|_2^2\)</div>
+      <p>Summe der quadrierten Gewichte. Bestraft große Koeffizienten, hält sie aber nie exakt bei 0.</p>
+    </div>
+  </div>
+</section>
+
+<!-- LAMBDA -->
+<section>
+  <div class="section-title">Wahl von λ — Bias-Variance Tradeoff</div>
+  <div class="lambda-row">
+    <div class="lambda-box high">
+      <div class="lhead">Großes λ</div>
+      <p><strong style="color:var(--text)">Hoher Bias, niedrige Varianz</strong><br>
+      Koeffizienten werden stark gestaucht. Modell ist einfacher, kann wichtige Muster verpassen.</p>
+    </div>
+    <div class="lambda-box low">
+      <div class="lhead">Kleines λ</div>
+      <p><strong style="color:var(--text)">Niedriger Bias, hohe Varianz</strong><br>
+      Wenig Regularisierung. Modell kann overfitting zeigen, nähert sich normaler linearer Regression.</p>
+    </div>
+  </div>
+  <div style="margin-top:14px; padding:14px 18px; background:var(--surface); border:1px solid var(--border); border-radius:8px; font-size:13px; color:var(--muted)">
+    \(\lambda = 0\) entspricht normaler linearer Regression ohne Regularisierung. \(\lambda \to \infty\) drückt alle Koeffizienten gegen 0.
+  </div>
+</section>
+
+<!-- VERGLEICH RIDGE vs LASSO -->
+<section>
+  <div class="section-title">Ridge vs. Lasso</div>
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th>Eigenschaft</th>
+        <th>Ridge (L2)</th>
+        <th>Lasso (L1)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Penalty-Term</td>
+        <td>\(\lambda \cdot \|\mathbf{w}\|_2^2 = \lambda \cdot \sum_i w_i^2\)</td>
+        <td>\(\lambda \cdot \|\mathbf{w}\|_1 = \lambda \cdot \sum_i |w_i|\)</td>
+      </tr>
+      <tr>
+        <td>Koeffizienten</td>
+        <td>Klein, aber nie exakt 0</td>
+        <td>Können exakt 0 werden</td>
+      </tr>
+      <tr>
+        <td>Feature Selection</td>
+        <td>Nein — alle Features bleiben</td>
+        <td>Ja — sparse Modelle möglich</td>
+      </tr>
+      <tr>
+        <td>Anwendung</td>
+        <td>Alle Features sind relevant</td>
+        <td>Viele irrelevante Features vorhanden</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- INTERAKTIV -->
+<section>
+  <div class="section-title">Interaktive Visualisierung</div>
+  <div class="demo-wrap">
+    <div class="controls">
+      <div class="ctrl-group">
+        <label>Polynomgrad &nbsp;<span id="deg-val">6</span></label>
+        <input type="range" id="deg" min="1" max="9" value="6">
+      </div>
+      <div class="ctrl-group">
+        <label>λ (Lambda) &nbsp;<span id="lam-val">0.1</span></label>
+        <input type="range" id="lam" min="0" max="100" value="5" step="1">
+      </div>
+    </div>
+    <canvas id="c" height="340"></canvas>
+    <div class="canvas-label">Grau = Datenpunkte · Blau = Ridge-Fit · Orange = Overfitting ohne Regularisierung</div>
+    <div class="info-row">
+      <div class="info-item">RSS: <span id="rss-val">—</span></div>
+      <div class="info-item">\(\|\mathbf{w}\|_2^2\): <span id="norm-val">—</span></div>
+      <div class="info-item">Total Cost: <span id="cost-val">—</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- LÖSUNG -->
+<section>
+  <div class="section-title">Analytische Lösung</div>
+  <div class="formula-block">
+    <div class="formula-label">Ridge-Lösung (geschlossene Form)</div>
+    <div class="main">
+      \[\mathbf{w}^* = (\mathbf{X}^\top\mathbf{X} + \color{#c96a28}{\lambda}\mathbf{I})^{-1}\mathbf{X}^\top\mathbf{y}\]
+    </div>
+  </div>
+  <p style="font-size:14px; color:var(--muted); line-height:1.7; margin-top:14px;">
+    Verglichen mit der normalen Gleichung \(\mathbf{w} = (\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{X}^\top\mathbf{y}\)
+    wird \(\lambda\mathbf{I}\) zur Matrix \(\mathbf{X}^\top\mathbf{X}\) addiert. Das macht die Matrix immer invertierbar (regularisiert numerisch)
+    und staucht die Gewichte in Richtung 0.
+  </p>
+</section>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+// Generate noisy sine-like data
+const N = 25;
+const rng = (() => { let s = 42; return () => { s ^= s<<13; s ^= s>>17; s ^= s<<5; return (s>>>0)/2**32; }; })();
+const data = Array.from({length: N}, (_, i) => {
+  const x = i / (N - 1);
+  const y = 0.5 + 0.4 * Math.sin(x * Math.PI * 2) + (rng() - 0.5) * 0.3;
+  return {x, y};
+});
+
+function buildVandermonde(xs, deg) {
+  return xs.map(x => Array.from({length: deg + 1}, (_, d) => Math.pow(x, d)));
+}
+
+function matMul(A, B) {
+  const m = A.length, n = B[0].length, k = B.length;
+  return Array.from({length: m}, (_, i) =>
+    Array.from({length: n}, (_, j) =>
+      A[i].reduce((s, v, l) => s + v * B[l][j], 0)));
+}
+
+function transpose(A) {
+  return A[0].map((_, j) => A.map(row => row[j]));
+}
+
+function addLambdaI(M, lam) {
+  return M.map((row, i) => row.map((v, j) => i === j ? v + lam : v));
+}
+
+function inv(M) {
+  const n = M.length;
+  const A = M.map(r => [...r]);
+  const I = Array.from({length: n}, (_, i) => Array.from({length: n}, (_, j) => i === j ? 1 : 0));
+  for (let col = 0; col < n; col++) {
+    let maxRow = col;
+    for (let row = col + 1; row < n; row++)
+      if (Math.abs(A[row][col]) > Math.abs(A[maxRow][col])) maxRow = row;
+    [A[col], A[maxRow]] = [A[maxRow], A[col]];
+    [I[col], I[maxRow]] = [I[maxRow], I[col]];
+    const div = A[col][col];
+    if (Math.abs(div) < 1e-12) continue;
+    for (let j = 0; j < n; j++) { A[col][j] /= div; I[col][j] /= div; }
+    for (let row = 0; row < n; row++) {
+      if (row === col) continue;
+      const f = A[row][col];
+      for (let j = 0; j < n; j++) { A[row][j] -= f * A[col][j]; I[row][j] -= f * I[col][j]; }
+    }
+  }
+  return I;
+}
+
+function fitRidge(deg, lam) {
+  const X = buildVandermonde(data.map(d => d.x), deg);
+  const y = data.map(d => d.y);
+  const Xt = transpose(X);
+  const XtX = matMul(Xt, X);
+  const XtXreg = addLambdaI(XtX, lam);
+  const XtXinv = inv(XtXreg);
+  const Xty = matMul(Xt, y.map(v => [v]));
+  const w = matMul(XtXinv, Xty).map(r => r[0]);
+  return w;
+}
+
+function predict(w, x) {
+  return w.reduce((s, wi, i) => s + wi * Math.pow(x, i), 0);
+}
+
+function drawCurve(w, color, lineWidth = 2) {
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.width / dpr, H = canvas.height / dpr;
+  const pad = 40;
+  const toCanvasX = x => pad + x * (W - 2 * pad);
+  const toCanvasY = y => H - pad - y * (H - 2 * pad);
+
+  ctx.beginPath();
+  for (let i = 0; i <= 300; i++) {
+    const x = i / 300;
+    const y = Math.min(1.5, Math.max(-0.5, predict(w, x)));
+    const cx = toCanvasX(x);
+    const cy = toCanvasY(y);
+    i === 0 ? ctx.moveTo(cx, cy) : ctx.lineTo(cx, cy);
+  }
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lineWidth;
+  ctx.stroke();
+}
+
+function draw() {
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = 340 * dpr;
+  ctx.scale(dpr, dpr);
+
+  const W = rect.width, H = 340;
+  const pad = 40;
+  const toCanvasX = x => pad + x * (W - 2 * pad);
+  const toCanvasY = y => H - pad - y * (H - 2 * pad);
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad + (i / 4) * (H - 2 * pad);
+    ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(W - pad, y); ctx.stroke();
+    const x = pad + (i / 4) * (W - 2 * pad);
+    ctx.beginPath(); ctx.moveTo(x, pad); ctx.lineTo(x, H - pad); ctx.stroke();
+  }
+
+  const deg = +document.getElementById('deg').value;
+  const lamRaw = +document.getElementById('lam').value;
+  const lam = lamRaw === 0 ? 0 : Math.pow(10, (lamRaw - 50) / 20);
+
+  // Overfit curve (lambda=0) in orange
+  const wOverfit = fitRidge(deg, 1e-9);
+  drawCurve(wOverfit, 'rgba(201,106,40,0.55)', 1.5);
+
+  // Ridge curve
+  const wRidge = fitRidge(deg, lam);
+  drawCurve(wRidge, '#2970c4', 2.5);
+
+  // Data points
+  data.forEach(({x, y}) => {
+    ctx.beginPath();
+    ctx.arc(toCanvasX(x), toCanvasY(y), 4, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(232,230,224,0.7)';
+    ctx.fill();
+  });
+
+  // Axes labels
+  ctx.fillStyle = 'rgba(106,104,102,0.7)';
+  ctx.font = '10px DM Mono, monospace';
+  ctx.fillText('0', pad - 12, H - pad + 14);
+  ctx.fillText('1', W - pad - 3, H - pad + 14);
+  ctx.fillText('x', W - pad + 6, H - pad + 4);
+  ctx.fillText('y', pad - 10, pad - 4);
+
+  // Stats
+  const rss = data.reduce((s, {x, y}) => s + Math.pow(y - predict(wRidge, x), 2), 0);
+  const norm2 = wRidge.reduce((s, w) => s + w * w, 0);
+  const cost = rss + lam * norm2;
+
+  document.getElementById('rss-val').textContent = rss.toFixed(4);
+  document.getElementById('norm-val').textContent = norm2.toFixed(4);
+  document.getElementById('cost-val').textContent = cost.toFixed(4);
+  document.getElementById('lam-val').textContent = lam < 0.001 ? lam.toExponential(1) : lam.toFixed(lam < 1 ? 3 : 1);
+}
+
+document.getElementById('deg').addEventListener('input', e => {
+  document.getElementById('deg-val').textContent = e.target.value;
+  draw();
+});
+document.getElementById('lam').addEventListener('input', draw);
+
+window.addEventListener('resize', draw);
+draw();
+</script>
+</body>
+</html>

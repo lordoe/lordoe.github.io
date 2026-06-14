@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Random Forests</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script>
+  MathJax = {
+    tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+    options: { skipHtmlTags: ['script','noscript','style','textarea'] }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0f0f11;
+  --bg2: #17171a;
+  --bg3: #1e1e22;
+  --border: rgba(255,255,255,0.07);
+  --text: #e8e6e0;
+  --muted: #6a6866;
+  --accent: #2970c4;
+  --class-a: #e05a5a;
+  --class-b: #4e9cef;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 300;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem 1rem 3rem;
+}
+
+header {
+  width: 100%;
+  max-width: 980px;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+h1 {
+  font-family: 'DM Mono', monospace;
+  font-size: 1.05rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+
+.subtitle { font-size: 0.8rem; color: var(--muted); font-family: 'DM Mono', monospace; }
+
+.main { width: 100%; max-width: 980px; display: flex; flex-direction: column; gap: 1rem; }
+
+/* ── explanation ── */
+.explanation {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.explanation h2 {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--accent);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.explanation p { font-size: 0.82rem; line-height: 1.65; color: var(--muted); }
+.explanation p b { color: var(--text); font-weight: 500; }
+
+.steps { display: flex; flex-direction: column; gap: 0.75rem; }
+.step { display: grid; grid-template-columns: 1.6rem 1fr; gap: 0.5rem 0.75rem; align-items: start; }
+.step-num { font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--accent); padding-top: 0.1rem; }
+.step-body { display: flex; flex-direction: column; gap: 0.35rem; }
+.step-title { font-size: 0.82rem; font-weight: 500; color: var(--text); }
+.step-desc { font-size: 0.78rem; color: var(--muted); line-height: 1.55; }
+.step-desc b { color: var(--text); font-weight: 500; }
+
+/* ── pipeline diagram ── */
+.pipeline {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.pipe-stage {
+  flex: 1;
+  min-width: 180px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.8rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.pipe-stage .pst { font-family: 'DM Mono', monospace; font-size: 0.66rem; color: var(--accent); letter-spacing: 0.05em; text-transform: uppercase; }
+.pipe-stage .psd { font-size: 0.76rem; color: var(--muted); line-height: 1.5; }
+.pipe-stage .psd b { color: var(--text); font-weight: 500; }
+.pipe-mini { display: flex; gap: 4px; flex-wrap: wrap; }
+.pipe-mini span {
+  font-family: 'DM Mono', monospace; font-size: 0.62rem; color: var(--text);
+  background: rgba(41,112,196,0.14); border: 1px solid var(--border);
+  border-radius: 5px; padding: 2px 6px;
+}
+
+/* ── controls ── */
+.controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 0.75rem 1rem; }
+label { font-size: 0.75rem; color: var(--muted); font-family: 'DM Mono', monospace; display: flex; align-items: center; gap: 6px; }
+label span { color: var(--text); }
+input[type=range] { accent-color: var(--accent); width: 110px; cursor: pointer; }
+
+.seg-group { display: flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.seg-btn { font-family: 'DM Mono', monospace; font-size: 0.72rem; padding: 5px 12px; background: var(--bg3); color: var(--muted); border: none; cursor: pointer; transition: background 0.15s, color 0.15s; border-right: 1px solid var(--border); }
+.seg-btn:last-child { border-right: none; }
+.seg-btn:hover { background: rgba(41,112,196,0.1); color: var(--text); }
+.seg-btn.active { background: rgba(41,112,196,0.18); color: var(--accent); }
+
+button { font-family: 'DM Mono', monospace; font-size: 0.75rem; font-weight: 500; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg3); color: var(--text); cursor: pointer; transition: background 0.15s, border-color 0.15s, color 0.15s; letter-spacing: 0.02em; }
+button:hover { background: rgba(41,112,196,0.12); border-color: var(--accent); color: var(--accent); }
+button:active { transform: scale(0.97); }
+.divider { width: 1px; background: var(--border); align-self: stretch; }
+
+/* ── canvas area ── */
+.viz-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+.canvas-wrap { position: relative; flex: 1; min-width: 300px; background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+.canvas-head { font-family: 'DM Mono', monospace; font-size: 0.68rem; color: var(--accent); letter-spacing: 0.05em; text-transform: uppercase; padding: 0.6rem 0.9rem 0.3rem; }
+canvas { display: block; width: 100%; }
+.hint { font-size: 0.7rem; color: var(--muted); font-family: 'DM Mono', monospace; text-align: center; padding: 0.4rem 0 0.5rem; }
+
+/* ── member trees grid ── */
+.members {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 0.9rem 1rem;
+}
+.members .canvas-head { padding: 0 0 0.5rem; }
+.members-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 0.5rem; }
+.member { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
+.member canvas { width: 100%; }
+.member .mlabel { font-family: 'DM Mono', monospace; font-size: 0.6rem; color: var(--muted); text-align: center; padding: 3px 0; }
+
+/* ── info panel ── */
+.info-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.info-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 0.55rem 0.9rem; font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--muted); display: flex; align-items: center; gap: 0.4rem; }
+.info-card .val { color: var(--text); font-weight: 500; }
+.info-card .val.red { color: var(--class-a); }
+.info-card .val.blue { color: var(--class-b); }
+
+/* ── properties ── */
+.props-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+@media (max-width: 560px) { .props-grid { grid-template-columns: 1fr; } }
+.prop-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 0.8rem 1rem; }
+.prop-tag { font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--accent); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.3rem; }
+.prop-text { font-size: 0.79rem; color: var(--muted); line-height: 1.55; }
+.prop-text b { color: var(--text); font-weight: 500; }
+
+mjx-container { color: var(--text) !important; }
+.src-note { font-size: 0.7rem; color: var(--muted); font-family: 'DM Mono', monospace; opacity: 0.5; text-align: center; margin-top: 0.5rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Random Forests</h1>
+  <span class="subtitle">// supervised · ensemble</span>
+</header>
+
+<div class="main">
+
+  <!-- Explanation -->
+  <div class="explanation">
+    <h2>Idee</h2>
+    <p>
+      Ein <b>Random Forest</b> kombiniert <b>Decision Trees</b> mit <b>Bootstrapping</b> (Bagging). Es wird ein ganzer „Wald“ aus vielen Bäumen
+      gezüchtet — jeder auf einem eigenen Bootstrap-Sample und mit nur einer <b>zufälligen Auswahl der Variablen</b> pro Knoten.
+      Klassifiziert wird per <b>Mehrheitsvotum</b> aller Bäume. Das Verfahren nutzt gezielt die <b>Instabilität</b> einzelner Bäume:
+      diverse Bäume mitteln ihre Fehler heraus. (Breiman &amp; Cutler, ~1995.)
+    </p>
+
+    <h2 style="margin-top:0.3rem">Pipeline</h2>
+    <div class="pipeline">
+      <div class="pipe-stage">
+        <div class="pst">Step 1 · Datensätze</div>
+        <div class="psd"><b>Bootstrap-Samples</b> aus den Trainingsdaten \(D\): mit Zurücklegen ziehen → \(D_1, D_2, \dots, D_t\).</div>
+        <div class="pipe-mini"><span>D₁</span><span>D₂</span><span>…</span><span>Dₜ</span></div>
+      </div>
+      <div class="pipe-stage">
+        <div class="pst">Step 2 · Klassifizierer</div>
+        <div class="psd">Pro Sample einen <b>Baum</b> bauen \(C_1 \dots C_t\). An jedem Knoten nur eine <b>zufällige Teilmenge der Features</b> betrachten.</div>
+        <div class="pipe-mini"><span>C₁</span><span>C₂</span><span>…</span><span>Cₜ</span></div>
+      </div>
+      <div class="pipe-stage">
+        <div class="pst">Step 3 · Kombinieren</div>
+        <div class="psd"><b>Majority Voting</b>: die von den meisten Bäumen vorhergesagte Klasse \(C^\*\) gewinnt (Ties werden gebrochen).</div>
+        <div class="pipe-mini"><span>→ C*</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <label>
+      Bäume = <span id="nTreesDisplay">25</span>
+      <input type="range" id="nTreesSlider" min="1" max="60" step="1" value="25">
+    </label>
+    <div class="divider"></div>
+    <label>
+      max. Tiefe = <span id="depthDisplay">5</span>
+      <input type="range" id="depthSlider" min="1" max="8" step="1" value="5">
+    </label>
+    <div class="divider"></div>
+    <label>Features/Knoten</label>
+    <div class="seg-group">
+      <button class="seg-btn active" id="btnMf1" onclick="setMaxFeat(1)">1 (zufällig)</button>
+      <button class="seg-btn" id="btnMf2" onclick="setMaxFeat(2)">2 (alle)</button>
+    </div>
+    <div class="divider"></div>
+    <label><input type="checkbox" id="chkBoot" checked onchange="toggleBoot()"> Bootstrap</label>
+    <div class="divider"></div>
+    <button onclick="rebuildForest()">neu ziehen</button>
+    <button onclick="shufflePoints()">shuffle Daten</button>
+  </div>
+
+  <!-- Info row -->
+  <div class="info-row" id="infoRow">
+    <div class="info-card">Bäume: <span class="val" id="iN">25</span></div>
+    <div class="info-card">Einzelbaum-Fehler: <span class="val" id="iSingleErr">–</span></div>
+    <div class="info-card">Forest-Fehler: <span class="val" id="iForestErr">–</span></div>
+    <div class="info-card">OOB-Schätzung: <span class="val" id="iOob">–</span></div>
+  </div>
+
+  <!-- Comparison: single deep tree vs forest -->
+  <div class="viz-row">
+    <div class="canvas-wrap">
+      <div class="canvas-head">Einzelner Baum — zackige Grenze (overfit)</div>
+      <canvas id="single"></canvas>
+      <div class="hint">ein tiefer Baum auf allen Daten &amp; allen Features</div>
+    </div>
+    <div class="canvas-wrap">
+      <div class="canvas-head">Random Forest — geglättete Grenze (Voting)</div>
+      <canvas id="forest"></canvas>
+      <div class="hint">Helligkeit = Stimmenanteil für die Klasse</div>
+    </div>
+  </div>
+
+  <!-- Member trees -->
+  <div class="members">
+    <div class="canvas-head">Einzelbäume des Waldes (Diversität durch Bootstrap + Feature-Subsampling)</div>
+    <div class="members-grid" id="membersGrid"></div>
+  </div>
+
+  <!-- Properties -->
+  <div class="explanation">
+    <h2>Eigenschaften</h2>
+    <div class="props-grid">
+      <div class="prop-card">
+        <div class="prop-tag">Wenig Parameter</div>
+        <div class="prop-text">Im Wesentlichen Anzahl Bäume &amp; Features pro Split. Gute Default-Werte, <b>recht robust</b> und ohne viel Tuning effektiv.</div>
+      </div>
+      <div class="prop-card">
+        <div class="prop-tag">Weniger Overfitting</div>
+        <div class="prop-text">Mehr Bäume → glattere, stabilere Grenze. Einzelbäume werden oft voll gezüchtet (eher <b>kein Pruning</b>), das Mitteln dämpft die Varianz.</div>
+      </div>
+      <div class="prop-card">
+        <div class="prop-tag">Out-of-Bag (OOB)</div>
+        <div class="prop-text">Evaluation ohne separaten Testsplit: für jedes \(x_i\) nur die Bäume nutzen, in deren Bootstrap-Sample \(x_i\) <b>nicht</b> vorkam, und deren Mehrheit auswerten.</div>
+      </div>
+      <div class="prop-card">
+        <div class="prop-tag">Skalierung</div>
+        <div class="prop-text">Wird mit mehr Bäumen langsamer — aber <b>parallelisierbar</b>, da die Bäume unabhängig trainiert &amp; ausgewertet werden.</div>
+      </div>
+    </div>
+  </div>
+
+  <p class="src-note">// Quelle: Foliensatz 05 — KNN, Decision Trees, Evaluation, Random Forest (ML SS2026)</p>
+</div>
+
+<script>
+// ── state ──────────────────────────────────────────────────────────────────
+let nTrees = 25;
+let maxDepth = 5;
+let maxFeatures = 1;       // features considered per split (of 2)
+let useBootstrap = true;
+let pts = [];
+let forest = [];           // array of { tree, oobIdx:Set }
+let singleTree = null;
+
+// ── data: noisy, interleaved → single tree overfits, forest smooths ──────────
+function genDefaultPoints() {
+  pts = [];
+  const rng = mulberry32(7);
+  // two diagonal-ish blobs with overlap + noise
+  for (let i = 0; i < 28; i++) {
+    const a = rng(), b = rng();
+    pts.push({ x: 0.22 + a * 0.42, y: 0.55 + b * 0.4, c: 1 });   // blue upper-left band
+  }
+  for (let i = 0; i < 28; i++) {
+    const a = rng(), b = rng();
+    pts.push({ x: 0.38 + a * 0.42, y: 0.05 + b * 0.4, c: 0 });   // red lower-right band
+  }
+  // label noise
+  for (let i = 0; i < 8; i++) {
+    pts.push({ x: rng(), y: rng(), c: rng() < 0.5 ? 0 : 1 });
+  }
+}
+
+// seeded RNG
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+let RNG = Math.random;
+
+// ── impurity (Gini) + best split with feature subsampling ────────────────────
+function countOf(points) { const c = [0, 0]; for (const p of points) c[p.c]++; return c; }
+function gini(counts) {
+  const n = counts[0] + counts[1];
+  if (n === 0) return 0;
+  const p0 = counts[0] / n, p1 = counts[1] / n;
+  return 1 - p0 * p0 - p1 * p1;
+}
+
+function bestSplit(points, allowedAxes) {
+  const n = points.length;
+  if (n < 2) return null;
+  let best = null;
+  for (const axis of allowedAxes) {
+    const sorted = [...points].sort((a, b) => a[axis] - b[axis]);
+    for (let i = 0; i < n - 1; i++) {
+      if (sorted[i][axis] === sorted[i + 1][axis]) continue;
+      const thr = (sorted[i][axis] + sorted[i + 1][axis]) / 2;
+      const left = sorted.slice(0, i + 1), right = sorted.slice(i + 1);
+      const wImp = (left.length / n) * gini(countOf(left)) + (right.length / n) * gini(countOf(right));
+      if (!best || wImp < best.wImp - 1e-12) best = { axis, thr, left, right, wImp };
+    }
+  }
+  return best;
+}
+
+// pick allowed axes (feature subsampling) — re-rolled at EACH node
+function pickAxes() {
+  if (maxFeatures >= 2) return ['x', 'y'];
+  return [RNG() < 0.5 ? 'x' : 'y'];
+}
+
+function buildTree(points, depth) {
+  const counts = countOf(points);
+  const pred = counts[0] >= counts[1] ? 0 : 1;
+  const node = { counts, pred, leaf: true };
+  const pure = counts[0] === 0 || counts[1] === 0;
+  if (pure || depth >= maxDepth || points.length < 2) return node;
+
+  const split = bestSplit(points, pickAxes());
+  // if subsampled axis cannot split (all equal / no gain), allow a fallback try
+  if (!split) return node;
+  const parentImp = gini(counts);
+  if (parentImp - split.wImp <= 1e-9 && maxFeatures < 2) {
+    // try the other axis as fallback so the tree can keep growing
+    const alt = bestSplit(points, ['x', 'y']);
+    if (alt && parentImp - alt.wImp > 1e-9) { return finish(node, alt, points, depth); }
+    return node;
+  }
+  return finish(node, split, points, depth);
+}
+function finish(node, split, points, depth) {
+  node.leaf = false; node.axis = split.axis; node.thr = split.thr;
+  node.left = buildTree(split.left, depth + 1);
+  node.right = buildTree(split.right, depth + 1);
+  return node;
+}
+
+function classify(node, q) {
+  while (!node.leaf) node = (q[node.axis] < node.thr) ? node.left : node.right;
+  return node.pred;
+}
+
+// ── build single tree + forest ───────────────────────────────────────────────
+function bootstrapSample() {
+  const n = pts.length, sample = [], inBag = new Set();
+  for (let i = 0; i < n; i++) {
+    const idx = Math.floor(RNG() * n);
+    sample.push(pts[idx]); inBag.add(idx);
+  }
+  const oob = new Set();
+  for (let i = 0; i < n; i++) if (!inBag.has(i)) oob.add(i);
+  return { sample, oob };
+}
+
+function buildAll() {
+  // single deep tree: all data, all features, fixed deep
+  const savedMf = maxFeatures, savedDepth = maxDepth;
+  maxFeatures = 2; maxDepth = Math.max(maxDepth, 7);
+  singleTree = buildTree(pts, 0);
+  maxFeatures = savedMf; maxDepth = savedDepth;
+
+  // forest
+  forest = [];
+  for (let t = 0; t < nTrees; t++) {
+    if (useBootstrap) {
+      const { sample, oob } = bootstrapSample();
+      forest.push({ tree: buildTree(sample, 0), oob });
+    } else {
+      forest.push({ tree: buildTree(pts, 0), oob: new Set() });
+    }
+  }
+}
+
+// forest vote → {cls, frac} frac = share of winning class
+function forestVote(q) {
+  let v0 = 0, v1 = 0;
+  for (const f of forest) (classify(f.tree, q) === 0 ? v0++ : v1++);
+  const cls = v0 >= v1 ? 0 : 1;
+  const frac = Math.max(v0, v1) / (v0 + v1 || 1);
+  return { cls, frac };
+}
+
+// ── metrics ───────────────────────────────────────────────────────────────
+function singleTrainErr() {
+  let e = 0; for (const p of pts) if (classify(singleTree, p) !== p.c) e++; return e;
+}
+function forestTrainErr() {
+  let e = 0; for (const p of pts) if (forestVote(p).cls !== p.c) e++; return e;
+}
+function oobError() {
+  if (!useBootstrap) return null;
+  let evald = 0, err = 0;
+  for (let i = 0; i < pts.length; i++) {
+    let v0 = 0, v1 = 0;
+    for (const f of forest) if (f.oob.has(i)) (classify(f.tree, pts[i]) === 0 ? v0++ : v1++);
+    if (v0 + v1 === 0) continue;
+    evald++;
+    const cls = v0 >= v1 ? 0 : 1;
+    if (cls !== pts[i].c) err++;
+  }
+  return evald ? { err, evald } : null;
+}
+
+// ── canvases ───────────────────────────────────────────────────────────────
+const singleCvs = document.getElementById('single'), sctx = singleCvs.getContext('2d');
+const forestCvs = document.getElementById('forest'), fctx = forestCvs.getContext('2d');
+let W, H;
+
+function resize() {
+  const DPR = Math.max(1, window.devicePixelRatio || 1);
+  const r = singleCvs.parentElement.getBoundingClientRect();
+  W = Math.floor(r.width); H = Math.floor(W * 0.78);
+  [[singleCvs, sctx], [forestCvs, fctx]].forEach(([c, cx]) => {
+    c.width = Math.round(W * DPR); c.height = Math.round(H * DPR);
+    c.style.width = W + 'px'; c.style.height = H + 'px';
+    cx.setTransform(DPR, 0, 0, DPR, 0, 0);   // draw in logical px, render at device res
+  });
+  drawAll();
+}
+window.addEventListener('resize', resize);
+setTimeout(resize, 50);
+
+function fromCanvas(px, py) { return { x: px / W, y: 1 - py / H }; }
+function toCanvas(p) { return { x: p.x * W, y: (1 - p.y) * H }; }
+
+function drawScatter(ctx) {
+  pts.forEach(p => {
+    const c = toCanvas(p);
+    ctx.fillStyle = p.c === 0 ? '#e05a5a' : '#4e9cef';
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(c.x, c.y, 4.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  });
+}
+
+function drawSingle() {
+  sctx.clearRect(0, 0, W, H);
+  sctx.fillStyle = '#17171a'; sctx.fillRect(0, 0, W, H);
+  // putImageData bypasses the ctx transform → work in device pixels
+  const DW = singleCvs.width, DH = singleCvs.height;
+  const step = Math.max(2, Math.floor(DW / 300));
+  const img = sctx.createImageData(DW, DH);
+  for (let py = 0; py < DH; py += step)
+    for (let px = 0; px < DW; px += step) {
+      const cls = classify(singleTree, { x: (px + step / 2) / DW, y: 1 - (py + step / 2) / DH });
+      const r = cls === 0 ? 224 : 50, g = cls === 0 ? 50 : 130, b = cls === 0 ? 50 : 230;
+      for (let dy = 0; dy < step && py + dy < DH; dy++)
+        for (let dx = 0; dx < step && px + dx < DW; dx++) {
+          const idx = ((py + dy) * DW + (px + dx)) * 4;
+          img.data[idx] = r; img.data[idx + 1] = g; img.data[idx + 2] = b; img.data[idx + 3] = 40;
+        }
+    }
+  sctx.putImageData(img, 0, 0);
+  drawScatter(sctx);
+}
+
+function drawForest() {
+  fctx.clearRect(0, 0, W, H);
+  fctx.fillStyle = '#17171a'; fctx.fillRect(0, 0, W, H);
+  // putImageData bypasses the ctx transform → work in device pixels
+  const DW = forestCvs.width, DH = forestCvs.height;
+  const step = Math.max(2, Math.floor(DW / 300));
+  const img = fctx.createImageData(DW, DH);
+  for (let py = 0; py < DH; py += step)
+    for (let px = 0; px < DW; px += step) {
+      const { cls, frac } = forestVote({ x: (px + step / 2) / DW, y: 1 - (py + step / 2) / DH });
+      const r = cls === 0 ? 224 : 50, g = cls === 0 ? 50 : 130, b = cls === 0 ? 50 : 230;
+      // alpha scales with vote confidence (0.5 → faint, 1.0 → strong)
+      const alpha = Math.round(18 + (frac - 0.5) * 2 * 60);
+      for (let dy = 0; dy < step && py + dy < DH; dy++)
+        for (let dx = 0; dx < step && px + dx < DW; dx++) {
+          const idx = ((py + dy) * DW + (px + dx)) * 4;
+          img.data[idx] = r; img.data[idx + 1] = g; img.data[idx + 2] = b; img.data[idx + 3] = alpha;
+        }
+    }
+  fctx.putImageData(img, 0, 0);
+  drawScatter(fctx);
+}
+
+// ── member thumbnails ────────────────────────────────────────────────────────
+function drawMembers() {
+  const grid = document.getElementById('membersGrid');
+  grid.innerHTML = '';
+  const show = Math.min(6, forest.length);
+  for (let i = 0; i < show; i++) {
+    const wrap = document.createElement('div'); wrap.className = 'member';
+    const cv = document.createElement('canvas');
+    const DPR = Math.max(1, window.devicePixelRatio || 1);
+    const w = Math.round(120 * DPR), h = Math.round(94 * DPR);
+    cv.width = w; cv.height = h;
+    const c = cv.getContext('2d');
+    c.fillStyle = '#1e1e22'; c.fillRect(0, 0, w, h);
+    const step = Math.max(2, Math.round(3 * DPR));
+    const img = c.createImageData(w, h);
+    for (let py = 0; py < h; py += step)
+      for (let px = 0; px < w; px += step) {
+        const cls = classify(forest[i].tree, { x: (px + 1) / w, y: 1 - (py + 1) / h });
+        const r = cls === 0 ? 224 : 50, g = cls === 0 ? 50 : 130, b = cls === 0 ? 50 : 230;
+        for (let dy = 0; dy < step && py + dy < h; dy++)
+          for (let dx = 0; dx < step && px + dx < w; dx++) {
+            const idx = ((py + dy) * w + (px + dx)) * 4;
+            img.data[idx] = r; img.data[idx + 1] = g; img.data[idx + 2] = b; img.data[idx + 3] = 70;
+          }
+      }
+    c.putImageData(img, 0, 0);
+    // mini scatter
+    pts.forEach(p => {
+      c.fillStyle = p.c === 0 ? '#e05a5a' : '#4e9cef';
+      c.beginPath(); c.arc(p.x * w, (1 - p.y) * h, 1.8 * DPR, 0, Math.PI * 2); c.fill();
+    });
+    const lbl = document.createElement('div'); lbl.className = 'mlabel'; lbl.textContent = 'Baum ' + (i + 1);
+    wrap.appendChild(cv); wrap.appendChild(lbl); grid.appendChild(wrap);
+  }
+}
+
+// ── info ───────────────────────────────────────────────────────────────────
+function updateInfo() {
+  document.getElementById('iN').textContent = nTrees;
+  document.getElementById('iSingleErr').textContent = `${singleTrainErr()} / ${pts.length}`;
+  document.getElementById('iForestErr').textContent = `${forestTrainErr()} / ${pts.length}`;
+  const oob = oobError();
+  document.getElementById('iOob').textContent = oob ? `${oob.err} / ${oob.evald}` : '– (kein Bootstrap)';
+}
+
+// ── main ─────────────────────────────────────────────────────────────────────
+function drawAll() {
+  if (!forest.length || !singleTree) buildAll();
+  drawSingle(); drawForest(); drawMembers(); updateInfo();
+}
+
+// ── controls ───────────────────────────────────────────────────────────────
+document.getElementById('nTreesSlider').addEventListener('input', e => {
+  nTrees = parseInt(e.target.value);
+  document.getElementById('nTreesDisplay').textContent = nTrees;
+  buildAll(); drawAll();
+});
+document.getElementById('depthSlider').addEventListener('input', e => {
+  maxDepth = parseInt(e.target.value);
+  document.getElementById('depthDisplay').textContent = maxDepth;
+  buildAll(); drawAll();
+});
+function setMaxFeat(m) {
+  maxFeatures = m;
+  document.getElementById('btnMf1').classList.toggle('active', m === 1);
+  document.getElementById('btnMf2').classList.toggle('active', m === 2);
+  buildAll(); drawAll();
+}
+function toggleBoot() { useBootstrap = document.getElementById('chkBoot').checked; buildAll(); drawAll(); }
+function rebuildForest() { buildAll(); drawAll(); }
+function shufflePoints() {
+  RNG = Math.random;
+  pts = [];
+  for (let i = 0; i < 28; i++) pts.push({ x: 0.22 + Math.random() * 0.42, y: 0.55 + Math.random() * 0.4, c: 1 });
+  for (let i = 0; i < 28; i++) pts.push({ x: 0.38 + Math.random() * 0.42, y: 0.05 + Math.random() * 0.4, c: 0 });
+  for (let i = 0; i < 8; i++)  pts.push({ x: Math.random(), y: Math.random(), c: Math.random() < 0.5 ? 0 : 1 });
+  buildAll(); drawAll();
+}
+
+// init
+genDefaultPoints();
+buildAll();
+</script>
+</body>
+</html>

@@ -1,0 +1,1740 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conv1d — Convolutional Sequence Models</title>
+<script>
+  MathJax = {
+    tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+    options: { skipHtmlTags: ['script','noscript','style','textarea'] }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0e11;
+    --bg2: #16161b;
+    --bg3: #1e1e26;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.13);
+    --text: #e8e6f0;
+    --muted: #7a7890;
+    --accent: #167a5a;
+    --accent-dim: rgba(22,122,90,0.15);
+    --orange: #c96a28;
+    --orange-dim: rgba(201,106,40,0.15);
+    --warn: #c4a020;
+    --warn-dim: rgba(196,160,32,0.18);
+    --danger: #ff6b6b;
+  }
+
+  mjx-container { color: var(--text) !important; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem 3rem;
+  }
+
+  header {
+    width: 100%;
+    max-width: 900px;
+    margin-bottom: 1.75rem;
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  h1 {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.05rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+  }
+
+  .subtitle {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .main {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.4rem 1.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+
+  .card-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.76rem;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .card p {
+    font-size: 0.85rem;
+    line-height: 1.75;
+    color: #b8b6c8;
+  }
+
+  .card p b { color: var(--text); font-weight: 500; }
+
+  /* Formula box */
+  .formula-box {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 0.9rem 1.2rem;
+    font-size: 0.88rem;
+    line-height: 1.8;
+    overflow-x: auto;
+  }
+
+  .formula-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-bottom: 0.4rem;
+  }
+
+  /* Param row */
+  .param-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .param-chip {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+  .param-chip span { color: var(--text); }
+
+  /* Controls / Buttons */
+  .controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  button, .btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 6px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--border2);
+    background: var(--bg3);
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    letter-spacing: 0.02em;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+  }
+  button:hover, .btn:hover { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+  button.btn-active, .btn.btn-active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+  button:active, .btn:active { transform: scale(0.97); }
+
+  /* Slider */
+  .slider-row {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .slider-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .slider-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .slider-label span { color: var(--text); font-weight: 500; }
+
+  input[type=range] {
+    width: 100%;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
+  /* Step info box */
+  .step-info {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 0.65rem 1rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--muted);
+    min-height: 2.4rem;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+  .step-info span { color: var(--accent); font-weight: 500; }
+
+  /* SVG wrap */
+  .svg-wrap {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow-x: auto;
+  }
+  svg text { font-family: 'DM Mono', monospace; }
+
+  /* Sequence row */
+  .seq-area {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.1rem 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .seq-row-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--muted);
+    margin-bottom: 2px;
+    letter-spacing: 0.04em;
+  }
+
+  .seq-row {
+    display: flex;
+    gap: 4px;
+    flex-wrap: nowrap;
+    align-items: center;
+  }
+
+  .cell {
+    width: 38px;
+    height: 38px;
+    border-radius: 6px;
+    border: 1px solid var(--border2);
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--muted);
+    flex-shrink: 0;
+    transition: background 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s;
+  }
+
+  .cell.active {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 8px rgba(22,122,90,0.3);
+  }
+
+  .cell.kernel {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 500;
+    box-shadow: 0 0 12px rgba(22,122,90,0.5);
+  }
+
+  .cell.kernel-c1 {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 500;
+    box-shadow: 0 0 12px rgba(22,122,90,0.5);
+  }
+
+  .cell.kernel-c2 {
+    background: var(--orange);
+    border-color: var(--orange);
+    color: #fff;
+    font-weight: 500;
+    box-shadow: 0 0 12px rgba(201,106,40,0.5);
+  }
+
+  .cell.output-active {
+    background: var(--orange-dim);
+    border-color: var(--orange);
+    color: var(--orange);
+    box-shadow: 0 0 8px rgba(201,106,40,0.3);
+  }
+
+  .cell.output-inactive {
+    opacity: 0.35;
+  }
+
+  /* Ausgangskanäle (D'=2) */
+  .cell.out-c1 {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 8px rgba(22,122,90,0.3);
+  }
+  .cell.out-c2 {
+    background: var(--orange-dim);
+    border-color: var(--orange);
+    color: var(--orange);
+    box-shadow: 0 0 8px rgba(201,106,40,0.3);
+  }
+
+  .cell.zero-pad {
+    background: var(--warn-dim);
+    border-color: var(--warn);
+    color: var(--warn);
+    opacity: 0.8;
+  }
+
+  /* D=3 channel example */
+  .d3-example {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    margin-top: 0.2rem;
+  }
+
+  .d3-input-row {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .d3-time-col {
+    width: 44px;
+    flex-shrink: 0;
+    display: grid;
+    grid-template-rows: repeat(3, 20px);
+    gap: 2px;
+  }
+
+  .d3-mini-cell,
+  .d3-weight-cell,
+  .d3-output-cell {
+    border-radius: 5px;
+    border: 1px solid var(--border2);
+    background: var(--bg);
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .d3-mini-cell {
+    font-size: 0.56rem;
+    line-height: 1;
+  }
+
+  .d3-time-col.active .d3-mini-cell {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 7px rgba(22,122,90,0.22);
+  }
+
+  .d3-filter-wrap {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+    gap: 0.9rem;
+  }
+
+  .d3-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(48px, 1fr));
+    gap: 4px;
+  }
+
+  .d3-weight-cell {
+    min-height: 34px;
+    font-size: 0.62rem;
+    padding: 2px;
+  }
+
+  .d3-weight-c1 {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .d3-weight-c2 {
+    background: var(--orange-dim);
+    border-color: var(--orange);
+    color: var(--orange);
+  }
+
+  .d3-output-row {
+    display: flex;
+    gap: 4px;
+    flex-wrap: nowrap;
+    align-items: center;
+  }
+
+  .d3-output-cell {
+    width: 38px;
+    height: 34px;
+    flex-shrink: 0;
+    font-size: 0.68rem;
+    font-weight: 500;
+    opacity: 0.35;
+  }
+
+  .d3-output-cell.out-c1 {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-dim);
+    box-shadow: 0 0 8px rgba(22,122,90,0.3);
+    opacity: 1;
+  }
+
+  .d3-output-cell.out-c2 {
+    border-color: var(--orange);
+    color: var(--orange);
+    background: var(--orange-dim);
+    box-shadow: 0 0 8px rgba(201,106,40,0.3);
+    opacity: 1;
+  }
+
+  @media (max-width: 640px) {
+    .d3-filter-wrap {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Comparison table */
+  .cmp-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+  }
+  .cmp-table th {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    font-weight: 500;
+    color: var(--muted);
+    text-align: left;
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border2);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: var(--accent-dim);
+  }
+  .cmp-table th:first-child { color: var(--accent); }
+  .cmp-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: middle;
+    font-size: 0.8rem;
+  }
+  .cmp-table tr:last-child td { border-bottom: none; }
+  .cmp-table td:first-child {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+  .cmp-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .yes { color: #6bcb77; font-weight: 500; }
+  .no  { color: #ff6b6b; font-weight: 500; }
+  .partial { color: #ffd93d; font-weight: 500; }
+
+  /* Canvas */
+  canvas {
+    display: block;
+    width: 100%;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+  }
+
+  /* Source note */
+  .src-note {
+    width: 100%;
+    max-width: 900px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Kernel bar chart */
+  .kernel-bar-row {
+    display: flex;
+    gap: 6px;
+    align-items: flex-end;
+    height: 80px;
+    padding: 0 0.5rem;
+  }
+  .kernel-bar-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+  }
+  .kernel-bar {
+    width: 100%;
+    border-radius: 3px 3px 0 0;
+    transition: height 0.3s, background 0.3s;
+  }
+  .kernel-bar-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--muted);
+  }
+
+  /* Reception field grid */
+  .rf-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+  .rf-row {
+    display: flex;
+    gap: 3px;
+    align-items: center;
+    min-width: max-content;
+  }
+  .rf-row-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--muted);
+    width: 52px;
+    text-align: right;
+    flex-shrink: 0;
+    padding-right: 6px;
+  }
+  .rf-cell {
+    width: 28px;
+    height: 26px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    flex-shrink: 0;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .rf-cell.rf-active {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+  }
+  .rf-cell.rf-focus {
+    background: var(--orange-dim);
+    border-color: var(--orange);
+    box-shadow: 0 0 6px rgba(201,106,40,0.4);
+  }
+  .rf-cell.rf-input {
+    background: var(--bg3);
+    border-color: var(--border2);
+  }
+
+  /* TCN SVG */
+  .tcn-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  /* Dilation connector */
+  .dilation-area {
+    position: relative;
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    padding: 4px 0;
+  }
+
+  /* Note box */
+  .note-box {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 1rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .note-box b { color: var(--text); font-weight: 500; }
+
+  .section-sep {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 0.1rem 0;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>conv1d.seq</h1>
+  <span class="subtitle">// Convolutional Sequence Models · Foliensatz 08</span>
+</header>
+
+<div class="main">
+
+  <!-- ══════════════════════════════════════════════════════
+       SECTION 1 — Conv1d Definition (animierter Kernel)
+  ═══════════════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-title">01 — Conv1d Definition</div>
+
+    <p>
+      Eine <b>eindimensionale Faltung (Conv1d)</b> schiebt einen gelernten <b>Kernel</b> über eine Eingangssequenz
+      und berechnet an jeder Position eine gewichtete Summe. Für Eingabe \(\mathbf{x} \in \mathbb{R}^{T \times D}\),
+      Kernel \(\mathbf{k} \in \mathbb{R}^{K \times D' \times D}\) entsteht Ausgabe \(\mathbf{y} \in \mathbb{R}^{(T-K+1) \times D'}\).
+    </p>
+
+    <div class="formula-box">
+      \[
+        y_t^{(d')} = \sum_{d=1}^{D} \sum_{\tau=0}^{K-1} x_{t+\tau}^{(d)}\, k_\tau^{(d',d)}
+      \]
+    </div>
+
+    <div class="param-row">
+      <div class="param-chip"><span>K</span> — Kernelgröße</div>
+      <div class="param-chip"><span>D</span> — Eingangskanäle</div>
+      <div class="param-chip"><span>D'</span> — Ausgangskanäle</div>
+      <div class="param-chip"><span>K · D · D'</span> — Anzahl Parameter</div>
+    </div>
+
+    <!-- Interactive slider kernel animation -->
+    <div class="card-title" style="margin-top:0.3rem;">Interaktiv: Gleitender Kernel — D'=2 Ausgangskanäle</div>
+
+    <div class="note-box">
+      <b>Hier ist D'=2 gewählt</b> (zwei Ausgangskanäle, also zwei Filter k⁽¹⁾, k⁽²⁾ ∈ ℝ<sup>K×D</sup>).
+      Beide Filter gleiten über <b>dieselbe</b> Eingabe und erzeugen je eine eigene Ausgabesequenz.
+      Die Ausgabe ist deshalb <b>kein Vektor</b>, sondern eine Matrix
+      y ∈ ℝ<sup>(T−K+1)×D'</sup> = ℝ<sup>10×2</sup> — eine Spalte (Sequenz) pro Kanal.
+    </div>
+
+    <div class="seq-area" id="conv1d-area">
+      <!-- Output channel 1 -->
+      <div>
+        <div class="seq-row-label" style="color:var(--accent);">Ausgabe y⁽¹⁾₁…y⁽¹⁾₁₀ — Kanal 1 (T−K+1 = 10)</div>
+        <div class="seq-row" id="output-row-1"></div>
+      </div>
+
+      <!-- Output channel 2 -->
+      <div>
+        <div class="seq-row-label" style="color:var(--orange);">Ausgabe y⁽²⁾₁…y⁽²⁾₁₀ — Kanal 2 (T−K+1 = 10)</div>
+        <div class="seq-row" id="output-row-2"></div>
+      </div>
+
+      <!-- Filter rows sharing the same input window -->
+      <div>
+        <div class="seq-row-label">
+          Gleitendes Fenster (K=3) — zwei Filter \(k^{(1)}\), \(k^{(2)}\) teilen sich dieses Fenster
+        </div>
+        <div class="seq-row-label" style="color:var(--accent);">Filter \(k^{(1)}\) — erzeugt Kanal \(y^{(1)}\)</div>
+        <div class="seq-row" id="kernel-row-1"></div>
+      </div>
+
+      <div>
+        <div class="seq-row-label" style="color:var(--orange);">Filter \(k^{(2)}\) — erzeugt Kanal \(y^{(2)}\)</div>
+        <div class="seq-row" id="kernel-row-2"></div>
+      </div>
+
+      <!-- Input row -->
+      <div>
+        <div class="seq-row-label">Eingabe x&thinsp;₁…x&thinsp;₁₂ (T=12, D=1)</div>
+        <div class="seq-row" id="input-row"></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="btn-prev" onclick="kernelStep(-1)">&#8592; Zurück</button>
+      <button id="btn-next" onclick="kernelStep(+1)">Weiter &#8594;</button>
+      <button onclick="kernelReset()">Reset</button>
+      <span style="font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--muted);margin-left:4px;">
+        Position: <span id="pos-display" style="color:var(--accent);font-weight:500;">t=1</span>
+      </span>
+    </div>
+
+    <div class="step-info" id="conv1d-info" style="flex-direction:column;align-items:flex-start;gap:0.45rem;">
+      <span id="conv1d-formula-1" style="color:var(--accent);font-weight:500;"></span>
+      <span id="conv1d-formula-2" style="color:var(--orange);font-weight:500;"></span>
+    </div>
+
+    <div class="note-box">
+      <b>Mehrere Eingangskanäle:</b> Mit \(D=3\) ist jeder Zeitpunkt ein Vektor
+      \(\mathbf{x}_t = (x_t^{(1)}, x_t^{(2)}, x_t^{(3)})\). Bei \(K=3\) sieht jeder Filter
+      deshalb ein Fenster der Form \(K \times D = 3 \times 3\). Für \(D'=2\) gibt es zwei
+      solche Filter, also \(K \cdot D \cdot D' = 3 \cdot 3 \cdot 2 = 18\) Parameter.
+    </div>
+
+    <div class="seq-area d3-example">
+      <div>
+        <div class="seq-row-label">Eingabe mit \(D=3\) — dasselbe gleitende Zeitfenster, aber drei Kanäle pro Zeitpunkt</div>
+        <div class="d3-input-row" id="d3-input-row"></div>
+      </div>
+
+      <div class="d3-filter-wrap">
+        <div>
+          <div class="seq-row-label" style="color:var(--accent);">Filter \(k^{(1)} \in \mathbb{R}^{3 \times 3}\)</div>
+          <div class="d3-filter-grid" id="d3-filter-1"></div>
+        </div>
+
+        <div>
+          <div class="seq-row-label" style="color:var(--orange);">Filter \(k^{(2)} \in \mathbb{R}^{3 \times 3}\)</div>
+          <div class="d3-filter-grid" id="d3-filter-2"></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="seq-row-label">Ausgabe \(y^{(1)}_1 \ldots y^{(1)}_{10}\) — Kanal 1, jeder Wert summiert über \(K \cdot D = 9\) Terme</div>
+        <div class="d3-output-row" id="d3-output-row-1"></div>
+      </div>
+
+      <div>
+        <div class="seq-row-label">Ausgabe \(y^{(2)}_1 \ldots y^{(2)}_{10}\) — Kanal 2, jeder Wert summiert über \(K \cdot D = 9\) Terme</div>
+        <div class="d3-output-row" id="d3-output-row-2"></div>
+      </div>
+
+      <div>
+        <div class="seq-row-label">Aktuelle Ausgabe bei Position <span id="d3-pos-display">t=1</span></div>
+        <div class="d3-output-row">
+          <div class="d3-output-cell out-c1" id="d3-current-output-1"></div>
+          <div class="d3-output-cell out-c2" id="d3-current-output-2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       SECTION 2 — Kernel Interpretationen
+  ═══════════════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-title">02 — Kernel Interpretationen</div>
+
+    <p>
+      Durch geeignete Wahl der Kernelkoeffizienten lässt sich Conv1d als klassische Signalverarbeitung
+      interpretieren. In einem CNN werden diese Kernel <b>aus Daten gelernt</b>.
+    </p>
+
+    <div class="controls">
+      <button id="btn-lp" class="btn-active" onclick="setKernelMode('lp')">Low-Pass</button>
+      <button id="btn-diff" onclick="setKernelMode('diff')">Zeitliche Ableitung</button>
+      <button id="btn-fourier" onclick="setKernelMode('fourier')">Fourier-Basis</button>
+    </div>
+
+    <div id="kernel-interp-content">
+      <!-- populated by JS -->
+    </div>
+
+    <canvas id="kernel-canvas" height="140"></canvas>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       SECTION 3 — Padding
+  ═══════════════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-title">03 — Padding</div>
+
+    <p>
+      Ohne Padding schrumpft die Ausgabe auf \(T - K + 1\). Mit Padding lässt sich die Ausgabelänge
+      erhalten oder kausale Verarbeitung erzwingen.
+    </p>
+
+    <div class="controls">
+      <button id="btn-pad-none" class="btn-active" onclick="setPaddingMode('none')">Kein Padding</button>
+      <button id="btn-pad-same" onclick="setPaddingMode('same')">Same</button>
+      <button id="btn-pad-causal" onclick="setPaddingMode('causal')">Kausal</button>
+    </div>
+
+    <div class="seq-area" id="pad-area">
+      <!-- Output row -->
+      <div>
+        <div class="seq-row-label" id="pad-out-label">Ausgabe (10 Zellen, T−K+1=10)</div>
+        <div class="seq-row" id="pad-output-row"></div>
+      </div>
+      <!-- Input row -->
+      <div>
+        <div class="seq-row-label">Eingabe (T=12) + Padding-Zellen (grau-gelb)</div>
+        <div class="seq-row" id="pad-input-row"></div>
+      </div>
+    </div>
+
+    <div class="step-info" id="pad-rule">
+      Keine Nullen hinzugefügt. Ausgabelänge = T − K + 1 = 10.
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       SECTION 4 — Rezeptives Feld
+  ═══════════════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-title">04 — Rezeptives Feld</div>
+
+    <p>
+      Das <b>rezeptive Feld</b> beschreibt, wie viele Eingangs-Zeitschritte eine einzelne Ausgabeposition
+      bei gestapelten Conv1d-Schichten "sehen" kann.
+    </p>
+
+    <div class="formula-box">
+      \[
+        \text{Rezeptives Feld} = 1 + L \cdot (K - 1)
+      \]
+    </div>
+
+    <div class="slider-row">
+      <div class="slider-group">
+        <div class="slider-label">Schichten L<span id="rf-l-val">2</span></div>
+        <input type="range" id="rf-l" min="1" max="5" value="2" oninput="updateRF()">
+      </div>
+      <div class="slider-group">
+        <div class="slider-label">Kernelgröße K<span id="rf-k-val">3</span></div>
+        <input type="range" id="rf-k" min="2" max="5" value="3" oninput="updateRF()">
+      </div>
+    </div>
+
+    <div class="step-info">
+      Rezeptives Feld = 1 + <span id="rf-l-display">2</span> · (<span id="rf-k-display">3</span> − 1) = <span id="rf-result">5</span>
+    </div>
+
+    <div class="rf-grid" id="rf-grid">
+      <!-- populated by JS -->
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       SECTION 5 — Stride und Dilation
+  ═══════════════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-title">05 — Stride und Dilation</div>
+
+    <p>
+      <b>Stride</b> überspringt Eingabepositionen und reduziert die Ausgabelänge.
+      <b>Dilation</b> vergrößert den effektiven Kernelbereich durch Lücken zwischen den Kernelelementen,
+      ohne mehr Parameter zu verwenden.
+    </p>
+
+    <div class="controls">
+      <button id="btn-sd-std" class="btn-active" onclick="setStrideMode('std')">Standard (S=1)</button>
+      <button id="btn-sd-stride" onclick="setStrideMode('stride')">Stride S=2</button>
+      <button id="btn-sd-dil" onclick="setStrideMode('dil')">Dilation d=2</button>
+    </div>
+
+    <div class="seq-area" id="sd-area">
+      <div>
+        <div class="seq-row-label" id="sd-out-label">Ausgabe (10 Zellen)</div>
+        <div class="seq-row" id="sd-output-row"></div>
+      </div>
+      <div>
+        <div class="seq-row-label" id="sd-in-label">Eingabe x₁…x₁₂</div>
+        <div class="seq-row" id="sd-input-row"></div>
+      </div>
+    </div>
+
+    <div class="step-info" id="sd-info">
+      Standard: Kernel gleitet 1 Schritt, Ausgabe = T − K + 1 = 10.
+    </div>
+
+    <div id="sd-dilation-note" style="display:none;" class="note-box">
+      <b>Dilation d=2:</b> Kernelpositionen k₁, k₂, k₃ greifen auf x<sub>t</sub>, x<sub>t+2</sub>, x<sub>t+4</sub> zu —
+      effektiver Kernelbereich = d·(K−1)+1 = 2·2+1 = <b>5</b>, gleiche Parameterzahl K=3.
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       SECTION 6 — TCN-Backbone
+  ═══════════════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-title">06 — TCN-Backbone</div>
+
+    <p>
+      Ein <b>Temporal Convolutional Network (TCN)</b> stapelt L kausale Conv1d-Schichten, wobei sich
+      die Dilation pro Schicht verdoppelt: Schicht \(\ell\) hat Dilation \(2^\ell\).
+      Dadurch wächst das rezeptive Feld <b>exponentiell</b> mit der Tiefe.
+    </p>
+
+    <div class="tcn-wrap">
+      <svg id="tcn-svg" viewBox="0 0 520 360" width="480" height="360" style="overflow:visible;">
+        <defs>
+          <marker id="arr-w" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="rgba(255,255,255,0.3)"/>
+          </marker>
+          <marker id="arr-a" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#167a5a"/>
+          </marker>
+          <marker id="arr-o" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#c96a28"/>
+          </marker>
+        </defs>
+
+        <!-- x input -->
+        <rect x="170" y="308" width="80" height="30" rx="5"
+              fill="#1e1e26" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+        <text x="210" y="328" font-size="12" fill="#7a7890" text-anchor="middle">x (Eingabe)</text>
+
+        <!-- arrow x -> conv -->
+        <line x1="210" y1="308" x2="210" y2="280" stroke="rgba(255,255,255,0.25)" stroke-width="1.5" marker-end="url(#arr-w)"/>
+
+        <!-- Conv1d box -->
+        <rect x="130" y="244" width="160" height="34" rx="6"
+              fill="rgba(22,122,90,0.15)" stroke="#167a5a" stroke-width="1.5"/>
+        <text x="210" y="258" font-size="10" fill="#167a5a" text-anchor="middle" font-weight="500">Causal Conv1d</text>
+        <text x="210" y="271" font-size="9" fill="#167a5a" text-anchor="middle">(Dilation 2ˡ)</text>
+
+        <!-- arrow conv -> ln -->
+        <line x1="210" y1="244" x2="210" y2="216" stroke="rgba(255,255,255,0.25)" stroke-width="1.5" marker-end="url(#arr-w)"/>
+
+        <!-- LayerNorm box -->
+        <rect x="145" y="180" width="130" height="34" rx="6"
+              fill="rgba(41,112,196,0.12)" stroke="rgba(41,112,196,0.6)" stroke-width="1.5"/>
+        <text x="210" y="202" font-size="10" fill="rgba(120,160,230,0.9)" text-anchor="middle" font-weight="500">LayerNorm</text>
+
+        <!-- arrow ln -> relu -->
+        <line x1="210" y1="180" x2="210" y2="152" stroke="rgba(255,255,255,0.25)" stroke-width="1.5" marker-end="url(#arr-w)"/>
+
+        <!-- ReLU box -->
+        <rect x="155" y="116" width="110" height="34" rx="6"
+              fill="rgba(201,106,40,0.12)" stroke="rgba(201,106,40,0.6)" stroke-width="1.5"/>
+        <text x="210" y="138" font-size="10" fill="#c96a28" text-anchor="middle" font-weight="500">ReLU</text>
+
+        <!-- arrow relu -> plus -->
+        <line x1="210" y1="116" x2="210" y2="88" stroke="rgba(255,255,255,0.25)" stroke-width="1.5" marker-end="url(#arr-w)"/>
+
+        <!-- Plus circle -->
+        <circle cx="210" cy="72" r="14" fill="#1e1e26" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+        <text x="210" y="77" font-size="13" fill="rgba(255,255,255,0.5)" text-anchor="middle" font-weight="300">+</text>
+
+        <!-- Skip connection: x -> right side -> plus -->
+        <line x1="310" y1="323" x2="360" y2="323" stroke="rgba(255,255,255,0.18)" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <line x1="360" y1="323" x2="360" y2="72" stroke="rgba(255,255,255,0.18)" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <line x1="360" y1="72" x2="226" y2="72" stroke="rgba(255,255,255,0.18)" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arr-w)"/>
+        <!-- skip label -->
+        <text x="368" y="200" font-size="9" fill="rgba(255,255,255,0.25)" text-anchor="start">Skip</text>
+        <!-- dot at x output for skip -->
+        <circle cx="310" cy="323" r="3" fill="rgba(255,255,255,0.3)"/>
+
+        <!-- arrow plus -> y output -->
+        <line x1="210" y1="58" x2="210" y2="34" stroke="rgba(255,255,255,0.25)" stroke-width="1.5" marker-end="url(#arr-w)"/>
+
+        <!-- y output -->
+        <rect x="170" y="10" width="80" height="24" rx="5"
+              fill="#1e1e26" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+        <text x="210" y="26" font-size="11" fill="#7a7890" text-anchor="middle">y (Ausgabe)</text>
+
+        <!-- x start point for skip -->
+        <circle cx="310" cy="323" r="0"/>
+
+        <!-- x L bracket -->
+        <rect x="395" y="96" width="64" height="220" rx="5"
+              fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1" stroke-dasharray="3 3"/>
+        <text x="426" y="195" font-size="10" fill="rgba(255,255,255,0.25)" text-anchor="middle" writing-mode="tb">× L Schichten</text>
+        <!-- bracket lines -->
+        <path d="M390,96 L395,96" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+        <path d="M390,316 L395,316" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+        <path d="M390,96 L390,316" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+      </svg>
+    </div>
+
+    <p>
+      <b>Dilation verdoppelt sich pro Schicht</b>, sodass das rezeptive Feld exponentiell wächst:
+      bei L Schichten mit Dilation 2⁰, 2¹, …, 2^(L-1) ergibt sich RF ≈ 2^L.
+    </p>
+
+    <div class="note-box">
+      <b>PyTorch:</b> nn.Conv1d erwartet Shape <b>(B, D, T)</b>, nicht (B, T, D). Transponieren mit
+      <code>x.transpose(1, 2)</code> vor dem Eingang in den TCN-Block.
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       Vergleich: Conv1d vs. RNN vs. Transformer
+  ═══════════════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-title">Vergleich — Conv1d · RNN · Transformer</div>
+
+    <table class="cmp-table">
+      <thead>
+        <tr>
+          <th>Eigenschaft</th>
+          <th>Conv1d</th>
+          <th>RNN</th>
+          <th>Transformer</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Parallele Verarbeitung</td>
+          <td class="yes">&#10003; ja</td>
+          <td class="no">&#10007; nein</td>
+          <td class="yes">&#10003; ja</td>
+        </tr>
+        <tr>
+          <td>Rezeptives Feld</td>
+          <td>endlich (1 + L(K−1))</td>
+          <td>unbegrenzt</td>
+          <td>unbegrenzt</td>
+        </tr>
+        <tr>
+          <td>Parameter (pro Schicht)</td>
+          <td>K · D · D'</td>
+          <td>D²</td>
+          <td>4D²</td>
+        </tr>
+        <tr>
+          <td>Kausale Verarbeitung</td>
+          <td class="yes">ja (Causal Padding)</td>
+          <td class="yes">ja</td>
+          <td class="partial">optional (Masking)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div><!-- .main -->
+
+<p class="src-note">// Quelle: Foliensatz 08 — RNN and Transformers (ML SS2026)</p>
+
+<script>
+/* ══════════════════════════════════════════════════════
+   SECTION 1 — Gleitender Kernel
+══════════════════════════════════════════════════════ */
+const T = 12, K = 3;
+let kernelPos = 0; // 0-indexed, so t = pos+1
+
+const subscripts = ['₁','₂','₃','₄','₅','₆','₇','₈','₉','₁₀','₁₁','₁₂'];
+const outCount = T - K + 1; // 10
+
+const outChannels = ['1', '2']; // D'=2
+const channelSuperscripts = { '1': '⁽¹⁾', '2': '⁽²⁾', '3': '⁽³⁾' };
+const inputChannelsD3 = ['1', '2', '3'];
+
+function buildRows() {
+  // Input row
+  const inputRow = document.getElementById('input-row');
+  inputRow.innerHTML = '';
+  for (let i = 0; i < T; i++) {
+    const c = document.createElement('div');
+    c.className = 'cell';
+    c.id = 'inp-' + i;
+    c.textContent = 'x' + subscripts[i];
+    inputRow.appendChild(c);
+  }
+
+  // Filter rows — both share the same 3 input positions at the current t.
+  outChannels.forEach(ch => {
+    const kernelRow = document.getElementById('kernel-row-' + ch);
+    kernelRow.innerHTML = '';
+    for (let i = 0; i < T; i++) {
+      const c = document.createElement('div');
+      c.className = 'cell';
+      c.id = 'ker' + ch + '-' + i;
+      kernelRow.appendChild(c);
+    }
+  });
+
+  // Two output rows — one per output channel (D'=2)
+  outChannels.forEach(ch => {
+    const outputRow = document.getElementById('output-row-' + ch);
+    outputRow.innerHTML = '';
+    // output y_t aligns with x_t
+    for (let i = 0; i < outCount; i++) {
+      const c = document.createElement('div');
+      c.className = 'cell output-inactive';
+      c.id = 'out' + ch + '-' + i;
+      c.textContent = 'y' + channelSuperscripts[ch] + subscripts[i];
+      outputRow.appendChild(c);
+    }
+    // empty spacer cells in output to right-align
+    for (let i = outCount; i < T; i++) {
+      const c = document.createElement('div');
+      c.className = 'cell';
+      c.style.opacity = '0';
+      c.style.pointerEvents = 'none';
+      outputRow.appendChild(c);
+    }
+  });
+}
+
+function renderKernelPos() {
+  const t = kernelPos; // 0-indexed
+
+  // Reset all input cells
+  for (let i = 0; i < T; i++) {
+    const el = document.getElementById('inp-' + i);
+    el.classList.remove('active');
+  }
+  // Reset all filter cells
+  outChannels.forEach(ch => {
+    for (let i = 0; i < T; i++) {
+      const el = document.getElementById('ker' + ch + '-' + i);
+      el.classList.remove('kernel-c1', 'kernel-c2');
+      el.textContent = '';
+      el.style.visibility = 'hidden';
+      el.style.opacity = '0';
+    }
+  });
+  // Reset output cells (both channels)
+  outChannels.forEach(ch => {
+    for (let i = 0; i < outCount; i++) {
+      const el = document.getElementById('out' + ch + '-' + i);
+      el.classList.remove('out-c1', 'out-c2');
+      el.classList.add('output-inactive');
+    }
+  });
+
+  // Highlight active input cells
+  for (let tau = 0; tau < K; tau++) {
+    document.getElementById('inp-' + (t + tau)).classList.add('active');
+  }
+  renderD3Example(t);
+
+  // Show both filters at the current position; they share the same input window.
+  outChannels.forEach(ch => {
+    for (let tau = 0; tau < K; tau++) {
+      const el = document.getElementById('ker' + ch + '-' + (t + tau));
+      el.classList.add(ch === '1' ? 'kernel-c1' : 'kernel-c2');
+      el.textContent = 'k' + channelSuperscripts[ch] + subscripts[tau];
+      el.style.visibility = 'visible';
+      el.style.opacity = '1';
+    }
+  });
+
+  // Highlight current output in both channels
+  const o1 = document.getElementById('out1-' + t);
+  o1.classList.remove('output-inactive');
+  o1.classList.add('out-c1');
+  const o2 = document.getElementById('out2-' + t);
+  o2.classList.remove('output-inactive');
+  o2.classList.add('out-c2');
+
+  // Update info text — one formula per output channel
+  document.getElementById('pos-display').textContent = 't=' + (t + 1);
+  document.getElementById('conv1d-formula-1').innerHTML =
+    '\\(y^{(1)}_' + (t + 1) + ' = k^{(1)}_1 x_' + (t + 1) + ' + k^{(1)}_2 x_' + (t + 2) + ' + k^{(1)}_3 x_' + (t + 3) + '\\)';
+  document.getElementById('conv1d-formula-2').innerHTML =
+    '\\(y^{(2)}_' + (t + 1) + ' = k^{(2)}_1 x_' + (t + 1) + ' + k^{(2)}_2 x_' + (t + 2) + ' + k^{(2)}_3 x_' + (t + 3) + '\\)';
+  if (window.MathJax?.typesetPromise) {
+    MathJax.typesetPromise([
+      document.getElementById('conv1d-formula-1'),
+      document.getElementById('conv1d-formula-2')
+    ]);
+  }
+
+  // Update buttons
+  document.getElementById('btn-prev').disabled = (t === 0);
+  document.getElementById('btn-next').disabled = (t === outCount - 1);
+}
+
+function buildD3Example() {
+  const inputRow = document.getElementById('d3-input-row');
+  inputRow.innerHTML = '';
+  for (let i = 0; i < T; i++) {
+    const col = document.createElement('div');
+    col.className = 'd3-time-col';
+    col.id = 'd3-in-' + i;
+    inputChannelsD3.forEach(d => {
+      const c = document.createElement('div');
+      c.className = 'd3-mini-cell';
+      c.innerHTML = 'x<sub>' + (i + 1) + '</sub><sup>(' + d + ')</sup>';
+      col.appendChild(c);
+    });
+    inputRow.appendChild(col);
+  }
+
+  outChannels.forEach(ch => {
+    const grid = document.getElementById('d3-filter-' + ch);
+    grid.innerHTML = '';
+    inputChannelsD3.forEach(d => {
+      for (let tau = 1; tau <= K; tau++) {
+        const c = document.createElement('div');
+        c.className = 'd3-weight-cell d3-weight-c' + ch;
+        c.innerHTML = 'k<sub>' + tau + '</sub><sup>(' + ch + ',' + d + ')</sup>';
+        grid.appendChild(c);
+      }
+    });
+  });
+
+  outChannels.forEach(ch => {
+    const outputRow = document.getElementById('d3-output-row-' + ch);
+    outputRow.innerHTML = '';
+    for (let i = 0; i < outCount; i++) {
+      const c = document.createElement('div');
+      c.className = 'd3-output-cell';
+      c.id = 'd3-out' + ch + '-' + i;
+      c.textContent = 'y' + channelSuperscripts[ch] + subscripts[i];
+      outputRow.appendChild(c);
+    }
+    for (let i = outCount; i < T; i++) {
+      const c = document.createElement('div');
+      c.className = 'd3-output-cell';
+      c.style.opacity = '0';
+      c.style.pointerEvents = 'none';
+      outputRow.appendChild(c);
+    }
+  });
+}
+
+function renderD3Example(t) {
+  for (let i = 0; i < T; i++) {
+    document.getElementById('d3-in-' + i).classList.remove('active');
+  }
+  for (let tau = 0; tau < K; tau++) {
+    document.getElementById('d3-in-' + (t + tau)).classList.add('active');
+  }
+  outChannels.forEach(ch => {
+    for (let i = 0; i < outCount; i++) {
+      document.getElementById('d3-out' + ch + '-' + i).classList.remove('out-c1', 'out-c2');
+    }
+    document.getElementById('d3-out' + ch + '-' + t).classList.add(ch === '1' ? 'out-c1' : 'out-c2');
+  });
+  document.getElementById('d3-current-output-1').textContent = 'y' + channelSuperscripts['1'] + subscripts[t];
+  document.getElementById('d3-current-output-2').textContent = 'y' + channelSuperscripts['2'] + subscripts[t];
+  document.getElementById('d3-pos-display').textContent = 't=' + (t + 1);
+}
+
+function kernelStep(dir) {
+  kernelPos = Math.max(0, Math.min(outCount - 1, kernelPos + dir));
+  renderKernelPos();
+}
+
+function kernelReset() {
+  kernelPos = 0;
+  renderKernelPos();
+}
+
+buildRows();
+buildD3Example();
+renderKernelPos();
+
+/* ══════════════════════════════════════════════════════
+   SECTION 2 — Kernel Interpretationen
+══════════════════════════════════════════════════════ */
+const kernelModes = {
+  lp: {
+    btns: ['btn-lp'],
+    formula: `\\[ k(\\tau) = \\frac{1}{K}, \\quad \\tau = 0, \\ldots, K-1 \\]`,
+    desc: `<b>Low-Pass (Tiefpass):</b> Alle Kernelkoeffizienten gleich 1/K — der Kernel berechnet den gleitenden Mittelwert.
+           Hochfrequente Schwingungen werden gedämpft, das Signal wird <b>geglättet</b>. Spektral: Frequenzen oberhalb
+           der Grenzfrequenz f<sub>c</sub> = 1/K werden unterdrückt.`,
+    barValues: [1/3, 1/3, 1/3, 0, 0, 0],
+    barLabels: ['k₁', 'k₂', 'k₃', '', '', ''],
+    showSignal: true,
+  },
+  diff: {
+    btns: ['btn-diff'],
+    formula: `\\[ k = (0,\\, 0,\\, -1,\\, +1,\\, 0,\\, 0) \\quad\\Rightarrow\\quad y_t = x_{t+3} - x_{t+2} \\]`,
+    desc: `<b>Zeitliche Ableitung (finiter Differenzenoperator):</b> Der Kernel approximiert die erste Ableitung der Sequenz.
+           Positive Werte entsprechen steigenden Flanken, negative entsprechen fallenden. Für verrauschte Signale
+           oft mit vorherigem Glätten kombiniert (Savitzky-Golay).`,
+    barValues: [0, 0, -1, 1, 0, 0],
+    barLabels: ['k₁', 'k₂', 'k₃', 'k₄', 'k₅', 'k₆'],
+    showSignal: false,
+  },
+  fourier: {
+    btns: ['btn-fourier'],
+    formula: `\\[ k_\\omega^{\\cos}(\\tau) = \\cos(\\omega \\tau), \\quad k_\\omega^{\\sin}(\\tau) = \\sin(\\omega \\tau) \\]`,
+    desc: `<b>Fourier-Basis:</b> Cosinus- und Sinus-Kernel bei Frequenz ω extrahieren die spektrale Komponente bei ω.
+           Stapelt man Ω Frequenzen, hat man D' = 2Ω Ausgabekanäle. In einem <b>CNN werden diese Kernel gelernt</b>
+           und passen sich an die Datenstruktur an — oft effizienter als eine feste Fourier-Basis.`,
+    barValues: null, // dynamisch
+    barLabels: ['τ=0','τ=1','τ=2','τ=3','τ=4','τ=5','τ=6','τ=7'],
+    showSignal: false,
+    omega: 0.8,
+  },
+};
+
+let currentKernelMode = 'lp';
+
+function setKernelMode(mode) {
+  currentKernelMode = mode;
+  ['lp','diff','fourier'].forEach(m => {
+    document.getElementById('btn-' + m).classList.toggle('btn-active', m === mode);
+  });
+  renderKernelInterp();
+}
+
+function renderKernelInterp() {
+  const m = kernelModes[currentKernelMode];
+  const content = document.getElementById('kernel-interp-content');
+  content.innerHTML = `
+    <div class="formula-box">${m.formula}</div>
+    <p>${m.desc}</p>
+  `;
+  if (typeof MathJax !== 'undefined' && MathJax.typesetPromise) {
+    MathJax.typesetPromise([content]);
+  }
+  drawKernelCanvas();
+}
+
+function drawKernelCanvas() {
+  const canvas = document.getElementById('kernel-canvas');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth || 800;
+  const h = 140;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  ctx.scale(dpr, dpr);
+
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = '#1e1e26';
+  ctx.fillRect(0, 0, w, h);
+
+  const m = kernelModes[currentKernelMode];
+
+  if (currentKernelMode === 'lp') {
+    drawSignalCanvas(ctx, w, h);
+  } else {
+    // Bar chart
+    let values = m.barValues;
+    if (currentKernelMode === 'fourier') {
+      values = [];
+      for (let tau = 0; tau < 8; tau++) {
+        values.push(Math.cos(m.omega * tau));
+      }
+    }
+    drawBarChart(ctx, w, h, values, m.barLabels);
+  }
+}
+
+function drawSignalCanvas(ctx, w, h) {
+  // Draw noisy signal and smoothed version
+  const pts = 60;
+  const padding = 24;
+  const mid = h / 2;
+  const amp = (h - padding * 2) / 2;
+
+  // Generate noisy signal
+  const signal = [];
+  for (let i = 0; i < pts; i++) {
+    signal.push(Math.sin(i * 0.22) * 0.6 + (Math.random() - 0.5) * 0.8);
+  }
+
+  // Smooth with K=7 moving average
+  const smoothed = [];
+  const kSmooth = 7;
+  for (let i = 0; i < pts; i++) {
+    let sum = 0, cnt = 0;
+    for (let j = Math.max(0, i - Math.floor(kSmooth/2)); j <= Math.min(pts-1, i + Math.floor(kSmooth/2)); j++) {
+      sum += signal[j]; cnt++;
+    }
+    smoothed.push(sum / cnt);
+  }
+
+  const xStep = (w - padding * 2) / (pts - 1);
+
+  // Draw noisy signal
+  ctx.beginPath();
+  ctx.strokeStyle = 'rgba(180,170,200,0.3)';
+  ctx.lineWidth = 1.2;
+  for (let i = 0; i < pts; i++) {
+    const x = padding + i * xStep;
+    const y = mid - signal[i] * amp;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Draw smoothed signal
+  ctx.beginPath();
+  ctx.strokeStyle = '#167a5a';
+  ctx.lineWidth = 2.5;
+  ctx.shadowBlur = 6;
+  ctx.shadowColor = 'rgba(22,122,90,0.5)';
+  for (let i = 0; i < pts; i++) {
+    const x = padding + i * xStep;
+    const y = mid - smoothed[i] * amp;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Legend
+  ctx.font = '10px DM Mono, monospace';
+  ctx.fillStyle = 'rgba(180,170,200,0.5)';
+  ctx.fillText('Eingabe (verrauscht)', padding, h - 6);
+  ctx.fillStyle = '#167a5a';
+  ctx.fillText('Ausgabe (geglättet)', padding + 160, h - 6);
+}
+
+function drawBarChart(ctx, w, h, values, labels) {
+  const n = values.length;
+  const padding = 24;
+  const barW = Math.min(48, (w - padding * 2) / n - 6);
+  const totalW = n * (barW + 6) - 6;
+  const startX = (w - totalW) / 2;
+  const zeroY = h / 2;
+  const maxH = (h - padding * 2) / 2;
+  const maxVal = Math.max(...values.map(Math.abs), 0.01);
+
+  // Zero line
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padding, zeroY);
+  ctx.lineTo(w - padding, zeroY);
+  ctx.stroke();
+
+  for (let i = 0; i < n; i++) {
+    const v = values[i];
+    const bh = (Math.abs(v) / maxVal) * maxH;
+    const x = startX + i * (barW + 6);
+    const y = v >= 0 ? zeroY - bh : zeroY;
+    const col = v >= 0 ? '#167a5a' : '#c96a28';
+
+    ctx.fillStyle = col + '99';
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.roundRect(x, y, barW, Math.max(bh, 1), [3]);
+    ctx.fill();
+    ctx.stroke();
+
+    // Value label
+    ctx.font = '9px DM Mono, monospace';
+    ctx.fillStyle = col;
+    ctx.textAlign = 'center';
+    const valStr = v === 0 ? '0' : v.toFixed(2);
+    ctx.fillText(valStr, x + barW / 2, v >= 0 ? y - 3 : y + bh + 11);
+
+    // Tau label
+    ctx.fillStyle = 'rgba(122,120,144,0.8)';
+    if (labels[i]) ctx.fillText(labels[i], x + barW / 2, h - 4);
+  }
+  ctx.textAlign = 'left';
+}
+
+renderKernelInterp();
+
+/* ══════════════════════════════════════════════════════
+   SECTION 3 — Padding
+══════════════════════════════════════════════════════ */
+let paddingMode = 'none';
+
+function setPaddingMode(mode) {
+  paddingMode = mode;
+  ['none','same','causal'].forEach(m => {
+    document.getElementById('btn-pad-' + m).classList.toggle('btn-active', m === mode);
+  });
+  renderPadding();
+}
+
+function renderPadding() {
+  const inputRow = document.getElementById('pad-input-row');
+  const outputRow = document.getElementById('pad-output-row');
+  const outLabel = document.getElementById('pad-out-label');
+  const rule = document.getElementById('pad-rule');
+
+  inputRow.innerHTML = '';
+  outputRow.innerHTML = '';
+
+  const KK = 3, TT = 12;
+  let padLeft = 0, padRight = 0;
+  let outLen = TT - KK + 1;
+
+  if (paddingMode === 'same') {
+    padLeft = 1; padRight = 1;
+    outLen = TT;
+  } else if (paddingMode === 'causal') {
+    padLeft = KK - 1; padRight = 0;
+    outLen = TT;
+  }
+
+  // Input row: pad-left zeros + real cells + pad-right zeros
+  for (let i = 0; i < padLeft; i++) {
+    const c = document.createElement('div');
+    c.className = 'cell zero-pad';
+    c.textContent = '0';
+    inputRow.appendChild(c);
+  }
+  for (let i = 0; i < TT; i++) {
+    const c = document.createElement('div');
+    c.className = 'cell';
+    c.textContent = 'x' + subscripts[i];
+    inputRow.appendChild(c);
+  }
+  for (let i = 0; i < padRight; i++) {
+    const c = document.createElement('div');
+    c.className = 'cell zero-pad';
+    c.textContent = '0';
+    inputRow.appendChild(c);
+  }
+
+  // Output row
+  outLabel.textContent = 'Ausgabe (' + outLen + ' Zellen)';
+  for (let i = 0; i < outLen; i++) {
+    const c = document.createElement('div');
+    c.className = 'cell output-active';
+    c.textContent = 'y' + subscripts[i];
+    outputRow.appendChild(c);
+  }
+
+  // Rule text
+  if (paddingMode === 'none') {
+    rule.textContent = 'Keine Nullen hinzugefügt. Ausgabelänge = T − K + 1 = ' + outLen + '.';
+  } else if (paddingMode === 'same') {
+    rule.textContent = 'Je ' + padLeft + ' Null links und rechts → Ausgabelänge = T = ' + outLen + '. y_t hängt von x_{t−1} bis x_{t+1} ab.';
+  } else {
+    rule.textContent = 'K−1 = ' + padLeft + ' Nullen links → Ausgabelänge = T = ' + outLen + '. y_t hängt nur von x_{≤t} ab (kausal).';
+  }
+}
+
+renderPadding();
+
+/* ══════════════════════════════════════════════════════
+   SECTION 4 — Rezeptives Feld
+══════════════════════════════════════════════════════ */
+function updateRF() {
+  const L = parseInt(document.getElementById('rf-l').value);
+  const KK = parseInt(document.getElementById('rf-k').value);
+  document.getElementById('rf-l-val').textContent = L;
+  document.getElementById('rf-k-val').textContent = KK;
+  document.getElementById('rf-l-display').textContent = L;
+  document.getElementById('rf-k-display').textContent = KK;
+  const rf = 1 + L * (KK - 1);
+  document.getElementById('rf-result').textContent = rf;
+  renderRFGrid(L, KK, rf);
+}
+
+function renderRFGrid(L, KK, rf) {
+  const grid = document.getElementById('rf-grid');
+  grid.innerHTML = '';
+
+  const COLS = 14;
+  const center = 7;
+
+  // We'll show L+1 rows: bottom = input, then layer 1, ..., layer L
+  // At layer ℓ, the "receptive" span at center is rf_ℓ = 1 + ℓ*(KK-1)
+
+  // Layer L output (top): single focus cell
+  // Layer L-1: KK positions feed into it
+  // ...down to input
+
+  // Compute which columns are "active" at each layer for the center output
+  function activeSet(layer) {
+    // layer 0 = input, layer L = output
+    // Eine einzelne Ausgabe (layer L) sieht nach unten ein wachsendes Feld:
+    // an Schicht ℓ umfasst es 1 + (L−ℓ)·(K−1) Positionen, an der Eingabe das volle RF.
+    const rfL = 1 + (L - layer) * (KK - 1);
+    // exakt rfL Zellen markieren (auch bei geradem RF korrekt)
+    const left = center - Math.floor((rfL - 1) / 2);
+    const set = new Set();
+    for (let i = left; i < left + rfL; i++) {
+      if (i >= 0 && i < COLS) set.add(i);
+    }
+    return set;
+  }
+
+  // Build from top (layer L) to bottom (layer 0 = input)
+  for (let ell = L; ell >= 0; ell--) {
+    const row = document.createElement('div');
+    row.className = 'rf-row';
+
+    const label = document.createElement('div');
+    label.className = 'rf-row-label';
+    label.textContent = ell === 0 ? 'Eingabe' : ('Schicht ' + ell);
+    row.appendChild(label);
+
+    const active = activeSet(ell);
+
+    for (let c = 0; c < COLS; c++) {
+      const cell = document.createElement('div');
+      if (ell === L && c === center) {
+        cell.className = 'rf-cell rf-focus';
+      } else if (active.has(c)) {
+        cell.className = 'rf-cell rf-active';
+      } else if (ell === 0) {
+        cell.className = 'rf-cell rf-input';
+      } else {
+        cell.className = 'rf-cell';
+      }
+      row.appendChild(cell);
+    }
+
+    grid.appendChild(row);
+  }
+}
+
+updateRF();
+
+/* ══════════════════════════════════════════════════════
+   SECTION 5 — Stride und Dilation
+══════════════════════════════════════════════════════ */
+let strideMode = 'std';
+let dilationStep = 0;
+
+function setStrideMode(mode) {
+  strideMode = mode;
+  ['std','stride','dil'].forEach(m => {
+    document.getElementById('btn-sd-' + m).classList.toggle('btn-active', m === mode);
+  });
+  dilationStep = 0;
+  renderStrideDilation();
+}
+
+function renderStrideDilation() {
+  const inputRow = document.getElementById('sd-input-row');
+  const outputRow = document.getElementById('sd-output-row');
+  const outLabel = document.getElementById('sd-out-label');
+  const info = document.getElementById('sd-info');
+  const dilNote = document.getElementById('sd-dilation-note');
+
+  inputRow.innerHTML = '';
+  outputRow.innerHTML = '';
+  dilNote.style.display = 'none';
+
+  const TT = 12, KK = 3;
+
+  if (strideMode === 'std') {
+    const outLen = TT - KK + 1; // 10
+    outLabel.textContent = 'Ausgabe (' + outLen + ' Zellen)';
+    // All input cells normal
+    for (let i = 0; i < TT; i++) {
+      const c = mkCell('x' + subscripts[i], '');
+      inputRow.appendChild(c);
+    }
+    for (let i = 0; i < outLen; i++) {
+      const c = mkCell('y' + subscripts[i], 'output-active');
+      outputRow.appendChild(c);
+    }
+    info.textContent = 'Standard: Kernel gleitet 1 Schritt, Ausgabe = T − K + 1 = ' + outLen + '.';
+
+  } else if (strideMode === 'stride') {
+    const S = 2;
+    const outLen = Math.floor((TT - KK) / S) + 1; // 5
+    outLabel.textContent = 'Ausgabe (' + outLen + ' Zellen, Stride S=2)';
+
+    // Input cells: highlight the K positions sampled by each output
+    for (let i = 0; i < TT; i++) {
+      const c = mkCell('x' + subscripts[i], '');
+      // check if any output uses this position
+      let used = false;
+      for (let j = 0; j < outLen; j++) {
+        const base = j * S;
+        if (i >= base && i < base + KK) used = true;
+      }
+      if (used) c.classList.add('active');
+      inputRow.appendChild(c);
+    }
+    for (let i = 0; i < outLen; i++) {
+      const c = mkCell('y' + subscripts[i], 'output-active');
+      outputRow.appendChild(c);
+    }
+    // fill spacer to right
+    for (let i = outLen; i < TT; i++) {
+      const c = mkCell('', '');
+      c.style.opacity = '0'; c.style.pointerEvents = 'none';
+      outputRow.appendChild(c);
+    }
+    info.textContent = 'Stride S=2: Kernel springt 2 Schritte, Ausgabe = ⌊(T−K)/S⌋+1 = ' + outLen + '.';
+
+  } else { // dilation
+    const d = 2;
+    const effSpan = d * (KK - 1) + 1; // 5
+    const outLen = TT - effSpan + 1;   // 8
+    outLabel.textContent = 'Ausgabe (' + outLen + ' Zellen, Dilation d=2)';
+    dilNote.style.display = '';
+
+    for (let i = 0; i < TT; i++) {
+      const c = mkCell('x' + subscripts[i], '');
+      // highlight positions used by y₁ (pos=0): 0, 2, 4
+      if (i === 0 || i === 2 || i === 4) c.classList.add('active');
+      inputRow.appendChild(c);
+    }
+
+    // Draw dilation connectors via SVG overlay
+    // (we'll just annotate the cells visually)
+    for (let i = 0; i < outLen; i++) {
+      const c = mkCell('y' + subscripts[i], 'output-active');
+      outputRow.appendChild(c);
+    }
+    for (let i = outLen; i < TT; i++) {
+      const c = mkCell('', '');
+      c.style.opacity = '0'; c.style.pointerEvents = 'none';
+      outputRow.appendChild(c);
+    }
+
+    info.textContent = 'Dilation d=2: Kernelpositionen greifen x_t, x_{t+2}, x_{t+4} ab. Effektiver Span = d·(K−1)+1 = ' + effSpan + '. Ausgabe = ' + outLen + '.';
+
+    // Mark the gap cells
+    const inpChildren = inputRow.children;
+    // positions 1 and 3 are "gaps" in the kernel — dim them slightly
+    if (inpChildren[1]) inpChildren[1].style.borderStyle = 'dashed';
+    if (inpChildren[3]) inpChildren[3].style.borderStyle = 'dashed';
+  }
+}
+
+function mkCell(text, cls) {
+  const c = document.createElement('div');
+  c.className = 'cell' + (cls ? ' ' + cls : '');
+  c.textContent = text;
+  return c;
+}
+
+renderStrideDilation();
+
+/* ══════════════════════════════════════════════════════
+   Redraw canvas on resize
+══════════════════════════════════════════════════════ */
+window.addEventListener('resize', () => {
+  drawKernelCanvas();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,1661 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meta-Learning &amp; AutoML</title>
+<script>
+  MathJax = {
+    tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+    options: { skipHtmlTags: ['script','noscript','style','textarea'] }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #0f0f11;
+    --surface: #17171a;
+    --surface2: #1e1e22;
+    --border:  rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text:    #e8e6e0;
+    --muted:   #6a6866;
+    --accent:  #a0522d;
+    --accent-dim: rgba(160,82,45,0.12);
+    --accent-dim2: rgba(160,82,45,0.22);
+    --accent-border: rgba(160,82,45,0.3);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem 3rem;
+  }
+
+  header {
+    width: 100%;
+    max-width: 920px;
+    margin-bottom: 1.75rem;
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  h1 {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.05rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+  }
+
+  .subtitle {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .tab-bar {
+    width: 100%;
+    max-width: 920px;
+    display: flex;
+    gap: 4px;
+    margin-bottom: 1.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 4px;
+    flex-wrap: wrap;
+  }
+
+  .tab-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 7px 16px;
+    border-radius: 7px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+  }
+  .tab-btn:hover { color: var(--text); background: var(--surface2); }
+  .tab-btn.active {
+    background: var(--accent-dim2);
+    color: var(--accent);
+    border: 1px solid var(--accent-border);
+  }
+
+  .main {
+    width: 100%;
+    max-width: 920px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .tab-panel { display: none; flex-direction: column; gap: 1.25rem; }
+  .tab-panel.active { display: flex; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.4rem 1.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+
+  .card-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .card p {
+    font-size: 0.85rem;
+    line-height: 1.75;
+    color: #b8b2a8;
+  }
+
+  .card p b { color: var(--text); font-weight: 500; }
+
+  .formula-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 0.9rem 1.2rem;
+    font-size: 0.88rem;
+    line-height: 1.8;
+    overflow-x: auto;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+  }
+
+  .info-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 1rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    border-top: 2px solid var(--accent);
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .info-item:hover { background: rgba(160,82,45,0.06); border-color: rgba(160,82,45,0.4); }
+
+  .info-item .item-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .info-item .item-formula {
+    font-size: 0.78rem;
+    color: var(--accent);
+    font-family: 'DM Mono', monospace;
+    margin-bottom: 2px;
+  }
+
+  .info-item .item-desc {
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
+
+  .svg-wrap {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: auto;
+  }
+
+  svg text { font-family: 'DM Mono', monospace; }
+
+  .intuition-box {
+    background: rgba(160,82,45,0.07);
+    border: 1px solid rgba(160,82,45,0.25);
+    border-radius: 8px;
+    padding: 0.9rem 1.1rem;
+    font-size: 0.82rem;
+    line-height: 1.7;
+    color: #c8b4a0;
+  }
+  .intuition-box strong { color: var(--accent); }
+
+  .quote-block {
+    background: var(--surface2);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 1rem 1.2rem;
+    font-size: 0.88rem;
+    line-height: 1.75;
+    color: #d0cac4;
+    font-style: italic;
+  }
+  .quote-block .cite {
+    font-style: normal;
+    font-size: 0.73rem;
+    color: var(--muted);
+    margin-top: 6px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .slider-row label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  input[type=range] {
+    accent-color: var(--accent);
+    width: 140px;
+    cursor: pointer;
+  }
+
+  .slider-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--accent);
+    min-width: 36px;
+  }
+
+  mjx-container { color: var(--text) !important; }
+
+  .src-note {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-top: 1rem;
+    opacity: 0.6;
+    text-align: right;
+    width: 100%;
+    max-width: 920px;
+  }
+
+  .badge {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--accent-dim);
+    color: var(--accent);
+    border: 1px solid var(--accent-border);
+    letter-spacing: 0.04em;
+  }
+
+  .algo-pseudocode {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.3rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    line-height: 2;
+    color: #c8c4bc;
+  }
+  .algo-pseudocode .kw { color: var(--accent); font-weight: 500; }
+  .algo-pseudocode .cm { color: var(--muted); }
+  .algo-pseudocode .ln {
+    color: var(--muted);
+    display: inline-block;
+    width: 1.6rem;
+    text-align: right;
+    margin-right: 0.8rem;
+    user-select: none;
+  }
+
+  .comparison-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+  }
+  .comparison-table th {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--accent);
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border2);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .comparison-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    color: #b8b2a8;
+    line-height: 1.5;
+  }
+  .comparison-table tr:last-child td { border-bottom: none; }
+  .comparison-table tr:hover td { background: rgba(160,82,45,0.04); }
+
+  #search-canvas-wrap {
+    position: relative;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0;
+    overflow: hidden;
+  }
+  #search-canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .ctrl-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.76rem;
+    padding: 7px 18px;
+    border-radius: 7px;
+    border: 1px solid var(--accent-border);
+    background: var(--accent-dim);
+    color: var(--accent);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn:hover { background: var(--accent-dim2); }
+  .btn.secondary {
+    border-color: var(--border2);
+    background: var(--surface2);
+    color: var(--muted);
+  }
+  .btn.secondary:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+
+  .legend-row {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    align-items: center;
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+  .legend-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 5px;
+  }
+
+  .stats-row {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .stat-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .stat-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 1rem;
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  .pipeline-flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    overflow: hidden;
+  }
+  .pipeline-step {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.6rem 1rem;
+    font-size: 0.78rem;
+    font-family: 'DM Mono', monospace;
+    color: var(--text);
+    position: relative;
+    white-space: nowrap;
+  }
+  .pipeline-step.highlighted {
+    border-color: var(--accent-border);
+    background: var(--accent-dim);
+    color: var(--accent);
+  }
+  .pipeline-arrow {
+    color: var(--muted);
+    font-size: 1rem;
+    padding: 0 6px;
+    flex-shrink: 0;
+  }
+
+  .feature-tag {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    padding: 3px 9px;
+    border-radius: 5px;
+    margin: 2px 3px;
+    cursor: default;
+  }
+  .feature-tag.stat {
+    background: rgba(100, 140, 200, 0.12);
+    border: 1px solid rgba(100, 140, 200, 0.25);
+    color: #8aaccc;
+  }
+  .feature-tag.model {
+    background: rgba(130, 180, 100, 0.12);
+    border: 1px solid rgba(130, 180, 100, 0.25);
+    color: #8ab87a;
+  }
+  .feature-tag.landmark {
+    background: rgba(200, 150, 80, 0.12);
+    border: 1px solid rgba(200, 150, 80, 0.25);
+    color: #c8a060;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Meta-Learning &amp; AutoML</h1>
+  <span class="subtitle">// Algorithmenauswahl · Hyperparameter-Optimierung · Bayesian Optimization</span>
+</header>
+
+<div class="tab-bar" role="tablist">
+  <button class="tab-btn active" role="tab" data-tab="nfl">No Free Lunch</button>
+  <button class="tab-btn" role="tab" data-tab="rice">Rice-Framework</button>
+  <button class="tab-btn" role="tab" data-tab="metafeatures">Meta-Features</button>
+  <button class="tab-btn" role="tab" data-tab="hpo">HP-Optimierung</button>
+  <button class="tab-btn" role="tab" data-tab="search">Grid vs. Random</button>
+  <button class="tab-btn" role="tab" data-tab="smbo">SMBO / Bayes</button>
+  <button class="tab-btn" role="tab" data-tab="automl">AutoML-Systeme</button>
+</div>
+
+<div class="main">
+
+
+<!-- ══════════════════════════════════════════════════════
+     TAB 1: NO FREE LUNCH
+══════════════════════════════════════════════════════ -->
+<div class="tab-panel active" id="tab-nfl">
+
+  <div class="card">
+    <div class="card-title">Motivation — das Algorithmen-Auswahlproblem</div>
+    <p>
+      Es existieren viele verschiedene ML-Algorithmen — Decision Trees, Naive Bayes, SVM, Neural Networks usw.
+      Jeder Algorithmus hat eigene Parameter. In der Praxis probieren Nutzer typischerweise einige Varianten aus
+      und wählen die beste für ihre Anwendung. Das ist zeitaufwendig und die Systeme sind nicht flexibel für
+      neue Aufgaben. Daraus ergibt sich das <b>Algorithmen-Auswahl/Konfigurationsproblem</b>.
+    </p>
+    <p>
+      <b>Metalearning</b> adressiert genau dieses Problem: statt Erfahrung über eine einzelne Lernaufgabe
+      zu sammeln, wird Erfahrung über die Performance von ML-Algorithmen auf <em>vielen</em> Anwendungen
+      akkumuliert — dynamisch für Modellauswahl und Methodenkombination.
+    </p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">No Free Lunch (NFL) Theorem</div>
+
+    <div class="quote-block">
+      "…for any algorithm, any elevated performance over one class of problems is offset by
+      performance over another class."
+      <div class="cite">— Wolpert &amp; Macready, IEEE Trans. Evolutionary Computation 1(1): 67–82 (1997)</div>
+    </div>
+
+    <div class="quote-block" style="margin-top: 4px;">
+      "any two algorithms are equivalent when their performance is averaged across all possible problems."
+      <div class="cite">— Wolpert &amp; Macready, IEEE Trans. Evolutionary Computation 9(6): 721–735 (2005)</div>
+    </div>
+
+    <p>
+      Das NFL-Theorem besagt: Es gibt <b>keinen universell besten Algorithmus</b>. Ein Algorithmus, der auf
+      einer Klasse von Problemen besonders gut abschneidet, zahlt dafür mit schlechterer Leistung auf
+      einer anderen Klasse. Wenn man über alle denkbaren Probleme mittelt, sind alle Algorithmen äquivalent.
+    </p>
+
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="item-label">CCWA</div>
+        <div class="item-formula">Closed Classification World</div>
+        <div class="item-desc">
+          Klassifikationsaufgaben in realen Anwendungen bilden eine Teilmenge des Universums.
+          Ein Algorithmus wird gewählt, der auf dieser Teilmenge experimentell besser abschneidet.
+          In der Praxis bevorzugt — Algorithmen werden auf UCI-Repository-Datensätzen verglichen.
+        </div>
+      </div>
+      <div class="info-item">
+        <div class="item-label">OCWA</div>
+        <div class="item-formula">Open Classification World</div>
+        <div class="item-desc">
+          Es wird keine Struktur über reale Klassifikationsaufgaben angenommen.
+          Stattdessen wird die Klasse von Aufgaben charakterisiert, auf denen ein neuer
+          Algorithmus gut funktioniert — aufwendiger, aber ehrlicher.
+        </div>
+      </div>
+    </div>
+
+    <div class="intuition-box">
+      <strong>Konsequenz:</strong> Da kein Algorithmus universell überlegen ist, brauchen wir
+      <strong>Mechanismen zur Algorithmenauswahl</strong> — Methoden, die für ein gegebenes Problem
+      den am besten geeigneten Algorithmus identifizieren. Genau das ist die Aufgabe von Metalearning.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Visualisierung — NFL-Prinzip</div>
+    <div class="svg-wrap" style="min-height: 200px;">
+      <svg width="640" height="190" viewBox="0 0 640 190" style="max-width:100%">
+        <defs>
+          <marker id="arr-nfl" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+            <path d="M0,0.5 L0,6.5 L7,3.5 z" fill="#6a6866"/>
+          </marker>
+        </defs>
+
+        <text x="320" y="18" text-anchor="middle" fill="#6a6866" font-size="10">Problemklassen</text>
+        <rect x="30" y="28" width="120" height="40" rx="6" fill="#1e1e22" stroke="rgba(255,255,255,0.07)"/>
+        <text x="90" y="51" text-anchor="middle" fill="#e8e6e0" font-size="11">Klasse A</text>
+        <rect x="180" y="28" width="120" height="40" rx="6" fill="#1e1e22" stroke="rgba(255,255,255,0.07)"/>
+        <text x="240" y="51" text-anchor="middle" fill="#e8e6e0" font-size="11">Klasse B</text>
+        <rect x="330" y="28" width="120" height="40" rx="6" fill="#1e1e22" stroke="rgba(255,255,255,0.07)"/>
+        <text x="390" y="51" text-anchor="middle" fill="#e8e6e0" font-size="11">Klasse C</text>
+        <rect x="480" y="28" width="120" height="40" rx="6" fill="#1e1e22" stroke="rgba(255,255,255,0.07)"/>
+        <text x="540" y="51" text-anchor="middle" fill="#e8e6e0" font-size="11">Klasse D</text>
+
+        <text x="16" y="115" fill="#8aaccc" font-size="10" text-anchor="middle" transform="rotate(-90,16,115)">Algorithmus 1</text>
+        <text x="16" y="155" fill="#c8a060" font-size="10" text-anchor="middle" transform="rotate(-90,16,155)">Algorithmus 2</text>
+
+        <rect x="30" y="95" width="120" height="18" rx="3" fill="rgba(100,140,200,0.7)"/>
+        <text x="90" y="108" text-anchor="middle" fill="#fff" font-size="9">hoch (95%)</text>
+        <rect x="180" y="95" width="70" height="18" rx="3" fill="rgba(100,140,200,0.4)"/>
+        <text x="215" y="108" text-anchor="middle" fill="#fff" font-size="9">mittel</text>
+        <rect x="330" y="95" width="40" height="18" rx="3" fill="rgba(100,140,200,0.2)"/>
+        <text x="350" y="108" text-anchor="middle" fill="#aaa" font-size="9">niedrig</text>
+        <rect x="480" y="95" width="55" height="18" rx="3" fill="rgba(100,140,200,0.25)"/>
+        <text x="508" y="108" text-anchor="middle" fill="#aaa" font-size="9">niedrig</text>
+
+        <rect x="30" y="133" width="30" height="18" rx="3" fill="rgba(200,150,80,0.2)"/>
+        <text x="45" y="146" text-anchor="middle" fill="#aaa" font-size="9">n.</text>
+        <rect x="180" y="133" width="100" height="18" rx="3" fill="rgba(200,150,80,0.55)"/>
+        <text x="230" y="146" text-anchor="middle" fill="#fff" font-size="9">hoch (90%)</text>
+        <rect x="330" y="133" width="110" height="18" rx="3" fill="rgba(200,150,80,0.65)"/>
+        <text x="385" y="146" text-anchor="middle" fill="#fff" font-size="9">hoch (88%)</text>
+        <rect x="480" y="133" width="80" height="18" rx="3" fill="rgba(200,150,80,0.45)"/>
+        <text x="520" y="146" text-anchor="middle" fill="#fff" font-size="9">mittel</text>
+
+        <text x="320" y="180" text-anchor="middle" fill="#6a6866" font-size="9">
+          Kein Algorithmus dominiert alle Klassen — gemittelt über alle Probleme sind beide equivalent
+        </text>
+      </svg>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     TAB 2: RICE FRAMEWORK
+══════════════════════════════════════════════════════ -->
+<div class="tab-panel" id="tab-rice">
+
+  <div class="card">
+    <div class="card-title">Rice's Algorithm Selection Framework (1976)</div>
+    <p>
+      John R. Rice formalisierte das Algorithmenauswahlproblem mit vier Räumen.
+      Gegeben ein Problem \(x \in P\) mit extrahierten Features \(f(x) \in F\), finde eine
+      Auswahlabbildung \(S(f(x))\) in den Algorithmenraum \(A\), sodass der gewählte Algorithmus
+      \(\alpha \in A\) die Performance \(y(\alpha(x)) \in Y\) maximiert.
+    </p>
+
+    <div class="svg-wrap" style="min-height: 240px;">
+      <svg width="600" height="240" viewBox="0 0 600 240" style="max-width:100%">
+        <defs>
+          <marker id="arr-rice" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#a0522d"/>
+          </marker>
+          <marker id="arr-rice2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#6a6866"/>
+          </marker>
+        </defs>
+
+        <rect x="20" y="30" width="140" height="65" rx="10" fill="#1e1e22" stroke="rgba(160,82,45,0.4)" stroke-width="1.5"/>
+        <text x="90" y="56" text-anchor="middle" fill="#6a6866" font-size="10">x ∈ P</text>
+        <text x="90" y="73" text-anchor="middle" fill="#e8e6e0" font-size="12" font-weight="500">PROBLEM</text>
+        <text x="90" y="87" text-anchor="middle" fill="#e8e6e0" font-size="12" font-weight="500">SPACE</text>
+
+        <rect x="20" y="145" width="140" height="65" rx="10" fill="#1e1e22" stroke="rgba(160,82,45,0.4)" stroke-width="1.5"/>
+        <text x="90" y="171" text-anchor="middle" fill="#6a6866" font-size="10">f(x) ∈ F</text>
+        <text x="90" y="188" text-anchor="middle" fill="#e8e6e0" font-size="12" font-weight="500">FEATURE</text>
+        <text x="90" y="202" text-anchor="middle" fill="#e8e6e0" font-size="12" font-weight="500">SPACE</text>
+
+        <rect x="430" y="30" width="145" height="65" rx="10" fill="#1e1e22" stroke="rgba(160,82,45,0.4)" stroke-width="1.5"/>
+        <text x="503" y="56" text-anchor="middle" fill="#6a6866" font-size="10">y ∈ Y</text>
+        <text x="503" y="73" text-anchor="middle" fill="#e8e6e0" font-size="12" font-weight="500">PERFORMANCE</text>
+        <text x="503" y="87" text-anchor="middle" fill="#e8e6e0" font-size="12" font-weight="500">SPACE</text>
+
+        <rect x="430" y="145" width="145" height="65" rx="10" fill="#1e1e22" stroke="rgba(160,82,45,0.4)" stroke-width="1.5"/>
+        <text x="503" y="171" text-anchor="middle" fill="#6a6866" font-size="10">α ∈ A</text>
+        <text x="503" y="188" text-anchor="middle" fill="#e8e6e0" font-size="12" font-weight="500">ALGORITHM</text>
+        <text x="503" y="202" text-anchor="middle" fill="#e8e6e0" font-size="12" font-weight="500">SPACE</text>
+
+        <path d="M90,95 L90,145" stroke="#a0522d" stroke-width="1.8" fill="none" marker-end="url(#arr-rice)"/>
+        <text x="56" y="124" fill="#a0522d" font-size="9.5">feature</text>
+        <text x="56" y="136" fill="#a0522d" font-size="9.5">extraction f</text>
+
+        <path d="M160,177 L430,177" stroke="#a0522d" stroke-width="1.8" fill="none" marker-end="url(#arr-rice)"/>
+        <text x="295" y="170" text-anchor="middle" fill="#a0522d" font-size="9.5">α = S(f(x))</text>
+        <text x="295" y="192" text-anchor="middle" fill="#6a6866" font-size="9">Selection Mapping</text>
+
+        <path d="M503,145 L503,95" stroke="#6a6866" stroke-width="1.8" fill="none" marker-end="url(#arr-rice2)"/>
+        <text x="560" y="120" fill="#6a6866" font-size="9" text-anchor="middle">y(α(x))</text>
+        <text x="560" y="132" fill="#6a6866" font-size="9" text-anchor="middle">apply α</text>
+
+        <path d="M503,145 Q503,62 430,62" stroke="#6a6866" stroke-width="1.5" fill="none" stroke-dasharray="5 3" marker-end="url(#arr-rice2)"/>
+        <text x="380" y="105" fill="#6a6866" font-size="9" text-anchor="middle">Select α to</text>
+        <text x="380" y="117" fill="#6a6866" font-size="9" text-anchor="middle">maximise ‖y‖</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Die vier Räume formal</div>
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="item-label">P — Problem Space</div>
+        <div class="item-formula">x ∈ P</div>
+        <div class="item-desc">Menge aller Instanzen einer Problemklasse. Z.B. verschiedene Klassifikationsdatensätze aus dem UCI Repository.</div>
+      </div>
+      <div class="info-item">
+        <div class="item-label">F — Feature Space</div>
+        <div class="item-formula">f(x) ∈ F</div>
+        <div class="item-desc">Messbare Charakteristika der Probleminstanzen, erzeugt durch eine rechnerische Feature-Extraktion auf P. Meta-Features.</div>
+      </div>
+      <div class="info-item">
+        <div class="item-label">A — Algorithm Space</div>
+        <div class="item-formula">α ∈ A</div>
+        <div class="item-desc">Menge aller betrachteten Algorithmen zur Lösung des Problems. Im Metalearning: Menge der Base-Level-Lernalgorithmen.</div>
+      </div>
+      <div class="info-item">
+        <div class="item-label">Y — Performance Space</div>
+        <div class="item-formula">y(α(x)) ∈ Y</div>
+        <div class="item-desc">Abbildung jedes Algorithmus auf Performance-Metriken. Z.B. Genauigkeit, Laufzeit, Kompaktheit. Wir optimieren ‖y‖.</div>
+      </div>
+    </div>
+
+    <p>
+      Im Metalearning-Kontext gilt: \(A\) ist die Menge von Base-Level-Lernalgorithmen,
+      die Selektionsabbildung \(S\) ist selbst ein Lernalgorithmus, der auf Trainings-Metadaten
+      \(\{\langle f(x), t(x) \rangle : x \in P' \subseteq P\}\) trainiert wird.
+      Dabei ist \(t(x) = \arg\max_{a \in A}\, y(a, x)\) der best-performing Algorithmus auf Instanz \(x\).
+    </p>
+
+    <div class="intuition-box">
+      <strong>Training Metadata:</strong> Eine Tabelle mit einer Zeile pro Datensatz —
+      Meta-Features (Anzahl Features, Klassen, Entropie, …) als Eingabe,
+      bester Algorithmus als Ziel. Aus dieser Tabelle lernt \(S\) (z.B. ein Decision Tree),
+      welcher Algorithmus für neue Datensätze am besten geeignet ist.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Training Metadata — Beispiel</div>
+    <div style="overflow-x:auto;">
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Datensatz</th>
+            <th>#Features</th>
+            <th>#Instanzen</th>
+            <th>Klassen-Entropie</th>
+            <th>…</th>
+            <th>Bester Algorithmus</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Dataset1</td><td>5</td><td>600</td><td>0.82</td><td>…</td><td style="color:var(--accent)">Decision Tree</td></tr>
+          <tr><td>Dataset2</td><td>3</td><td>200</td><td>0.61</td><td>…</td><td style="color:var(--accent)">Naive Bayes</td></tr>
+          <tr><td>Dataset3</td><td>25</td><td>20000</td><td>0.94</td><td>…</td><td style="color:var(--accent)">Neural Networks</td></tr>
+          <tr><td>Dataset4</td><td>56</td><td>4500</td><td>0.88</td><td>…</td><td style="color:var(--accent)">Neural Networks</td></tr>
+          <tr><td>Dataset5</td><td>8</td><td>1000</td><td>0.75</td><td>…</td><td style="color:var(--accent)">Random Forest</td></tr>
+          <tr><td style="color:var(--muted)">NewDataset1</td><td style="color:var(--muted)">20</td><td style="color:var(--muted)">2000</td><td style="color:var(--muted)">0.91</td><td style="color:var(--muted)">…</td><td style="color:#8aaccc">? → S(f(x))</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:0.78rem; color:var(--muted); font-family:'DM Mono',monospace; margin-top:4px;">
+      S(f(x)): Lerne ein Modell (z.B. Decision Tree) über die Metadaten → klassifiziere neue Datensätze
+    </p>
+  </div>
+
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     TAB 3: META-FEATURES
+══════════════════════════════════════════════════════ -->
+<div class="tab-panel" id="tab-metafeatures">
+
+  <div class="card">
+    <div class="card-title">Feature Space — Meta-Features</div>
+    <p>
+      Die Wahl geeigneter Meta-Features ist entscheidend: Features müssen <b>Vorhersagekraft</b>
+      bezüglich der Algorithmusperformance besitzen. Es gibt vier Hauptkategorien der
+      Datensatz-Charakterisierung, die in der Praxis eingesetzt werden.
+    </p>
+
+    <div style="margin-top: 4px;">
+      <span class="feature-tag stat">Statistisch</span>
+      <span class="feature-tag stat">Informationstheoretisch</span>
+      <span class="feature-tag model">Modellbasiert</span>
+      <span class="feature-tag model">Decision Tree</span>
+      <span class="feature-tag landmark">Landmarking</span>
+      <span class="feature-tag landmark">Naive Bayes</span>
+      <span class="feature-tag landmark">OneR</span>
+      <span class="feature-tag stat">Learning Curves</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">1. Statistische &amp; Informationstheoretische Features</div>
+    <p>
+      Aus dem Datensatz werden direkt messbare Charakteristika extrahiert.
+      Die Grundannahme: <b>Lernalgorithmen reagieren sensitiv auf die Struktur des Datensatzes</b>.
+      Auch die Trainingsgröße spielt eine wichtige Rolle.
+    </p>
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="item-label">Einfache Metriken</div>
+        <div class="item-formula">n, p, |C|</div>
+        <div class="item-desc">Anzahl Instanzen, Anzahl Attribute, Anzahl Klassen, Verhältnis Instanzen/Attribute.</div>
+      </div>
+      <div class="info-item">
+        <div class="item-label">Statistische Metriken</div>
+        <div class="item-formula">corr, skew, …</div>
+        <div class="item-desc">Mittlere absolute Korrelation zwischen Features, Korrelation Feature–Ziel, Schiefe der Verteilungen.</div>
+      </div>
+      <div class="info-item">
+        <div class="item-label">Informationstheorie</div>
+        <div class="item-formula">H(C), H̄</div>
+        <div class="item-desc">Entropie der Klassenverteilung, mittlere Feature-Entropie, gegenseitige Information Feature–Ziel.</div>
+      </div>
+    </div>
+    <div class="formula-box">
+      Klassen-Entropie (StatLog-Beispiel):<br>
+      \[H(C) = -\sum_{c \in C} p(c) \log_2 p(c)\]
+      Hohe Entropie → gleichmäßige Klassenverteilung → schwieriges Problem.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">2. Modellbasierte Charakterisierung</div>
+    <p>
+      Eigenschaften einer Hypothese, die auf dem Problem induziert wurde, werden als <b>indirekte
+      Charakterisierungsform</b> genutzt. Vor allem Decision Trees werden eingesetzt, weil sie
+      interpretierbare Strukturinformationen über den Datensatz liefern.
+    </p>
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="item-label">Nodes per Feature</div>
+        <div class="item-formula">nodes/p</div>
+        <div class="item-desc">Wie oft wird jedes Feature im Baum verwendet. Gibt an, welche Features für die Klassifikation wichtig sind.</div>
+      </div>
+      <div class="info-item">
+        <div class="item-label">Max. Baumtiefe</div>
+        <div class="item-formula">depth_max</div>
+        <div class="item-desc">Maximale Tiefe des induzierten Entscheidungsbaums. Indikator für Problemkomplexität.</div>
+      </div>
+      <div class="info-item">
+        <div class="item-label">Baum-Imbalanz</div>
+        <div class="item-formula">imbalance</div>
+        <div class="item-desc">Wie stark der Baum asymmetrisch ist. Symmetrische Bäume deuten auf ausgewogene Problemstruktur hin.</div>
+      </div>
+    </div>
+    <div class="intuition-box">
+      <strong>Idee:</strong> Ein Decision Tree wird einmal auf dem Datensatz trainiert — nicht um Vorhersagen
+      zu machen, sondern um dessen Struktur zu beschreiben. Die Baumeigenschaften sind die Meta-Features \(f(x)\).
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">3. Landmarking</div>
+    <p>
+      Beim Landmarking wird die <b>Performance einfacher, schneller Lernalgorithmen</b> (Landmarker)
+      als Meta-Feature verwendet. Die Intuition: Jeder Lernalgorithmus hat eine "Expertise-Region" —
+      eine Klasse von Aufgaben, auf der er besonders gut funktioniert. Die Performance eines Landmarkers
+      auf einem Datensatz beschreibt, in welcher Region sich dieser Datensatz befindet.
+    </p>
+    <div class="two-col">
+      <div>
+        <p>
+          <b>Landmarker müssen effizient sein</b> — ihr Ausführungsaufwand muss kleiner sein als der
+          Aufwand, alle Algorithmen aus \(A\) zu testen. Sonst könnte man direkt alle Algorithmen
+          evaluieren. Geeignete Landmarker:
+        </p>
+        <ul style="font-size:0.82rem; color:#b8b2a8; line-height:1.8; padding-left:1.2rem; margin-top:6px;">
+          <li>Naive Bayes</li>
+          <li>OneR (one-rule learner)</li>
+          <li>Lineare Diskriminanzanalyse</li>
+          <li>1-Nearest Neighbor</li>
+          <li>Decision Stump</li>
+        </ul>
+      </div>
+      <div class="svg-wrap" style="min-height:180px;">
+        <svg width="240" height="200" viewBox="0 0 240 200" style="max-width:100%">
+          <ellipse cx="85" cy="100" rx="55" ry="75" fill="none" stroke="rgba(138,172,204,0.4)" stroke-width="1.5" stroke-dasharray="5 3"/>
+          <text x="55" y="30" fill="#8aaccc" font-size="9">i1-Expertise</text>
+
+          <ellipse cx="130" cy="110" rx="45" ry="65" fill="none" stroke="rgba(200,150,80,0.4)" stroke-width="1.5" stroke-dasharray="5 3"/>
+          <text x="160" y="52" fill="#c8a060" font-size="9">i2-Expertise</text>
+
+          <ellipse cx="100" cy="145" rx="60" ry="40" fill="none" stroke="rgba(138,180,120,0.4)" stroke-width="1.5" stroke-dasharray="5 3"/>
+          <text x="80" y="190" fill="#8ab87a" font-size="9">i3-Expertise</text>
+
+          <rect x="60" y="70" width="28" height="40" rx="4" fill="#1e1e22" stroke="rgba(255,255,255,0.1)"/>
+          <text x="74" y="95" text-anchor="middle" fill="#e8e6e0" font-size="9">i1</text>
+
+          <rect x="105" y="80" width="28" height="40" rx="4" fill="#1e1e22" stroke="rgba(255,255,255,0.1)"/>
+          <text x="119" y="105" text-anchor="middle" fill="#e8e6e0" font-size="9">i2</text>
+
+          <rect x="80" y="120" width="28" height="40" rx="4" fill="#1e1e22" stroke="rgba(255,255,255,0.1)"/>
+          <text x="94" y="145" text-anchor="middle" fill="#e8e6e0" font-size="9">i4</text>
+
+          <rect x="135" y="115" width="28" height="40" rx="4" fill="#1e1e22" stroke="rgba(255,255,255,0.1)"/>
+          <text x="149" y="140" text-anchor="middle" fill="#e8e6e0" font-size="9">i6</text>
+
+          <text x="120" y="16" text-anchor="middle" fill="#6a6866" font-size="9">Expertise-Karte der Lernalgorithmen</text>
+        </svg>
+      </div>
+    </div>
+    <div class="intuition-box">
+      <strong>Beispiel:</strong> Wenn Landmarker i1 und i3 auf einem Datensatz gut abschneiden,
+      i2 aber schlecht, deutet das darauf hin, dass der Datensatz wahrscheinlich in der Expertise-Region
+      von i4 liegt — der weder i1 noch i2 noch i3 ist, aber in der Schnittmenge ihrer Regionen.
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     TAB 4: HP-OPTIMIERUNG
+══════════════════════════════════════════════════════ -->
+<div class="tab-panel" id="tab-hpo">
+
+  <div class="card">
+    <div class="card-title">Hyperparameter-Optimierung — formale Definition</div>
+    <p>
+      Die meisten ML-Algorithmen haben Parameter, die vor dem Training festgelegt werden müssen:
+      Anzahl Nachbarn (KNN), Anzahl Schichten (Neural Networks), Anzahl Bäume (Random Forest) usw.
+      Die Konfiguration dieser Parameter ist oft entscheidend für gute Ergebnisse.
+      Der Parameterraum kann diskret, kontinuierlich oder bedingt strukturiert sein — ein großes
+      <b>Suchproblem</b>.
+    </p>
+
+    <p>
+      Die formale Definition nach [H2015]: Sei \(A\) ein ML-Algorithmus mit Hyperparametern
+      \(\lambda_1, \ldots, \lambda_n\) und Domänen \(\Lambda_1, \ldots, \Lambda_n\).
+      Der <b>Hyperparameter-Raum</b> ist:
+    </p>
+    <div class="formula-box">
+      \[\boldsymbol{\Lambda} = \Lambda_1 \times \cdots \times \Lambda_n\]
+    </div>
+    <p>
+      \(A_{\boldsymbol\lambda}\) bezeichnet Algorithmus \(A\) mit Hyperparameter-Einstellung
+      \(\boldsymbol\lambda\). Die Validierungsverlustfunktion \(\mathcal{L}(A_{\boldsymbol\lambda},
+      \mathcal{D}_\text{train}, \mathcal{D}_\text{valid})\) misst z.B. die Misklassifikationsrate.
+    </p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Das Optimierungsproblem — k-fold Cross-Validation</div>
+    <p>
+      Das Optimierungsproblem unter k-facher Kreuzvalidierung ist das Minimieren der folgenden
+      Blackbox-Funktion:
+    </p>
+    <div class="formula-box" style="text-align:center; padding: 1.2rem 1.5rem;">
+      \[
+        f(\boldsymbol\lambda) = \frac{1}{k} \sum_{i=1}^{k}
+        \mathcal{L}\!\left(A_{\boldsymbol\lambda},\, \mathcal{D}_\text{train}^{(i)},\, \mathcal{D}_\text{valid}^{(i)}\right)
+      \]
+    </div>
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="item-label">\(\boldsymbol\lambda\)</div>
+        <div class="item-formula">Hyperparameter-Vektor</div>
+        <div class="item-desc">Eine Konfiguration aus dem Hyperparameter-Raum \(\boldsymbol\Lambda\). Was wir optimieren.</div>
+      </div>
+      <div class="info-item">
+        <div class="item-label">\(k\)</div>
+        <div class="item-formula">Anzahl Folds</div>
+        <div class="item-desc">Typisch: k = 10. Mittelung über k verschiedene Train/Val-Splits für robuste Schätzung.</div>
+      </div>
+      <div class="info-item">
+        <div class="item-label">\(\mathcal{L}\)</div>
+        <div class="item-formula">Verlustfunktion</div>
+        <div class="item-desc">z.B. Misklassifikationsrate. Wird auf den Validierungsdaten des i-ten Folds gemessen.</div>
+      </div>
+      <div class="info-item">
+        <div class="item-label">\(f\)</div>
+        <div class="item-formula">Blackbox-Funktion</div>
+        <div class="item-desc">Teuer auszuwerten, nicht differenzierbar, ggf. verrauscht. Daher spezielle Suchmethoden nötig.</div>
+      </div>
+    </div>
+
+    <div class="intuition-box">
+      <strong>Herausforderung:</strong> Die Funktion \(f(\boldsymbol\lambda)\) ist eine Blackbox —
+      wir können sie auswerten, aber nicht ableiten. Jede Auswertung erfordert das vollständige
+      Training des Modells. Für tiefe Neural Networks kann eine Auswertung Stunden dauern.
+      Ziel: Minimum mit möglichst wenigen Auswertungen finden.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Verbindung: Metalearning + Hyperparameter-Optimierung</div>
+    <p>
+      Hyperparameter-Optimierung ist ein Spezialfall der Modellauswahl. Die Wahl eines bestimmten
+      Lernalgorithmus kann als Optimierung eines nominalen Hyperparameters betrachtet werden.
+      Vorverarbeitungsschritte (Normalisierung, Encoding) sind ebenfalls nominale Hyperparameter.
+    </p>
+    <p>
+      <b>Meta-Features können genutzt werden</b>, um die Initialisierung der Hyperparameter für
+      einen neuen Datensatz zu verbessern — statt bei Null zu starten, beginnt man bei einer
+      durch ähnliche Datensätze informierten Konfiguration (Warm-Starting).
+    </p>
+  </div>
+
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     TAB 5: GRID VS RANDOM SEARCH
+══════════════════════════════════════════════════════ -->
+<div class="tab-panel" id="tab-search">
+
+  <div class="card">
+    <div class="card-title">Grid Search vs. Random Search — Interaktive Demo</div>
+    <p>
+      <b>Grid Search</b> testet das kartesische Produkt aller Parameterwerte — exhaustiv und gleichmäßig
+      verteilt. <b>Randomized Search</b> zieht zufällige Konfigurationen. Wenn ein Parameter wenig Einfluss
+      hat (unimportant parameter), verschwendet Grid Search Budget auf dessen Variation,
+      während Random Search mehr Punkte entlang des wichtigen Parameters abdeckt.
+    </p>
+
+    <div class="ctrl-row">
+      <label class="slider-row">
+        <span style="font-family:'DM Mono',monospace;font-size:0.78rem;color:var(--muted)">Punkte (n):</span>
+        <input type="range" id="n-trials-slider" min="4" max="25" step="1" value="9">
+        <span class="slider-val" id="n-trials-val">9</span>
+      </label>
+      <button class="btn" id="btn-resample">Neu zufällig</button>
+      <button class="btn secondary" id="btn-toggle-importance">Wichtigkeit anzeigen</button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;" id="canvas-container">
+      <div>
+        <div style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--accent);margin-bottom:6px;text-align:center">GRID SEARCH</div>
+        <div id="search-canvas-wrap-grid">
+          <canvas id="canvas-grid" width="360" height="260" style="display:block;width:100%;border-radius:8px;"></canvas>
+        </div>
+      </div>
+      <div>
+        <div style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--accent);margin-bottom:6px;text-align:center">RANDOM SEARCH</div>
+        <div id="search-canvas-wrap-rand">
+          <canvas id="canvas-rand" width="360" height="260" style="display:block;width:100%;border-radius:8px;"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="legend-row">
+      <span><span class="legend-dot" style="background:#a0522d;"></span>Sampling-Punkt</span>
+      <span><span class="legend-dot" style="background:rgba(138,172,204,0.7);display:inline-block;width:30px;height:10px;border-radius:2px;"></span>Wichtiger Parameter (x-Achse)</span>
+      <span><span class="legend-dot" style="background:rgba(160,82,45,0.15);display:inline-block;width:30px;height:10px;border-radius:2px;"></span>Geringer Einfluss (y-Achse)</span>
+    </div>
+
+    <div class="stats-row" id="search-stats">
+      <div class="stat-item">
+        <div class="stat-label">Grid: distinct x-Werte</div>
+        <div class="stat-val" id="stat-grid-x">—</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">Random: distinct x-Werte</div>
+        <div class="stat-val" id="stat-rand-x">—</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">Vorteil Random</div>
+        <div class="stat-val" id="stat-advantage">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Vergleich der Suchmethoden</div>
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          <th>Eigenschaft</th>
+          <th>Grid Search</th>
+          <th>Random Search</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Strategie</td>
+          <td>Kartesisches Produkt aller Werte</td>
+          <td>Zufällige Stichprobe aus Verteilung</td>
+        </tr>
+        <tr>
+          <td>Kontinuierliche Parameter</td>
+          <td>Müssen diskretisiert werden</td>
+          <td>Direkt aus Verteilung sampelbar</td>
+        </tr>
+        <tr>
+          <td>Skalierung mit Dimension</td>
+          <td>Exponentiell (\(d^n\) Punkte)</td>
+          <td>Linear (feste Anzahl Trials)</td>
+        </tr>
+        <tr>
+          <td>Unimportante Parameter</td>
+          <td>Budget wird verschwendet</td>
+          <td>Kein Nachteil — zufällige Abdeckung</td>
+        </tr>
+        <tr>
+          <td>Abdeckung wichtiger Parameter</td>
+          <td>\(\sqrt{n}\) Werte pro Dimension</td>
+          <td>\(n\) verschiedene Werte möglich</td>
+        </tr>
+        <tr>
+          <td>Parallelisierbar</td>
+          <td>Ja</td>
+          <td>Ja</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="intuition-box" style="margin-top:4px;">
+      <strong>Bergstra &amp; Bengio (2012):</strong> Random Search kann Grid Search signifikant
+      übertreffen, wenn nur wenige Hyperparameter tatsächlich wichtig sind — was in der Praxis
+      häufig der Fall ist. Mit \(n\) zufälligen Punkten werden \(n\) verschiedene Werte des
+      wichtigen Parameters getestet, statt nur \(\sqrt{n}\) beim Grid Search.
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     TAB 6: SMBO / BAYESIAN OPTIMIZATION
+══════════════════════════════════════════════════════ -->
+<div class="tab-panel" id="tab-smbo">
+
+  <div class="card">
+    <div class="card-title">Sequential Model-Based Bayesian Optimization (SMBO)</div>
+    <p>
+      SMBO ist ein allgemeines Framework zur Minimierung von Blackbox-Funktionen \(f\).
+      Ein <b>probabilistisches Surrogatmodell</b> \(\mathcal{M}\) approximiert \(f\) basierend
+      auf bisherigen Auswertungen. Das Modell wird genutzt, um die nächste vielversprechende
+      Konfiguration auszuwählen — ohne \(f\) direkt auszuwerten.
+    </p>
+    <p>
+      \(\mathcal{M}\) ist ein Regressionsmodell, angepasst auf Datentupeln
+      \((\boldsymbol\lambda, \mathcal{L}(A_{\boldsymbol\lambda}))\).
+      Es sagt eine <b>a-posteriori-Verteilung</b> \(p_\mathcal{M}(f \mid \boldsymbol\lambda)\) vorher.
+    </p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">SMBO Algorithmus — formale Darstellung</div>
+
+    <div class="algo-pseudocode">
+      <div><span class="kw">Algorithm 1</span> Sequential Model-Based Bayesian Optimization (SMBO)</div>
+      <div style="border-top:1px solid var(--border);margin:6px 0;"></div>
+      <div><span class="ln">1:</span> Initialisiere Modell \(\mathcal{M}\); \(\mathcal{H} \leftarrow \emptyset\)</div>
+      <div><span class="ln">2:</span> <span class="kw">while</span> Zeitbudget für Optimierung nicht erschöpft <span class="kw">do</span></div>
+      <div><span class="ln">3:</span>&nbsp;&nbsp;&nbsp;&nbsp;\(\boldsymbol\lambda \leftarrow\) bestimme Kandidatenkonfiguration aus \(\mathcal{M}\)</div>
+      <div><span class="ln">4:</span>&nbsp;&nbsp;&nbsp;&nbsp;\(i \leftarrow\) wähle Cross-Validation-Fold</div>
+      <div><span class="ln">5:</span>&nbsp;&nbsp;&nbsp;&nbsp;Berechne \(c = \mathcal{L}(A_{\boldsymbol\lambda}, \mathcal{D}_\text{train}^{(i)}, \mathcal{D}_\text{valid}^{(i)})\)</div>
+      <div><span class="ln">6:</span>&nbsp;&nbsp;&nbsp;&nbsp;\(\mathcal{H} \leftarrow \mathcal{H} \cup \{(\boldsymbol\lambda, c)\}\)</div>
+      <div><span class="ln">7:</span>&nbsp;&nbsp;&nbsp;&nbsp;Aktualisiere \(\mathcal{M}\) gegeben \(\mathcal{H}\)</div>
+      <div><span class="ln">8:</span> <span class="kw">end while</span></div>
+      <div><span class="ln">9:</span> <span class="kw">return</span> \(\boldsymbol\lambda\) aus \(\mathcal{H}\) mit minimalem \(c\) über alle CV-Folds</div>
+      <div style="border-top:1px solid var(--border);margin:6px 0;"></div>
+      <div class="cm">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Quelle: [H2015] Hutter et al., Beyond Manual Tuning of Hyperparameters</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Acquisition Function — Expected Improvement (EI)</div>
+    <p>
+      Die <b>Acquisition Function</b> \(a_\mathcal{M}: \boldsymbol\Lambda \to \mathbb{R}\)
+      bestimmt, welche Konfiguration als nächstes ausgewertet wird. Die beliebteste Wahl ist
+      der <b>Expected Improvement (EI)</b> über den bisher besten beobachteten Funktionswert
+      \(f_\text{min}\):
+    </p>
+    <div class="formula-box">
+      \[
+        \text{EI}(\boldsymbol\lambda) =
+        \mathbb{E}_{p_\mathcal{M}(f|\boldsymbol\lambda)}\!\left[\max(f_\text{min} - f, 0)\right]
+      \]
+    </div>
+    <p>
+      EI balanciert <b>Exploitation</b> (Bereiche mit niedrig erwartetem \(f\)) und
+      <b>Exploration</b> (Bereiche mit hoher Unsicherheit). Das probabilistische Modell
+      \(\mathcal{M}\) liefert sowohl den Erwartungswert als auch die Unsicherheit
+      \(p_\mathcal{M}(f \mid \boldsymbol\lambda)\).
+    </p>
+
+    <div class="svg-wrap" style="min-height: 280px;">
+      <svg id="bayes-svg" width="620" height="270" viewBox="0 0 620 270" style="max-width:100%">
+        <defs>
+          <marker id="arr-bo" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+            <path d="M0,0.5 L0,6.5 L7,3.5 z" fill="#a0522d"/>
+          </marker>
+        </defs>
+
+        <text x="310" y="16" text-anchor="middle" fill="#6a6866" font-size="10">Bayesian Optimization — Iteration 3 → 4</text>
+
+        <text x="8" y="50" fill="#6a6866" font-size="9" text-anchor="middle" transform="rotate(-90,8,140)">f(λ) / Surrogatmodell</text>
+        <line x1="35" y1="20" x2="35" y2="195" stroke="var(--border2)" stroke-width="1"/>
+        <line x1="35" y1="195" x2="600" y2="195" stroke="var(--border2)" stroke-width="1"/>
+
+        <path d="M35,100 C80,80 130,60 160,90 C190,120 210,150 250,130 C290,110 330,80 370,120 C410,160 450,95 490,70 C530,45 570,90 600,100"
+              fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1.5" stroke-dasharray="5 3"/>
+
+        <path d="M35,115 C80,100 130,85 160,105 C190,125 210,145 250,135 C290,125 340,100 370,128 C400,156 440,115 490,95 C520,80 560,100 600,108"
+              fill="none" stroke="#8aaccc" stroke-width="2"/>
+
+        <path d="M35,115 C80,100 130,85 160,105 C190,125 210,145 250,135 C290,125 340,100 370,128 C400,156 440,115 490,95 C520,80 560,100 600,108
+                 C600,108 600,125 560,118 C520,112 490,118 440,138 C400,158 370,150 340,125 C310,100 280,138 250,152 C210,166 190,148 160,128
+                 C130,108 80,118 35,130 Z"
+              fill="rgba(138,172,204,0.12)" stroke="none"/>
+
+        <circle cx="130" cy="85" r="5" fill="#e8e6e0" stroke="#a0522d" stroke-width="2"/>
+        <text x="130" y="74" text-anchor="middle" fill="#6a6866" font-size="9">Beob. 1</text>
+        <circle cx="250" cy="135" r="5" fill="#e8e6e0" stroke="#a0522d" stroke-width="2"/>
+        <text x="250" y="124" text-anchor="middle" fill="#6a6866" font-size="9">Beob. 2</text>
+        <circle cx="390" cy="130" r="5" fill="#e8e6e0" stroke="#a0522d" stroke-width="2"/>
+        <text x="390" y="119" text-anchor="middle" fill="#6a6866" font-size="9">Beob. 3</text>
+
+        <rect x="440" y="196" width="70" height="25" rx="3" fill="rgba(160,82,45,0.25)"/>
+        <line x1="475" y1="196" x2="475" y2="94" stroke="rgba(160,82,45,0.5)" stroke-width="1" stroke-dasharray="4 3"/>
+        <text x="475" y="232" text-anchor="middle" fill="#a0522d" font-size="9">EI-Maximum</text>
+        <text x="475" y="243" text-anchor="middle" fill="#a0522d" font-size="8">→ nächste Auswertung</text>
+
+        <path d="M475,210 L475,98" stroke="#a0522d" stroke-width="1.5" fill="none" marker-end="url(#arr-bo)"/>
+        <circle cx="475" cy="95" r="6" fill="#a0522d" stroke="#e8e6e0" stroke-width="1.5"/>
+
+        <text x="55" y="210" fill="#8aaccc" font-size="9">Surrogatmodell (posterior mean)</text>
+        <rect x="45" y="214" width="16" height="2" fill="#8aaccc"/>
+        <text x="55" y="225" fill="rgba(138,172,204,0.5)" font-size="9">Unsicherheitsband (posterior uncertainty)</text>
+        <rect x="45" y="229" width="16" height="8" fill="rgba(138,172,204,0.15)"/>
+        <text x="55" y="244" fill="rgba(255,255,255,0.15)" font-size="9">Echte Funktion f(λ) — unbekannt</text>
+        <line x1="45" y1="250" x2="61" y2="250" stroke="rgba(255,255,255,0.15)" stroke-width="1.5" stroke-dasharray="5 3"/>
+
+        <text x="310" y="263" text-anchor="middle" fill="#6a6866" font-size="9">λ (Hyperparameter-Raum)</text>
+      </svg>
+    </div>
+
+    <div class="intuition-box">
+      <strong>Ablauf:</strong> Das Surrogatmodell approximiert \(f\) mit einem Unsicherheitsband.
+      Die Acquisition Function wählt den nächsten Punkt mit maximalem EI — oft dort, wo
+      das Modell niedrige Werte vorhersagt <em>oder</em> wo die Unsicherheit hoch ist.
+      Nach jeder Auswertung wird das Modell mit dem neuen Datenpunkt aktualisiert.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">SMAC — Sequential Model-Based Algorithm Configuration [H2011]</div>
+    <p>
+      SMAC ist eine konkrete Implementierung von SMBO, die <b>Random Forests als Surrogatmodell</b>
+      verwendet (anstelle von Gaussian Processes). Das modelliert \(p_\mathcal{M}(f \mid \boldsymbol\lambda)\)
+      über die Variation der Baumvorhersagen im Ensemble.
+    </p>
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="item-label">Anwendungsbereich</div>
+        <div class="item-formula">Beliebige Algorithmen</div>
+        <div class="item-desc">Optimierung von Hyperparametern für beliebige Algorithmen, auch harte kombinatorische Problemlöser.</div>
+      </div>
+      <div class="info-item">
+        <div class="item-label">Surrogatmodell</div>
+        <div class="item-formula">Random Forest</div>
+        <div class="item-desc">Verwendet Random Forest zur Schätzung von \(p_\mathcal{M}(f \mid \boldsymbol\lambda)\). Robust für gemischte Parameterräume.</div>
+      </div>
+      <div class="info-item">
+        <div class="item-label">Instanzbasiert</div>
+        <div class="item-formula">Mehrere Datensätze</div>
+        <div class="item-desc">Basiert auf einer Menge von Instanzen — gut für Algorithmen, die auf verschiedenen Problemen laufen sollen.</div>
+      </div>
+    </div>
+
+    <div class="two-col" style="margin-top:6px;">
+      <div>
+        <p style="font-size:0.8rem;margin-bottom:8px;">
+          <b>Regression Tree fitting</b> — ein Beispiel: Ein Baum wird an Beobachtungen
+          \((\boldsymbol\lambda, \text{runtime})\) angepasst, um die Laufzeit zu schätzen.
+        </p>
+        <div class="svg-wrap" style="min-height:160px;">
+          <svg width="260" height="165" viewBox="0 0 260 165">
+            <defs>
+              <marker id="arr-tree" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+                <path d="M0,0.5 L0,6.5 L7,3.5 z" fill="#6a6866"/>
+              </marker>
+            </defs>
+            <circle cx="130" cy="22" r="14" fill="var(--surface2)" stroke="rgba(160,82,45,0.5)" stroke-width="1.5"/>
+
+            <line x1="120" y1="34" x2="60" y2="65" stroke="#6a6866" stroke-width="1.2" marker-end="url(#arr-tree)"/>
+            <line x1="140" y1="34" x2="200" y2="65" stroke="#6a6866" stroke-width="1.2" marker-end="url(#arr-tree)"/>
+
+            <text x="82" y="52" text-anchor="middle" fill="#8ab87a" font-size="8">param₃ ∈ {red}</text>
+            <text x="178" y="52" text-anchor="middle" fill="#8aaccc" font-size="8">param₃ ∈ {blue,green}</text>
+
+            <circle cx="60" cy="80" r="12" fill="var(--surface2)" stroke="rgba(160,82,45,0.5)" stroke-width="1.5"/>
+
+            <line x1="50" y1="90" x2="30" y2="120" stroke="#6a6866" stroke-width="1.2" marker-end="url(#arr-tree)"/>
+            <line x1="70" y1="90" x2="90" y2="120" stroke="#6a6866" stroke-width="1.2" marker-end="url(#arr-tree)"/>
+
+            <text x="38" y="112" text-anchor="middle" fill="#6a6866" font-size="7">p₂ ≤ 3.5</text>
+            <text x="82" y="112" text-anchor="middle" fill="#6a6866" font-size="7">p₂ &gt; 3.5</text>
+
+            <rect x="15" y="132" width="30" height="20" rx="3" fill="var(--surface2)" stroke="rgba(160,82,45,0.35)"/>
+            <text x="30" y="146" text-anchor="middle" fill="#a0522d" font-size="9">3.7</text>
+
+            <rect x="72" y="132" width="35" height="20" rx="3" fill="var(--surface2)" stroke="rgba(160,82,45,0.35)"/>
+            <text x="89" y="146" text-anchor="middle" fill="#a0522d" font-size="9">1.65</text>
+
+            <circle cx="200" cy="80" r="12" fill="var(--surface2)" stroke="rgba(160,82,45,0.5)" stroke-width="1.5"/>
+            <text x="200" y="108" text-anchor="middle" fill="#6a6866" font-size="8">…</text>
+          </svg>
+        </div>
+      </div>
+      <div>
+        <p style="font-size:0.8rem;">
+          <b>Vorteil gegenüber Gaussian Processes:</b> Random Forests können nativ mit
+          kategoriellen und konditionalen Hyperparametern umgehen — wichtig in AutoML,
+          wo Parameter wie "Anzahl Schichten" nur dann relevant ist, wenn als Algorithmus
+          Neural Networks gewählt wurde.
+        </p>
+        <div class="formula-box" style="margin-top:8px;font-size:0.8rem;">
+          Surrogatmodell gibt Unsicherheit via Baumvarianz:<br>
+          \[\hat{\mu}(\boldsymbol\lambda) = \frac{1}{B}\sum_{b=1}^B T_b(\boldsymbol\lambda)\]
+          \[\hat{\sigma}^2(\boldsymbol\lambda) = \frac{1}{B-1}\sum_{b=1}^B (T_b(\boldsymbol\lambda) - \hat{\mu})^2\]
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     TAB 7: AUTOML-SYSTEME
+══════════════════════════════════════════════════════ -->
+<div class="tab-panel" id="tab-automl">
+
+  <div class="card">
+    <div class="card-title">AutoML — Automated Machine Learning</div>
+    <p>
+      AutoML automatisiert den gesamten ML-Anwendungsprozess auf einem Datensatz:
+      Hyperparameter-Optimierung, Algorithmenauswahl und Feature-Selektion/Preprocessing.
+      Das Ziel ist, ML auch für Nicht-Experten zugänglich zu machen und den Aufwand für
+      Experten zu reduzieren.
+    </p>
+    <div class="pipeline-flow" style="gap:6px;margin-top:6px;flex-wrap:nowrap;overflow-x:auto;padding:4px 0;">
+      <div class="pipeline-step">Raw Data</div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step">Data Cleaning</div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step highlighted">Feature Preprocessing</div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step highlighted">Model Selection</div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step highlighted">Parameter Optimization</div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step">Model Validation</div>
+    </div>
+    <p style="font-size:0.75rem;color:var(--muted);font-family:'DM Mono',monospace;">
+      Orange Schritte werden von TPOT/Auto-Sklearn automatisiert
+    </p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Auto-Sklearn ([F2017]) — Pipeline-Struktur</div>
+    <p>
+      Auto-Sklearn (Feurer et al., NIPS 2015) ist ein vollständiges AutoML-System auf Basis von
+      scikit-learn. Es kombiniert SMAC für HP-Optimierung mit Metalearning (Warm-Starting)
+      und Ensemble-Methoden.
+    </p>
+
+    <div class="svg-wrap" style="min-height: 280px;">
+      <svg width="580" height="280" viewBox="0 0 580 280" style="max-width:100%">
+        <defs>
+          <marker id="arr-aml" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+            <path d="M0,0.5 L0,6.5 L7,3.5 z" fill="#6a6866"/>
+          </marker>
+        </defs>
+
+        <rect x="10" y="10" width="560" height="260" rx="10" fill="none" stroke="rgba(160,82,45,0.2)" stroke-width="1.5" stroke-dasharray="6 4"/>
+        <text x="290" y="30" text-anchor="middle" fill="rgba(160,82,45,0.5)" font-size="9">Auto-Sklearn Pipeline</text>
+
+        <rect x="30" y="45" width="230" height="100" rx="8" fill="var(--surface2)" stroke="rgba(255,255,255,0.07)"/>
+        <text x="145" y="63" text-anchor="middle" fill="#6a6866" font-size="8">feature preprocessor</text>
+        <rect x="80" y="72" width="100" height="28" rx="6" fill="var(--bg)" stroke="rgba(160,82,45,0.4)" stroke-width="1.5"/>
+        <text x="130" y="91" text-anchor="middle" fill="#e8e6e0" font-size="11" font-weight="500">preprocessing</text>
+        <text x="50" y="118" text-anchor="middle" fill="#8aaccc" font-size="9" style="cursor:pointer">PCA</text>
+        <text x="130" y="118" text-anchor="middle" fill="#6a6866" font-size="9">None</text>
+        <text x="215" y="118" text-anchor="middle" fill="#8aaccc" font-size="9">fast ICA</text>
+        <line x1="130" y1="100" x2="50" y2="110" stroke="rgba(255,255,255,0.07)" stroke-width="1" stroke-dasharray="3 2"/>
+        <line x1="130" y1="100" x2="130" y2="110" stroke="rgba(255,255,255,0.07)" stroke-width="1" stroke-dasharray="3 2"/>
+        <line x1="130" y1="100" x2="215" y2="110" stroke="rgba(255,255,255,0.07)" stroke-width="1" stroke-dasharray="3 2"/>
+
+        <rect x="320" y="45" width="240" height="120" rx="8" fill="var(--surface2)" stroke="rgba(255,255,255,0.07)"/>
+        <text x="440" y="63" text-anchor="middle" fill="#6a6866" font-size="8">estimator</text>
+        <rect x="370" y="72" width="100" height="28" rx="6" fill="var(--bg)" stroke="rgba(160,82,45,0.4)" stroke-width="1.5"/>
+        <text x="420" y="91" text-anchor="middle" fill="#e8e6e0" font-size="11" font-weight="500">classifier</text>
+        <text x="340" y="118" text-anchor="middle" fill="#8aaccc" font-size="9">RF</text>
+        <text x="420" y="118" text-anchor="middle" fill="#c8a060" font-size="9">AdaBoost</text>
+        <text x="540" y="118" text-anchor="middle" fill="#8aaccc" font-size="9">kNN</text>
+        <line x1="420" y1="100" x2="340" y2="110" stroke="rgba(255,255,255,0.07)" stroke-width="1" stroke-dasharray="3 2"/>
+        <line x1="420" y1="100" x2="420" y2="110" stroke="rgba(255,255,255,0.07)" stroke-width="1" stroke-dasharray="3 2"/>
+        <line x1="420" y1="100" x2="540" y2="110" stroke="rgba(255,255,255,0.07)" stroke-width="1" stroke-dasharray="3 2"/>
+        <text x="393" y="143" text-anchor="middle" fill="#6a6866" font-size="7.5">learning rate</text>
+        <text x="420" y="143" text-anchor="middle" fill="#6a6866" font-size="7.5"># estimators</text>
+        <text x="447" y="143" text-anchor="middle" fill="#6a6866" font-size="7.5">max depth</text>
+        <line x1="420" y1="126" x2="397" y2="136" stroke="rgba(255,255,255,0.05)" stroke-width="1" stroke-dasharray="2 2"/>
+        <line x1="420" y1="126" x2="420" y2="136" stroke="rgba(255,255,255,0.05)" stroke-width="1" stroke-dasharray="2 2"/>
+        <line x1="420" y1="126" x2="447" y2="136" stroke="rgba(255,255,255,0.05)" stroke-width="1" stroke-dasharray="2 2"/>
+
+        <rect x="30" y="175" width="530" height="90" rx="8" fill="var(--surface2)" stroke="rgba(255,255,255,0.07)"/>
+        <text x="295" y="193" text-anchor="middle" fill="#6a6866" font-size="8">data preprocessor</text>
+
+        <rect x="40" y="200" width="90" height="55" rx="6" fill="var(--bg)" stroke="rgba(160,82,45,0.3)"/>
+        <text x="85" y="221" text-anchor="middle" fill="#e8e6e0" font-size="10" font-weight="500">rescaling</text>
+        <text x="60" y="243" text-anchor="middle" fill="#8aaccc" font-size="8">min/max</text>
+        <text x="100" y="243" text-anchor="middle" fill="#6a6866" font-size="8">standard</text>
+
+        <rect x="155" y="200" width="90" height="55" rx="6" fill="var(--bg)" stroke="rgba(160,82,45,0.3)"/>
+        <text x="200" y="221" text-anchor="middle" fill="#e8e6e0" font-size="10" font-weight="500">one hot enc.</text>
+        <text x="200" y="243" text-anchor="middle" fill="#6a6866" font-size="8">mean / …</text>
+
+        <rect x="315" y="200" width="100" height="55" rx="6" fill="var(--bg)" stroke="rgba(160,82,45,0.3)"/>
+        <text x="365" y="221" text-anchor="middle" fill="#e8e6e0" font-size="10" font-weight="500">imputation</text>
+        <text x="348" y="243" text-anchor="middle" fill="#8aaccc" font-size="8">mean</text>
+        <text x="382" y="243" text-anchor="middle" fill="#6a6866" font-size="8">median</text>
+
+        <rect x="440" y="200" width="100" height="55" rx="6" fill="var(--bg)" stroke="rgba(160,82,45,0.3)"/>
+        <text x="490" y="221" text-anchor="middle" fill="#e8e6e0" font-size="10" font-weight="500">balancing</text>
+        <text x="462" y="243" text-anchor="middle" fill="#c8a060" font-size="8">weighting</text>
+        <text x="505" y="243" text-anchor="middle" fill="#6a6866" font-size="8">None</text>
+      </svg>
+    </div>
+
+    <div class="intuition-box">
+      <strong>Metalearning in Auto-Sklearn:</strong> Vor der SMAC-Optimierung werden auf Basis
+      von Meta-Features ähnliche Datensätze aus einer Datenbasis gesucht und deren beste
+      Konfigurationen als Warm-Start-Punkte verwendet. Das reduziert die benötigte Optimierungszeit
+      erheblich.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">AutoML-Systeme im Überblick</div>
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          <th>System</th>
+          <th>Optimierungsstrategie</th>
+          <th>Besonderheit</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="color:var(--text)">Auto-WEKA</td>
+          <td>SMAC</td>
+          <td>Automatische Modellauswahl + HP-Optimierung (WEKA-Basis)</td>
+        </tr>
+        <tr>
+          <td style="color:var(--text)">Hyperopt-Sklearn</td>
+          <td>Tree Parzen Estimator</td>
+          <td>scikit-learn Pipeline-Optimierung via Hyperopt</td>
+        </tr>
+        <tr>
+          <td style="color:var(--text)">Auto-Sklearn</td>
+          <td>SMAC + Metalearning</td>
+          <td>Warm-Starting + Ensemble-Building, NIPS 2015 Winner</td>
+        </tr>
+        <tr>
+          <td style="color:var(--text)">TPOT</td>
+          <td>Evolutionäre Algorithmen</td>
+          <td>Tree-based Pipeline Optimization, exportiert Python-Code</td>
+        </tr>
+        <tr>
+          <td style="color:var(--text)">Google AutoML</td>
+          <td>Neural Architecture Search</td>
+          <td>Cloud-basiert, fokus auf Deep Learning &amp; NAS</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+</div>
+
+<p class="src-note">// Quelle: Foliensatz 07 — Meta-Learning &amp; AutoML (ML SS2026)</p>
+
+<script>
+  const tabBtns   = document.querySelectorAll('.tab-btn');
+  const tabPanels = document.querySelectorAll('.tab-panel');
+
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.tab;
+      tabBtns.forEach(b => b.classList.remove('active'));
+      tabPanels.forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + target).classList.add('active');
+      if (window.MathJax && MathJax.typesetPromise) {
+        MathJax.typesetPromise();
+      }
+      if (target === 'search') renderSearch();
+    });
+  });
+
+  const GRID_COLOR  = '#a0522d';
+  const RAND_COLOR  = '#8aaccc';
+  const BG          = '#1e1e22';
+  const AXIS_COLOR  = 'rgba(255,255,255,0.12)';
+  const MUTED       = '#6a6866';
+  const SURF_COLOR  = '#17171a';
+  const IMPORTANT_BAND = 'rgba(138,172,204,0.08)';
+  const UNIMP_BAND     = 'rgba(160,82,45,0.08)';
+
+  let nTrials = 9;
+  let randomPoints = [];
+  let showImportance = false;
+
+  function generateGridPoints(n) {
+    const side = Math.round(Math.sqrt(n));
+    const pts = [];
+    for (let i = 0; i < side; i++) {
+      for (let j = 0; j < side; j++) {
+        pts.push({
+          x: (i + 1) / (side + 1),
+          y: (j + 1) / (side + 1)
+        });
+      }
+    }
+    return pts;
+  }
+
+  function generateRandomPoints(n) {
+    const pts = [];
+    for (let i = 0; i < n; i++) {
+      pts.push({ x: Math.random(), y: Math.random() });
+    }
+    return pts;
+  }
+
+  function drawSearchCanvas(canvasEl, pts, isGrid) {
+    const dpr = window.devicePixelRatio || 1;
+    const w   = canvasEl.offsetWidth  || 360;
+    const h   = 260;
+    canvasEl.width  = w * dpr;
+    canvasEl.height = h * dpr;
+    canvasEl.style.height = h + 'px';
+    const ctx = canvasEl.getContext('2d');
+    ctx.scale(dpr, dpr);
+
+    const pad = { left: 44, right: 12, top: 14, bottom: 40 };
+    const pw = w - pad.left - pad.right;
+    const ph = h - pad.top  - pad.bottom;
+
+    ctx.fillStyle = BG;
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.fillStyle = UNIMP_BAND;
+    ctx.fillRect(pad.left, pad.top, pw, ph);
+
+    const importantH = ph * 0.55;
+    ctx.fillStyle = IMPORTANT_BAND;
+    ctx.fillRect(pad.left, pad.top + ph - importantH, pw, importantH);
+
+    ctx.strokeStyle = AXIS_COLOR;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(pad.left, pad.top);
+    ctx.lineTo(pad.left, pad.top + ph);
+    ctx.lineTo(pad.left + pw, pad.top + ph);
+    ctx.stroke();
+
+    const gridLines = 5;
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.lineWidth = 0.5;
+    for (let i = 1; i < gridLines; i++) {
+      const xp = pad.left + pw * i / gridLines;
+      const yp = pad.top  + ph * i / gridLines;
+      ctx.beginPath(); ctx.moveTo(xp, pad.top); ctx.lineTo(xp, pad.top + ph); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(pad.left, yp); ctx.lineTo(pad.left + pw, yp); ctx.stroke();
+    }
+
+    ctx.fillStyle = MUTED;
+    ctx.font = '9px DM Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Wichtiger Parameter (x)', pad.left + pw / 2, h - 6);
+
+    ctx.save();
+    ctx.translate(11, pad.top + ph / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.fillText('Unwichtiger Parameter (y)', 0, 0);
+    ctx.restore();
+
+    const dotColor = isGrid ? GRID_COLOR : RAND_COLOR;
+    pts.forEach(pt => {
+      const cx = pad.left + pt.x * pw;
+      const cy = pad.top  + (1 - pt.y) * ph;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 4.5, 0, Math.PI * 2);
+      ctx.fillStyle = dotColor;
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+
+    if (showImportance) {
+      const distinctX = new Set(pts.map(p => Math.round(p.x * 10)));
+      ctx.strokeStyle = isGrid ? 'rgba(160,82,45,0.5)' : 'rgba(138,172,204,0.5)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 3]);
+      distinctX.forEach(dx => {
+        const xp = pad.left + (dx / 10) * pw;
+        ctx.beginPath();
+        ctx.moveTo(xp, pad.top);
+        ctx.lineTo(xp, pad.top + ph);
+        ctx.stroke();
+      });
+      ctx.setLineDash([]);
+    }
+
+    ctx.fillStyle = MUTED;
+    ctx.font = '8px DM Mono, monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(isGrid ? 'Grid Search' : 'Random Search', pad.left + 4, pad.top + 12);
+    ctx.fillStyle = isGrid ? GRID_COLOR : RAND_COLOR;
+    ctx.fillText('n = ' + pts.length + ' Punkte', pad.left + 4, pad.top + 23);
+  }
+
+  function countDistinctX(pts, bins) {
+    const set = new Set(pts.map(p => Math.floor(p.x * bins)));
+    return set.size;
+  }
+
+  function renderSearch() {
+    const n    = nTrials;
+    const gridPts = generateGridPoints(n);
+    const randPts = randomPoints.length === 0 ? generateRandomPoints(n) : randomPoints;
+
+    const cg = document.getElementById('canvas-grid');
+    const cr = document.getElementById('canvas-rand');
+    drawSearchCanvas(cg, gridPts, true);
+    drawSearchCanvas(cr, randPts, false);
+
+    const bins = 10;
+    const gx = countDistinctX(gridPts, bins);
+    const rx = countDistinctX(randPts, bins);
+    document.getElementById('stat-grid-x').textContent = gx;
+    document.getElementById('stat-rand-x').textContent = rx;
+    const adv = rx > gx ? '+' + (rx - gx) + ' mehr' : rx === gx ? 'gleich' : (rx - gx) + '';
+    document.getElementById('stat-advantage').textContent = adv;
+  }
+
+  document.getElementById('n-trials-slider').addEventListener('input', function() {
+    nTrials = parseInt(this.value);
+    document.getElementById('n-trials-val').textContent = nTrials;
+    randomPoints = generateRandomPoints(nTrials);
+    renderSearch();
+  });
+
+  document.getElementById('btn-resample').addEventListener('click', function() {
+    randomPoints = generateRandomPoints(nTrials);
+    renderSearch();
+  });
+
+  document.getElementById('btn-toggle-importance').addEventListener('click', function() {
+    showImportance = !showImportance;
+    this.textContent = showImportance ? 'Wichtigkeit ausblenden' : 'Wichtigkeit anzeigen';
+    renderSearch();
+  });
+
+  window.addEventListener('resize', () => {
+    const activeTab = document.querySelector('.tab-panel.active');
+    if (activeTab && activeTab.id === 'tab-search') renderSearch();
+  });
+
+  randomPoints = generateRandomPoints(nTrials);
+  setTimeout(() => {
+    const activeTab = document.querySelector('.tab-panel.active');
+    if (activeTab && activeTab.id === 'tab-search') renderSearch();
+  }, 100);
+</script>
+</body>
+</html>

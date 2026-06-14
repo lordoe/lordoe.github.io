@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lloyd-Algorithmus — K-Means Clustering</title>
+<script>
+  MathJax = {
+    tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+    options: { skipHtmlTags: ['script','noscript','style','textarea'] }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0e11;
+    --bg2: #16161b;
+    --bg3: #1e1e26;
+    --border: rgba(255,255,255,0.08);
+    --text: #e8e6f0;
+    --muted: #7a7890;
+    --accent: #8b7cf8;
+    --accent2: #4ecdc4;
+    --c0: #8b7cf8; --c0l: rgba(139,124,248,0.15);
+    --c1: #4ecdc4; --c1l: rgba(78,205,196,0.15);
+    --c2: #ff6b6b; --c2l: rgba(255,107,107,0.15);
+    --c3: #ffd93d; --c3l: rgba(255,217,61,0.15);
+    --c4: #6bcb77; --c4l: rgba(107,203,119,0.15);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem;
+  }
+
+  header {
+    width: 100%;
+    max-width: 860px;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  h1 {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.05rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+  }
+
+  .subtitle {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .main {
+    width: 100%;
+    max-width: 860px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+  }
+
+  button {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    letter-spacing: 0.02em;
+  }
+  button:hover { background: rgba(139,124,248,0.12); border-color: var(--accent); color: var(--accent); }
+  button.primary { background: rgba(139,124,248,0.15); border-color: var(--accent); color: var(--accent); }
+  button:active { transform: scale(0.97); }
+
+  select {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    color: var(--text);
+    cursor: pointer;
+  }
+
+  label { font-size: 0.75rem; color: var(--muted); font-family: 'DM Mono', monospace; display: flex; align-items: center; gap: 6px; }
+
+  .stats {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+  .stat span { color: var(--text); font-weight: 500; }
+
+  .phase-box {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 0.6rem 1rem;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: var(--muted);
+    min-height: 2.4rem;
+  }
+  .phase-box b { color: var(--text); font-weight: 500; }
+
+  canvas {
+    display: block;
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    cursor: crosshair;
+  }
+
+  .hint {
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    text-align: center;
+    margin-top: 0.25rem;
+  }
+
+  .legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    justify-content: center;
+  }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .legend-ring { width: 12px; height: 12px; border-radius: 50%; border: 2px solid; background: transparent; }
+
+  .explanation {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .explanation h2 {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .explanation p {
+    font-size: 0.82rem;
+    line-height: 1.65;
+    color: var(--muted);
+  }
+  .explanation p b { color: var(--text); font-weight: 500; }
+
+  .steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .step {
+    display: grid;
+    grid-template-columns: 1.6rem 1fr;
+    gap: 0.5rem 0.75rem;
+    align-items: start;
+  }
+
+  .step-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    padding-top: 0.1rem;
+  }
+
+  .step-body { display: flex; flex-direction: column; gap: 0.35rem; }
+
+  .step-title {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .step-desc {
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+
+  .formula-box {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.4rem 1rem;
+    color: var(--text);
+    overflow-x: auto;
+  }
+
+  .formula-box mjx-container { color: var(--text) !important; }
+
+  .src-note {
+    font-size: 0.7rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    border-top: 1px solid var(--border);
+    padding-top: 0.75rem;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>lloyd-algorithm.js</h1>
+  <span class="subtitle">// K-Means Clustering — interaktive Visualisierung</span>
+</header>
+
+<div class="main">
+  <div class="controls">
+    <button onclick="reset()" class="primary">↺ neu</button>
+    <label>k =
+      <select id="ksel" onchange="reset()">
+        <option value="2">2</option>
+        <option value="3" selected>3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+      </select>
+    </label>
+    <button onclick="step()" id="step-btn">schritt →</button>
+    <button onclick="autoRun()" id="auto-btn">▶ auto</button>
+    <button onclick="runToEnd()">⏭ fertig</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat">iteration <span id="iter-count">0</span></div>
+    <div class="stat">phase <span id="phase-name">init</span></div>
+    <div class="stat">änderungen <span id="changes-count">—</span></div>
+    <div class="stat">punkte <span id="pt-count">0</span></div>
+  </div>
+
+  <div class="phase-box" id="desc">Klicke <b>schritt →</b> um zu starten. Klick auf die Fläche fügt Punkte hinzu.</div>
+
+  <canvas id="c"></canvas>
+
+  <div class="hint">klick auf leinwand → punkt hinzufügen</div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--c0)"></div><span>cluster 1</span></div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--c1)"></div><span>cluster 2</span></div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--c2)"></div><span>cluster 3</span></div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--c3)"></div><span>cluster 4</span></div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--c4)"></div><span>cluster 5</span></div>
+    <div class="legend-item"><div class="legend-ring" style="border-color:var(--text)"></div><span>zentroid</span></div>
+  </div>
+
+  <div class="explanation">
+    <h2>// k-means — zielfunktion</h2>
+
+    <p>
+      Gegeben <b>x₁, …, x_N ∈ ℝ<sup>d</sup></b> — finde Zentroide
+      <b>μ₁, …, μ_K ∈ ℝ<sup>d</sup></b> und Zuweisungen
+      <b>c_n ∈ {1, …, K}</b>, die folgendes minimieren:
+    </p>
+
+    <div class="formula-box">
+      \[ \mathcal{L}(\{\boldsymbol{\mu}_k\},\{c_n\}) \;=\; \sum_{n=1}^{N} \|\mathbf{x}_n - \boldsymbol{\mu}_{c_n}\|^2 \]
+    </div>
+
+    <p>
+      Im Optimum wird jeder Punkt seinem <b>nächstgelegenen Zentroid</b> zugewiesen →
+      Partition von ℝ<sup>d</sup> in <b>Voronoi-Zellen</b>.
+    </p>
+
+    <div class="steps">
+
+      <div class="step">
+        <span class="step-num">01</span>
+        <div class="step-body">
+          <span class="step-title">Initialisierung</span>
+          <span class="step-desc">Initialisiere μ₁, …, μ_K zufällig (z. B. K zufällige Datenpunkte). Tipp: <b>K-means++</b> wählt Zentroide mit abstandsproportionaler Wahrscheinlichkeit — vermindert schlechte lokale Minima.</span>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">02</span>
+        <div class="step-body">
+          <span class="step-title">Assign — Zuweisungsschritt</span>
+          <span class="step-desc">Weise jeden Punkt x_n dem nächstgelegenen Zentroid zu:</span>
+          <div class="formula-box">
+            \[ c_n \;=\; \arg\min_{k \,\in\, \{1,\dots,K\}} \|\mathbf{x}_n - \boldsymbol{\mu}_k\|^2 \qquad \forall\, n = 1, \dots, N \]
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">03</span>
+        <div class="step-body">
+          <span class="step-title">Update — Aktualisierungsschritt</span>
+          <span class="step-desc">Setze jeden Zentroid auf das arithmetische Mittel seiner zugewiesenen Punkte:</span>
+          <div class="formula-box">
+            \[ \boldsymbol{\mu}_k \;=\; \frac{1}{|S_k|}\sum_{n \,\in\, S_k} \mathbf{x}_n \qquad \text{mit} \quad S_k = \{n : c_n = k\},\quad k = 1,\dots,K \]
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">04</span>
+        <div class="step-body">
+          <span class="step-title">Abbruch</span>
+          <span class="step-desc">
+            Wiederhole Schritte 02–03, bis sich keine Zuweisung c_n mehr ändert.<br><br>
+            ▸ &nbsp;<b>ℒ nimmt in jedem Schritt strikt ab</b> und es gibt nur K<sup>N</sup> Zuweisungen
+            → Terminierung in endlich vielen Iterationen.<br>
+            ▸ &nbsp;Konvergiert nur zu einem <b>lokalen Minimum</b>, sensitiv gegenüber Initialisierung → motiviert K-means++.
+          </span>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="explanation">
+    <h2>// eigenschaften der zielfunktion</h2>
+
+    <div class="steps">
+      <div class="step">
+        <span class="step-num">▸</span>
+        <div class="step-body">
+          <span class="step-title">Nicht-konvex</span>
+          <span class="step-desc">In ({μ_k}, {c_n}) gemeinsam → viele lokale Minima.</span>
+        </div>
+      </div>
+      <div class="step">
+        <span class="step-num">▸</span>
+        <div class="step-body">
+          <span class="step-title">Nicht-eindeutiges Optimum</span>
+          <span class="step-desc">Label-Permutationen + nicht-eindeutige Zentroid-Positionen.</span>
+        </div>
+      </div>
+      <div class="step">
+        <span class="step-num">▸</span>
+        <div class="step-body">
+          <span class="step-title">NP-schwer</span>
+          <span class="step-desc">Globale Minimierung für allgemeines d, K ≥ 2 ist NP-schwer.</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="explanation">
+    <h2>// mini-batch k-means</h2>
+
+    <p>
+      <b>Idee:</b> Verarbeite eine Stichprobe auf einmal, aktualisiere den gewinnenden Zentroid
+      per gleitendem Mittelwert. Für jede gestreamte Stichprobe <b>x_t</b> (t = 1, 2, …):
+    </p>
+
+    <div class="steps">
+      <div class="step">
+        <span class="step-num">01</span>
+        <div class="step-body">
+          <span class="step-title">Assign</span>
+          <div class="formula-box">
+            \[ k^* \;=\; \arg\min_k \|\mathbf{x}_t - \boldsymbol{\mu}_k\|^2 \]
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <span class="step-num">02</span>
+        <div class="step-body">
+          <span class="step-title">Update (gleitender Mittelwert)</span>
+          <div class="formula-box">
+            \[ \boldsymbol{\mu}_{k^*} \;\leftarrow\; (1-\eta)\,\boldsymbol{\mu}_{k^*} \;+\; \eta\,\mathbf{x}_t, \qquad \eta \in (0,1] \]
+          </div>
+          <span class="step-desc">
+            Wahl η = 1/n_{k*} (laufender Zähler) reproduziert exakt den laufenden Mittelwert.<br>
+            ▸ &nbsp;Praktische Erweiterungen: Zentroid-Reset-Heuristik, Balancierungs-Heuristik.<br>
+            ▸ &nbsp;In PyTorch als <b>Codebook-Update des Quantized VAE (VQ-VAE)</b> implementiert.
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <p class="src-note">// Quelle: Foliensatz 04 — Unsupervised Learning (ML SS2026)</p>
+  </div>
+
+</div>
+
+<script>
+const PALETTE = ['#8b7cf8','#4ecdc4','#ff6b6b','#ffd93d','#6bcb77'];
+const PALETTE_BG = [
+  'rgba(139,124,248,0.12)','rgba(78,205,196,0.12)',
+  'rgba(255,107,107,0.12)','rgba(255,217,61,0.12)','rgba(107,203,119,0.12)'
+];
+
+let pts = [], centroids = [], labels = [], k = 3;
+let phase = 'init', iterCount = 0, changesCount = 0;
+let autoTimer = null;
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+function resize() {
+  const W = Math.min(860, window.innerWidth - 32);
+  const H = Math.round(W * 0.58);
+  canvas.width = W;
+  canvas.height = H;
+  draw();
+}
+window.addEventListener('resize', resize);
+
+function rnd(a, b) { return a + Math.random() * (b - a); }
+
+function generatePoints() {
+  k = parseInt(document.getElementById('ksel').value);
+  pts = [];
+  const W = canvas.width, H = canvas.height;
+  const centers = Array.from({length: k}, () => [rnd(W*0.1, W*0.9), rnd(H*0.1, H*0.9)]);
+  centers.forEach(([cx, cy]) => {
+    const n = Math.floor(rnd(18, 35));
+    for (let i = 0; i < n; i++) {
+      pts.push([
+        Math.max(8, Math.min(W-8, cx + rnd(-W*0.12, W*0.12))),
+        Math.max(8, Math.min(H-8, cy + rnd(-H*0.14, H*0.14)))
+      ]);
+    }
+  });
+  document.getElementById('pt-count').textContent = pts.length;
+}
+
+function initCentroids() {
+  const shuffled = [...pts].sort(() => Math.random() - 0.5);
+  centroids = Array.from({length: k}, (_, i) => [...shuffled[i]]);
+  labels = new Array(pts.length).fill(-1);
+}
+
+function assign() {
+  let changes = 0;
+  labels = pts.map((p, i) => {
+    let best = 0, bestD = Infinity;
+    centroids.forEach((c, j) => {
+      const d = (p[0]-c[0])**2 + (p[1]-c[1])**2;
+      if (d < bestD) { bestD = d; best = j; }
+    });
+    if (best !== labels[i]) changes++;
+    return best;
+  });
+  return changes;
+}
+
+function updateCentroids() {
+  centroids = centroids.map((_, j) => {
+    const m = pts.filter((_, i) => labels[i] === j);
+    if (!m.length) return centroids[j];
+    return [m.reduce((s,p) => s+p[0], 0)/m.length, m.reduce((s,p) => s+p[1], 0)/m.length];
+  });
+}
+
+function drawVoronoi() {
+  const W = canvas.width, H = canvas.height;
+  if (!centroids.length || phase === 'init') return;
+  const idata = ctx.createImageData(W, H);
+  const parsed = PALETTE_BG.slice(0, k).map(s => {
+    const m = s.match(/[\d.]+/g);
+    return [+m[0], +m[1], +m[2], Math.round(+m[3]*255)];
+  });
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      let best = 0, bestD = Infinity;
+      centroids.forEach((c, j) => {
+        const d = (x-c[0])**2 + (y-c[1])**2;
+        if (d < bestD) { bestD = d; best = j; }
+      });
+      const [r,g,b,a] = parsed[best];
+      const idx = (y*W+x)*4;
+      idata.data[idx]=r; idata.data[idx+1]=g; idata.data[idx+2]=b; idata.data[idx+3]=a;
+    }
+  }
+  ctx.putImageData(idata, 0, 0);
+}
+
+function draw() {
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#16161b';
+  ctx.fillRect(0, 0, W, H);
+  drawVoronoi();
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+  for (let y = 0; y < H; y += 40) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+  // Connector lines in assign phase
+  if (phase === 'assign' || phase === 'converged') {
+    pts.forEach((p, i) => {
+      if (labels[i] < 0) return;
+      const c = centroids[labels[i]];
+      ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(c[0], c[1]);
+      ctx.strokeStyle = PALETTE[labels[i]];
+      ctx.lineWidth = 0.4;
+      ctx.globalAlpha = 0.15;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    });
+  }
+
+  // Points
+  pts.forEach((p, i) => {
+    const col = labels[i] >= 0 ? PALETTE[labels[i]] : '#7a7890';
+    ctx.beginPath(); ctx.arc(p[0], p[1], 4.5, 0, Math.PI*2);
+    ctx.fillStyle = col;
+    ctx.globalAlpha = 0.85;
+    ctx.fill();
+    ctx.strokeStyle = '#0e0e11';
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = 0.5;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  });
+
+  // Centroids
+  centroids.forEach((c, j) => {
+    // Outer glow ring
+    ctx.beginPath(); ctx.arc(c[0], c[1], 16, 0, Math.PI*2);
+    ctx.strokeStyle = PALETTE[j];
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = 0.2;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // Ring
+    ctx.beginPath(); ctx.arc(c[0], c[1], 11, 0, Math.PI*2);
+    ctx.fillStyle = PALETTE_BG[j].replace('0.12','0.6');
+    ctx.fill();
+    ctx.strokeStyle = PALETTE[j];
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Core
+    ctx.beginPath(); ctx.arc(c[0], c[1], 4, 0, Math.PI*2);
+    ctx.fillStyle = PALETTE[j];
+    ctx.fill();
+
+    // Label
+    ctx.font = '500 11px "DM Mono", monospace';
+    ctx.fillStyle = PALETTE[j];
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('C' + (j+1), c[0], c[1] - 15);
+  });
+
+  // Converged overlay
+  if (phase === 'converged') {
+    ctx.font = '500 12px "DM Mono", monospace';
+    ctx.fillStyle = 'rgba(139,124,248,0.7)';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('// konvergiert ✓', W - 12, H - 10);
+  }
+}
+
+const PHASE_DESCS = {
+  init: () => 'Klicke <b>schritt →</b> um zu starten. Klick auf die Fläche fügt Punkte hinzu.',
+  assign: (ch) => `<b>Zuweisung:</b> Jeder der ${pts.length} Punkte wird dem nächstgelegenen Zentroid zugewiesen — ${ch} Änderung${ch!==1?'en':''} in dieser Runde.`,
+  update: () => `<b>Aktualisierung:</b> Jeder Zentroid wandert zum arithmetischen Mittel seiner Punkte.`,
+  converged: () => `<b>Konvergiert</b> nach ${iterCount} Iteration${iterCount!==1?'en':''}. Keine Zuweisungsänderungen mehr möglich.`,
+};
+
+function setUI(ch) {
+  document.getElementById('phase-name').textContent = phase;
+  document.getElementById('desc').innerHTML = PHASE_DESCS[phase](ch);
+  document.getElementById('iter-count').textContent = iterCount;
+  document.getElementById('changes-count').textContent = ch !== undefined ? ch : '—';
+}
+
+function step() {
+  if (phase === 'converged') { reset(); return; }
+  if (phase === 'init') {
+    changesCount = assign();
+    phase = 'assign';
+  } else if (phase === 'assign') {
+    updateCentroids();
+    iterCount++;
+    phase = 'update';
+  } else if (phase === 'update') {
+    changesCount = assign();
+    if (changesCount === 0) {
+      phase = 'converged';
+      if (autoTimer) { clearInterval(autoTimer); autoTimer = null; document.getElementById('auto-btn').textContent = '▶ auto'; }
+    } else {
+      phase = 'assign';
+    }
+  }
+  draw();
+  setUI(changesCount);
+}
+
+function autoRun() {
+  if (autoTimer) {
+    clearInterval(autoTimer); autoTimer = null;
+    document.getElementById('auto-btn').textContent = '▶ auto';
+    return;
+  }
+  document.getElementById('auto-btn').textContent = '⏸ pause';
+  autoTimer = setInterval(() => {
+    if (phase === 'converged') { clearInterval(autoTimer); autoTimer = null; document.getElementById('auto-btn').textContent = '▶ auto'; return; }
+    step();
+  }, 650);
+}
+
+function runToEnd() {
+  for (let i = 0; i < 300 && phase !== 'converged'; i++) step();
+}
+
+function reset() {
+  if (autoTimer) { clearInterval(autoTimer); autoTimer = null; document.getElementById('auto-btn').textContent = '▶ auto'; }
+  generatePoints();
+  initCentroids();
+  phase = 'init';
+  iterCount = 0;
+  changesCount = 0;
+  draw();
+  setUI();
+}
+
+canvas.addEventListener('click', e => {
+  const rect = canvas.getBoundingClientRect();
+  const sx = canvas.width / rect.width;
+  const sy = canvas.height / rect.height;
+  pts.push([(e.clientX - rect.left) * sx, (e.clientY - rect.top) * sy]);
+  labels.push(-1);
+  document.getElementById('pt-count').textContent = pts.length;
+  if (phase !== 'init') { assign(); }
+  draw();
+});
+
+resize();
+reset();
+</script>
+</body>
+</html>
