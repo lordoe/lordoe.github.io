@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gastritis — OSCE Bauchschmerz</title>
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    /* ── PAIN TIMING VIZ ── */
+    .pain-timing {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .pain-card {
+      background: var(--s2);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 1rem 1.1rem;
+      display: flex;
+      flex-direction: column;
+      gap: .6rem;
+    }
+    .pain-card.active-pain {
+      border-color: rgba(244,96,96,.3);
+      background: var(--red-dim);
+    }
+    .pain-card.some-relief {
+      border-color: rgba(62,207,168,.25);
+      background: var(--teal-dim);
+    }
+
+    .pain-card-label {
+      font-family: var(--mono);
+      font-size: .75rem;
+      color: var(--muted);
+      letter-spacing: .04em;
+    }
+
+    .pain-card-title {
+      font-size: .95rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .pain-card-desc {
+      font-size: .85rem;
+      color: var(--dim);
+      line-height: 1.5;
+    }
+
+    .pain-meter {
+      display: flex;
+      gap: 3px;
+      margin-top: .25rem;
+    }
+    .pain-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--border-2);
+    }
+    .pain-dot.on { background: var(--red); }
+    .pain-dot.low { background: var(--orange); }
+
+    /* ── GASTRITIS TYPES ── */
+    .type-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: .75rem;
+      margin-top: 1rem;
+    }
+
+    .type-card {
+      background: var(--s2);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: .9rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: .4rem;
+    }
+    .type-card.type-a { border-top: 2px solid var(--purple); }
+    .type-card.type-b { border-top: 2px solid var(--blue); }
+    .type-card.type-c { border-top: 2px solid var(--orange); }
+
+    .type-header {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+
+    .type-badge {
+      font-family: var(--mono);
+      font-size: .7rem;
+      font-weight: 600;
+      padding: .15rem .45rem;
+      border-radius: 4px;
+    }
+    .type-a .type-badge { background: var(--purple-dim); color: var(--purple); }
+    .type-b .type-badge { background: var(--blue-dim);   color: var(--blue); }
+    .type-c .type-badge { background: var(--orange-dim); color: var(--orange); }
+
+    .type-name {
+      font-size: .88rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .type-desc {
+      font-size: .82rem;
+      color: var(--dim);
+      line-height: 1.45;
+    }
+
+    .type-note {
+      font-size: .78rem;
+      color: var(--muted);
+      font-style: italic;
+      line-height: 1.4;
+    }
+
+    @media (max-width: 600px) {
+      .pain-timing { grid-template-columns: 1fr; }
+      .type-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="breadcrumb">
+    <a href="../index.html">← Übersicht</a>
+    <span class="sep">/</span>
+    <span>Gastritis</span>
+  </nav>
+
+  <main class="page-wrap fade-in">
+
+    <header class="page-header">
+      <span class="topic-tag">// Krankheitsbild</span>
+      <h1>Gastritis</h1>
+    </header>
+
+    <!-- Kernaussage -->
+    <section class="kern-section">
+      <p class="kern">„Die Magenschleimhaut ist entzündet — typisch ist brennender Nüchternschmerz im Oberbauch, der sich nach dem Essen teils verbessert."</p>
+    </section>
+
+    <!-- Visualisierung: Schmerzzeit + Typen -->
+    <div class="viz-section">
+      <div class="viz-label">// Schmerzcharakter &amp; Zeitpunkt</div>
+      <div class="viz-body">
+        <div class="pain-timing">
+          <div class="pain-card active-pain">
+            <div class="pain-card-label">// Hauptsymptom</div>
+            <div class="pain-card-title">Nüchternschmerz</div>
+            <div class="pain-meter">
+              <div class="pain-dot on"></div>
+              <div class="pain-dot on"></div>
+              <div class="pain-dot on"></div>
+              <div class="pain-dot on"></div>
+              <div class="pain-dot"></div>
+            </div>
+            <div class="pain-card-desc">Brennender Schmerz im Oberbauch auf leeren Magen. Typisch morgens vor dem Frühstück oder zwischen den Mahlzeiten.</div>
+          </div>
+          <div class="pain-card some-relief">
+            <div class="pain-card-label">// Variabel möglich</div>
+            <div class="pain-card-title">Postprandialer Schmerz</div>
+            <div class="pain-meter">
+              <div class="pain-dot low"></div>
+              <div class="pain-dot low"></div>
+              <div class="pain-dot"></div>
+              <div class="pain-dot"></div>
+              <div class="pain-dot"></div>
+            </div>
+            <div class="pain-card-desc">Schmerzen auch nach dem Essen möglich (variable Ausprägung). Antazida bringen oft vorübergehend Erleichterung.</div>
+          </div>
+        </div>
+
+        <div style="margin-top:1.5rem">
+          <div class="sub-title" style="margin-bottom:.5rem">Gastritis-Typen</div>
+          <div class="type-grid">
+            <div class="type-card type-a">
+              <div class="type-header">
+                <span class="type-badge">Typ A</span>
+                <span class="type-name">Autoimmun</span>
+              </div>
+              <div class="type-desc">Antikörper gegen Parietalzellen → Vit.-B12-Mangel → perniziöse Anämie</div>
+              <div class="type-note">Selten; oft mit Hashimoto assoziiert</div>
+            </div>
+            <div class="type-card type-b">
+              <div class="type-header">
+                <span class="type-badge">Typ B</span>
+                <span class="type-name">Bakteriell</span>
+              </div>
+              <div class="type-desc"><em>H. pylori</em> — häufigste Form; chronische Entzündung des Antrums, Ulkusrisiko ↑</div>
+              <div class="type-note">Ca. 90 % aller Gastritiden</div>
+            </div>
+            <div class="type-card type-c">
+              <div class="type-header">
+                <span class="type-badge">Typ C</span>
+                <span class="type-name">Chemisch</span>
+              </div>
+              <div class="type-desc">NSAR, Alkohol, Gallereflux — direkte Schleimhautschädigung</div>
+              <div class="type-note">Häufig bei NSAR-Dauertherapie</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Intro -->
+    <section class="intro-section">
+      <p>Die Gastritis bezeichnet eine Entzündung der Magenschleimhaut. Sie verläuft schleichend mit brennendem Oberbauchschmerz, Übelkeit und saurem Aufstoßen. Teerstuhl (Meläna) ist ein Alarmsymptom, das auf eine Blutung hinweist.</p>
+      <p>Typische Auslöser: NSAR, Corticosteroide, SSRI sowie Vorerkrankungen wie Hashimoto-Thyreoiditis. Ein starkes bohrendes Hungergefühl bei gleichzeitig vermindertem Appetit ist charakteristisch.</p>
+    </section>
+
+    <!-- Collapsible Details -->
+    <details class="detail-section">
+      <summary>OPQRST, Klinische Untersuchung, DD &amp; Diagnostik</summary>
+      <div class="detail-body">
+
+        <!-- OPQRST -->
+        <div class="sub-section">
+          <div class="sub-title">OPQRST — Schmerzanamnese</div>
+          <table class="detail-table">
+            <thead>
+              <tr>
+                <th>Kürzel</th>
+                <th>Bedeutung &amp; Befund</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>O — Onset</td><td>Schleichend</td></tr>
+              <tr><td>P — Palliation</td><td>Nüchternschmerz (Hauptmerkmal); auch postprandialer Schmerz möglich</td></tr>
+              <tr><td>Q — Quality</td><td>Brennend</td></tr>
+              <tr><td>R — Region</td><td>Oberbauch (Epigastrium)</td></tr>
+              <tr><td>S — Severity</td><td>Variable Ausprägung</td></tr>
+              <tr><td>T — Timing</td><td>Verstärkung; variable Ausprägung, meist chronisch-intermittierend</td></tr>
+            </tbody>
+          </table>
+          <div class="info-box warn mt-2">
+            <strong>Alarmsymptom:</strong> Teerstuhl (Meläna, schwarz glänzend) = Blutung im oberen GI-Trakt! Sofortige weitere Abklärung erforderlich.
+          </div>
+          <div class="info-box mt-2">
+            <strong>Medikamente erfragen:</strong> NSAR, Corticosteroide, SSRI. <strong>Vorerkrankungen:</strong> Hashimoto-Thyreoiditis, Vit.-B-Mangel, Ulcus in Anamnese.
+          </div>
+        </div>
+
+        <!-- Klinische Untersuchung -->
+        <div class="sub-section">
+          <div class="sub-title">Klinische Untersuchung</div>
+          <table class="detail-table">
+            <tbody>
+              <tr><td>Auskultation</td><td>Normal</td></tr>
+              <tr><td>Palpation</td><td>Druckschmerz im Oberbauch (Epigastrium)</td></tr>
+              <tr><td>Hämoccult</td><td>Ggf. positiv (okkultes Blut im Stuhl)</td></tr>
+              <tr><td>DRU</td><td>Digital-rektale Untersuchung — Blut im Stuhl?</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Differentialdiagnosen -->
+        <div class="sub-section">
+          <div class="sub-title">Differentialdiagnosen</div>
+          <ul class="detail-list">
+            <li>Cholelithiasis / Cholezystitis / Gallenblasenperforation / Gallenkolik</li>
+            <li>Appendizitis</li>
+            <li>Ulcus ventriculi / Ulcus duodeni</li>
+            <li>Pankreatitis</li>
+            <li>Myokardinfarkt (Hinterwandinfarkt kann als Oberbauchschmerz imponieren!)</li>
+          </ul>
+        </div>
+
+        <!-- Diagnostik -->
+        <div class="sub-section">
+          <div class="sub-title">Diagnostik</div>
+          <table class="detail-table">
+            <tbody>
+              <tr>
+                <td>Labor</td>
+                <td>Leukozytose, CRP; Autoantikörper gegen Parietalzellen (90 %) und Intrinsic Factor (70 %); ggf. Vit.-B12-Mangel, makrozytäre Anämie; ggf. Hypergastrinämie</td>
+              </tr>
+              <tr>
+                <td>Endoskopie</td>
+                <td>Ösophago-Gastro-Duodenoskopie (ÖGD) mit Biopsie → histologische Sicherung, H.-pylori-Nachweis</td>
+              </tr>
+              <tr>
+                <td>H. pylori</td>
+                <td>Antigennachweis im Stuhl; Urease-Atemtest (13C-Harnstoff wird durch H.-pylori-Urease zu 13CO2 gespalten → Nachweis in der Ausatemluft)</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="info-box teal">
+            <strong>Urease-Atemtest:</strong> Patient trinkt 13C-Harnstoff-Lösung → H. pylori spaltet diesen über Urease → 13CO2 in der Ausatemluft messbar. Nicht-invasiv, sensitiv und spezifisch.
+          </div>
+        </div>
+
+      </div>
+    </details>
+
+    <p class="src-note">// Quelle: OSCE Ausarbeitung Bauchschmerz — Leonie (SoSe 24, MedUni Wien)</p>
+  </main>
+</body>
+</html>

@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Appendizitis — OSCE Bauchschmerz</title>
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    /* ── Page-specific ── */
+    .anim-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      background: var(--s2);
+      border: 1px solid var(--border-2);
+      border-radius: var(--r);
+      color: var(--dim);
+      font-family: var(--mono);
+      font-size: .78rem;
+      padding: .45rem .9rem;
+      cursor: pointer;
+      transition: border-color .15s, color .15s;
+      letter-spacing: .03em;
+      margin-top: .75rem;
+    }
+    .anim-btn:hover { border-color: var(--orange); color: var(--orange); }
+
+    /* Pain dot animations */
+    @keyframes pulse {
+      0%, 100% { opacity: .6; r: 8; }
+      50%       { opacity: 1;  r: 12; }
+    }
+    @keyframes pulse-glow {
+      0%, 100% { opacity: .25; r: 20; }
+      50%       { opacity: .55; r: 28; }
+    }
+    @keyframes migrate-dot {
+      0%   { cx: 200; cy: 180; }
+      100% { cx: 290; cy: 255; }
+    }
+    @keyframes migrate-glow {
+      0%   { cx: 200; cy: 180; }
+      100% { cx: 290; cy: 255; }
+    }
+    @keyframes arrive-pulse {
+      0%   { opacity: 0; r: 6; }
+      30%  { opacity: .7; r: 14; }
+      60%  { opacity: .4; r: 10; }
+      100% { opacity: .7; r: 12; }
+    }
+    @keyframes arrow-appear {
+      0%   { opacity: 0; }
+      60%  { opacity: 0; }
+      100% { opacity: .7; }
+    }
+    @keyframes label-fade-in {
+      0%   { opacity: 0; }
+      70%  { opacity: 0; }
+      100% { opacity: 1; }
+    }
+
+    #pain-dot, #pain-glow { animation: none; }
+    #arrive-dot, #arrive-glow { opacity: 0; }
+    #migration-arrow { opacity: 0; }
+    #label-rlq { opacity: 0; }
+
+    .running #pain-glow { animation: pulse-glow 1s ease-in-out 0s 2, migrate-glow 1.6s ease-in-out 2s 1 forwards; }
+    .running #pain-dot  { animation: pulse 1s ease-in-out 0s 2, migrate-dot 1.6s ease-in-out 2s 1 forwards; }
+    .running #arrive-glow { animation: arrive-pulse 1.2s ease-out 3.4s 1 forwards; }
+    .running #arrive-dot  { animation: arrive-pulse 1.2s ease-out 3.4s 1 forwards; }
+    .running #migration-arrow { animation: arrow-appear 3.6s ease 0s 1 forwards; }
+    .running #label-rlq { animation: label-fade-in 4s ease 0s 1 forwards; }
+
+    /* Stages timeline */
+    .stage-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: .5rem;
+      margin-top: .5rem;
+    }
+    @media (max-width: 640px) { .stage-grid { grid-template-columns: 1fr 1fr; } }
+
+    .stage-card {
+      background: var(--s2);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: .7rem .8rem;
+    }
+    .stage-card .stage-time {
+      font-family: var(--mono);
+      font-size: .7rem;
+      color: var(--orange);
+      margin-bottom: .25rem;
+    }
+    .stage-card .stage-name {
+      font-size: .82rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: .2rem;
+    }
+    .stage-card .stage-desc {
+      font-size: .78rem;
+      color: var(--dim);
+      line-height: 1.4;
+    }
+
+    /* Clinical signs */
+    .sign-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .4rem;
+    }
+    .sign-pill {
+      background: var(--orange-dim);
+      border: 1px solid rgba(245,164,69,.2);
+      border-radius: 20px;
+      padding: .25rem .75rem;
+      font-size: .82rem;
+      color: var(--orange);
+    }
+  </style>
+</head>
+<body>
+  <nav class="breadcrumb">
+    <a href="../index.html">← Übersicht</a>
+    <span class="sep">/</span>
+    <span>Appendizitis</span>
+  </nav>
+
+  <main class="page-wrap fade-in">
+    <header class="page-header">
+      <span class="topic-tag">// Krankheitsbild</span>
+      <h1>Appendizitis</h1>
+    </header>
+
+    <!-- Kernaussage -->
+    <section class="kern-section">
+      <p class="kern">„Der Schmerz wandert — er beginnt periumbilikał und zieht innerhalb von Stunden in den rechten Unterbauch."</p>
+    </section>
+
+    <!-- Visualization: Pain migration -->
+    <section class="viz-section">
+      <p class="viz-label">// Schmerzwanderung — Visualisierung</p>
+      <div class="viz-body" style="display:flex; flex-direction:column; align-items:center; gap:0;">
+        <svg id="appendix-svg" viewBox="0 0 400 360" xmlns="http://www.w3.org/2000/svg"
+             style="width:100%; max-width:420px; height:auto;">
+
+          <!-- Quadrant lines (dashed, subtle) -->
+          <line x1="200" y1="60" x2="200" y2="330" stroke="#1f2438" stroke-width="1" stroke-dasharray="4 4"/>
+          <line x1="80"  y1="195" x2="330" y2="195" stroke="#1f2438" stroke-width="1" stroke-dasharray="4 4"/>
+
+          <!-- Abdomen outline (oval) -->
+          <ellipse cx="200" cy="195" rx="135" ry="140"
+                   fill="none" stroke="#2a3050" stroke-width="2"/>
+
+          <!-- Nabel marker -->
+          <circle cx="200" cy="195" r="4" fill="#1c2130" stroke="#505878" stroke-width="1.5"/>
+          <text x="210" y="191" font-family="'DM Mono', monospace" font-size="9" fill="#505878">Nabel</text>
+
+          <!-- Quadrant labels -->
+          <text x="88"  y="80" font-family="'DM Mono', monospace" font-size="9" fill="#2a3050">RO</text>
+          <text x="300" y="80" font-family="'DM Mono', monospace" font-size="9" fill="#2a3050">LO</text>
+          <text x="88"  y="310" font-family="'DM Mono', monospace" font-size="9" fill="#2a3050">RU</text>
+          <text x="300" y="310" font-family="'DM Mono', monospace" font-size="9" fill="#2a3050">LU</text>
+
+          <!-- Phase 1 label -->
+          <text x="115" y="138" font-family="'DM Sans', sans-serif" font-size="9.5" fill="#8d97c0" text-anchor="middle">Epigastrisch /</text>
+          <text x="115" y="150" font-family="'DM Sans', sans-serif" font-size="9.5" fill="#8d97c0" text-anchor="middle">Periumbilikał</text>
+          <text x="115" y="162" font-family="'DM Mono', monospace" font-size="8.5" fill="#505878" text-anchor="middle">(Stunden 0–6)</text>
+
+          <!-- Migration arrow (appears late) -->
+          <path id="migration-arrow"
+                d="M 210 188 Q 255 205 278 243"
+                fill="none" stroke="#f5a445" stroke-width="1.5" stroke-dasharray="4 3"
+                marker-end="url(#arrowhead)" opacity="0"/>
+          <defs>
+            <marker id="arrowhead" markerWidth="7" markerHeight="7" refX="3" refY="3.5" orient="auto">
+              <polygon points="0 0, 7 3.5, 0 7" fill="#f5a445"/>
+            </marker>
+          </defs>
+
+          <!-- Arrival zone (McBurney) — subtle background circle -->
+          <circle cx="290" cy="255" r="28" fill="rgba(245,164,69,.06)" stroke="rgba(245,164,69,.15)" stroke-width="1" stroke-dasharray="3 3"/>
+
+          <!-- Phase 2 label (RLQ) -->
+          <g id="label-rlq" opacity="0">
+            <text x="297" y="303" font-family="'DM Sans', sans-serif" font-size="9.5" fill="#f5a445" text-anchor="middle">Rechter Unterbauch</text>
+            <text x="297" y="315" font-family="'DM Mono', monospace" font-size="8.5" fill="#8d97c0" text-anchor="middle">(ab Stunde 6)</text>
+            <!-- McBurney label -->
+            <text x="314" y="250" font-family="'DM Mono', monospace" font-size="8" fill="#f5a445" opacity=".8">McBurney</text>
+          </g>
+
+          <!-- Arrival dot (drawn over everything) -->
+          <circle id="arrive-glow" cx="290" cy="255" r="20" fill="rgba(245,164,69,.3)" opacity="0"/>
+          <circle id="arrive-dot"  cx="290" cy="255" r="8"  fill="#f5a445" opacity="0"/>
+
+          <!-- Pain dot (starts at periumbilik) -->
+          <circle id="pain-glow" cx="200" cy="180" r="20" fill="rgba(245,164,69,.3)"/>
+          <circle id="pain-dot"  cx="200" cy="180" r="8"  fill="#f5a445"/>
+        </svg>
+
+        <button class="anim-btn" id="play-btn" onclick="playAnimation()">&#9654; Animation abspielen</button>
+      </div>
+    </section>
+
+    <!-- Intro / Anamnese overview -->
+    <section class="intro-section">
+      <p>Die Appendizitis ist eine der häufigsten Ursachen für akuten Bauchschmerz und ein häufiges OSCE-Szenario. Der klassische Verlauf mit Schmerzwanderung ist pathognomonisch.</p>
+    </section>
+
+    <!-- Beispielfall -->
+    <section class="detail-section">
+      <details open>
+        <summary>Beispielfall</summary>
+        <div class="detail-body">
+          <div class="info-box accent">
+            <strong>Patientin, 19 Jahre</strong> — stechend/ziehende Schmerzen im rechten Unterbauch. Schmerzen begannen paraumbilical und sind in den rechten Unterbauch gewandert.
+          </div>
+          <div class="kv-grid" style="margin-top:.75rem;">
+            <span class="kv-key">Temp</span>   <span class="kv-val">38,4 °C</span>
+            <span class="kv-key">HF</span>     <span class="kv-val">96 /min</span>
+            <span class="kv-key">Leukos</span> <span class="kv-val">15,5 G/L <span style="color:var(--red)">↑</span></span>
+            <span class="kv-key">CRP</span>    <span class="kv-val">21 mg/dL <span style="color:var(--red)">↑</span></span>
+            <span class="kv-key">Sono</span>   <span class="kv-val">Verdickter Appendix 12 mm mit Kokardenzeichen, Appendicolith</span>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <!-- Anamnese OPQRST -->
+    <section class="detail-section">
+      <details>
+        <summary>Anamnese (OPQRST)</summary>
+        <div class="detail-body">
+          <table class="detail-table">
+            <tbody>
+              <tr>
+                <td>O — Onset</td>
+                <td>Plötzlich</td>
+              </tr>
+              <tr>
+                <td>P — Provokation</td>
+                <td>Keine Wärme (verschlimmert Entzündung); Schonhaltung mit gebeugter Hüfte</td>
+              </tr>
+              <tr>
+                <td>Q — Qualität</td>
+                <td>Anfangs <strong>dumpf</strong>, später mehr <strong>stechend / ziehend</strong></td>
+              </tr>
+              <tr>
+                <td>R — Region</td>
+                <td>Diffuse epigastrische / periumbilikale Schmerzen → Wanderung in rechten Unterbauch (innerhalb Stunden)</td>
+              </tr>
+              <tr>
+                <td>S — Severity</td>
+                <td>1–10 (NRS)</td>
+              </tr>
+              <tr>
+                <td>T — Zeitverlauf</td>
+                <td>Verschlechterung</td>
+              </tr>
+              <tr>
+                <td>Begleitsymptome</td>
+                <td>Fieber, Schüttelfrost, Appetitlosigkeit, Stuhlverhalt (oder Diarrhoe), Dysurie (Brennen)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </section>
+
+    <!-- Klinische Untersuchung -->
+    <section class="detail-section">
+      <details>
+        <summary>Klinische Untersuchung</summary>
+        <div class="detail-body">
+          <div class="sub-section">
+            <p class="sub-title">Inspektion</p>
+            <p style="color:var(--dim); font-size:.92rem;">Insbesondere <strong style="color:var(--text)">Skrotum</strong> (DD Hodentorsion) und <strong style="color:var(--text)">Leiste</strong> (DD inkarzerierte Leistenhernie) inspizieren.</p>
+          </div>
+          <div class="sub-section">
+            <p class="sub-title">Palpation</p>
+            <ul class="detail-list">
+              <li>Druckschmerz im rechten Unterbauch</li>
+              <li>Abwehrspannung</li>
+              <li>Schmerzauslösung durch Erschütterung</li>
+            </ul>
+          </div>
+          <div class="sub-section">
+            <p class="sub-title">Klinische Zeichen</p>
+            <div class="sign-grid">
+              <span class="sign-pill">McBurney-Punkt</span>
+              <span class="sign-pill">Lanz-Punkt</span>
+              <span class="sign-pill">Blumberg-Zeichen</span>
+              <span class="sign-pill">Douglas-Schmerz</span>
+              <span class="sign-pill">Psoas-Zeichen</span>
+              <span class="sign-pill">Baldwin-Zeichen</span>
+              <span class="sign-pill">Rovsing-Zeichen</span>
+            </div>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <!-- Stadieneinteilung -->
+    <section class="detail-section">
+      <details>
+        <summary>Stadieneinteilung</summary>
+        <div class="detail-body">
+          <div class="stage-grid">
+            <div class="stage-card">
+              <p class="stage-time">~6 Std.</p>
+              <p class="stage-name">Erosiva</p>
+              <p class="stage-desc">Schleimhauterosion mit Granulozytenfiltrat</p>
+            </div>
+            <div class="stage-card">
+              <p class="stage-time">~12 Std.</p>
+              <p class="stage-name">Phlegmonosa</p>
+              <p class="stage-desc">Transmurale Infiltration</p>
+            </div>
+            <div class="stage-card">
+              <p class="stage-time">~24 Std.</p>
+              <p class="stage-name">Ulcerophlegmonosa</p>
+              <p class="stage-desc">Zusätzlich fibrinöse Peritonitis</p>
+            </div>
+            <div class="stage-card" style="border-color: rgba(244,96,96,.3);">
+              <p class="stage-time" style="color:var(--red);">~72 Std.</p>
+              <p class="stage-name">Gangraenosa</p>
+              <p class="stage-desc">Einschmelzung durch Bakterien — Perforationsgefahr!</p>
+            </div>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <!-- Differentialdiagnosen -->
+    <section class="detail-section">
+      <details>
+        <summary>Differentialdiagnosen</summary>
+        <div class="detail-body">
+          <div class="sub-section">
+            <p class="sub-title">Gastrointestinal / Entzündlich</p>
+            <ul class="detail-list">
+              <li>Gastroenteritis</li>
+              <li>Chronisch entzündliche Darmerkrankung (CED)</li>
+              <li>Divertikulitis</li>
+              <li>Lymphadenitis mesenterialis</li>
+              <li>Meckel-Divertikulitis</li>
+            </ul>
+          </div>
+          <div class="sub-section">
+            <p class="sub-title">Gynäkologisch / Urologisch</p>
+            <ul class="detail-list">
+              <li>Adnexitis</li>
+              <li>Extrauteringravidität</li>
+              <li>Ovarialtorsion</li>
+              <li>Hodentorsion</li>
+              <li>Harnwegsinfekt → <strong style="color:var(--text)">Harnstix!</strong></li>
+              <li>Urolithiasis</li>
+              <li>Epididymitis</li>
+            </ul>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <!-- Diagnostik -->
+    <section class="detail-section">
+      <details>
+        <summary>Diagnostik</summary>
+        <div class="detail-body">
+          <div class="sub-section">
+            <p class="sub-title">Labor</p>
+            <ul class="detail-list">
+              <li>Leukozytose, CRP erhöht</li>
+              <li>Schwangerschaftstest (bei Frauen im gebärfähigen Alter)</li>
+            </ul>
+          </div>
+          <div class="sub-section">
+            <p class="sub-title">Bildgebung</p>
+            <ul class="detail-list">
+              <li><strong style="color:var(--text)">Sonographie</strong> — verdickter Appendix &gt; 6 mm (typisch 12 mm) im Querdurchmesser mit <strong style="color:var(--text)">Kokardenzeichen</strong> (Zielscheibenmuster)</li>
+              <li>MRT (bei Schwangeren bevorzugt)</li>
+              <li>CT (bei unklarem Befund)</li>
+            </ul>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <p class="src-note">// Quelle: OSCE Ausarbeitung Bauchschmerz — Leonie (SoSe 24, MedUni Wien)</p>
+  </main>
+
+  <script>
+    let animTimeout = [];
+
+    function clearAnim() {
+      animTimeout.forEach(t => clearTimeout(t));
+      animTimeout = [];
+      const svg = document.getElementById('appendix-svg');
+      svg.classList.remove('running');
+      // reset positions via re-insertion trick
+      void svg.offsetWidth;
+    }
+
+    function playAnimation() {
+      clearAnim();
+      const svg = document.getElementById('appendix-svg');
+      // Force reflow to restart CSS animations
+      svg.classList.remove('running');
+      void svg.offsetWidth;
+      svg.classList.add('running');
+
+      // After animation completes (~4.5s) remove running class so dots stay in final position
+      animTimeout.push(setTimeout(() => {
+        // keep final state — leave running class
+      }, 4600));
+    }
+  </script>
+</body>
+</html>

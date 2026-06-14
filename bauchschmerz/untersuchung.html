@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Untersuchungsablauf — OSCE Bauchschmerz</title>
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    /* ── Step interactive enhancements ──────────────────────────── */
+    .step-item {
+      cursor: pointer;
+      border-radius: var(--r);
+      transition: background .15s;
+      padding: .75rem .75rem .75rem .25rem;
+      margin-left: -.25rem;
+    }
+    .step-item:hover { background: var(--s2); }
+    .step-item.active {
+      background: var(--s2);
+    }
+    .step-item.active .step-num {
+      background: var(--teal-dim);
+      border-color: var(--teal);
+      color: var(--teal);
+    }
+    .step-item.active .step-content h3 {
+      color: var(--teal);
+    }
+
+    /* Fix connector line with padding */
+    .step-item:not(:last-child)::before {
+      left: 1.3rem;
+      top: 2.85rem;
+    }
+
+    .step-expand {
+      display: none;
+      margin-top: .75rem;
+      padding-top: .75rem;
+      border-top: 1px solid var(--border);
+    }
+    .step-item.active .step-expand {
+      display: block;
+    }
+    .step-expand ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: .35rem;
+    }
+    .step-expand ul li {
+      padding-left: 1.1rem;
+      position: relative;
+      color: var(--dim);
+      font-size: .88rem;
+      line-height: 1.5;
+    }
+    .step-expand ul li::before {
+      content: '·';
+      position: absolute;
+      left: 0;
+      color: var(--teal);
+      font-size: 1.1rem;
+      line-height: 1.35;
+    }
+
+    /* ── Two-column detail layout ────────────────────────────────── */
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    @media (max-width: 600px) {
+      .detail-grid { grid-template-columns: 1fr; }
+    }
+
+    .detail-card {
+      background: var(--s2);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: .9rem 1rem;
+    }
+    .detail-card h4 {
+      font-size: .88rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: .5rem;
+    }
+    .detail-card p {
+      font-size: .85rem;
+      color: var(--dim);
+      line-height: 1.5;
+    }
+
+    /* Defence musculaire highlight */
+    .def-box {
+      background: var(--orange-dim);
+      border: 1px solid rgba(245,164,69,.3);
+      border-radius: var(--r);
+      padding: .9rem 1rem;
+      font-size: .88rem;
+      color: var(--dim);
+      line-height: 1.55;
+    }
+    .def-box strong {
+      color: var(--orange);
+      display: block;
+      margin-bottom: .3rem;
+      font-size: .82rem;
+      font-family: var(--mono);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+  </style>
+</head>
+<body>
+  <nav class="breadcrumb">
+    <a href="../index.html">← Übersicht</a>
+    <span class="sep">/</span>
+    <span>Untersuchungsablauf</span>
+  </nav>
+
+  <main class="page-wrap fade-in">
+    <header class="page-header">
+      <span class="topic-tag">// Klinische Untersuchung</span>
+      <h1>Untersuchungsablauf</h1>
+    </header>
+
+    <!-- 1. Kernaussage -->
+    <section class="kern-section">
+      <p class="kern">„Die klinische Untersuchung folgt immer derselben Reihenfolge: Zuerst schauen, dann hören, dann klopfen, dann tasten."</p>
+    </section>
+
+    <!-- 2. Visualization: interactive steps -->
+    <section class="viz-section">
+      <div class="viz-label">// Untersuchungsablauf — Klicken zum Ausklappen</div>
+      <div class="viz-body">
+        <div class="step-list" id="stepList">
+
+          <div class="step-item" data-step="0">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <h3>Inspektion</h3>
+              <p>Zuerst alles anschauen, bevor man berührt.</p>
+              <div class="step-expand">
+                <ul>
+                  <li><strong>Haut:</strong> Ikterus, Blässe, Spider naevi, Caput medusae</li>
+                  <li><strong>Skleren:</strong> Gelbfärbung bei Ikterus</li>
+                  <li><strong>Bauchform:</strong> Distension, Asymmetrie, sichtbare Peristaltik</li>
+                  <li><strong>Narben:</strong> Voroperationen</li>
+                  <li><strong>Hautveränderungen:</strong> Hämatome, Rötungen, Erytheme</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="step-item" data-step="1">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <h3>Auskultation</h3>
+              <p>Darmgeräusche in allen 4 Quadranten abhören.</p>
+              <div class="step-expand">
+                <ul>
+                  <li>Stethoskop in alle <strong>4 Quadranten</strong> platzieren</li>
+                  <li><strong>Normale Darmgeräusche:</strong> regelmäßig, gurgelnd</li>
+                  <li><strong>Hyperperistaltik:</strong> z.B. bei Gastroenteritis, frühem Ileus</li>
+                  <li><strong>Stille:</strong> paralytischer Ileus, Peritonitis</li>
+                  <li>Auskultation <em>vor</em> Perkussion und Palpation, um Geräusche nicht zu beeinflussen</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="step-item" data-step="2">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <h3>Perkussion</h3>
+              <p>Klopfen zur Beurteilung von Luft, Flüssigkeit und Organgrenzen.</p>
+              <div class="step-expand">
+                <ul>
+                  <li><strong>Tympanisch:</strong> lufthaltige Darmschlingen (Normalfall)</li>
+                  <li><strong>Gedämpft:</strong> Flüssigkeit, Tumor, vergrößerte Organe</li>
+                  <li><strong>Leberdämpfung:</strong> oberer rechter Quadrant; fehlt bei freier Luft</li>
+                  <li><strong>Milzdämpfung:</strong> oberer linker Quadrant</li>
+                  <li><strong>Stoßwellenperkussion:</strong> Perkussion bei Nierenerkrankungen im Flankenbereich</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="step-item" data-step="3">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <h3>Palpation</h3>
+              <p>Erst oberflächlich, dann tief; immer vom schmerzfreien Bereich beginnen.</p>
+              <div class="step-expand">
+                <ul>
+                  <li><strong>Druckschmerz:</strong> lokalisierter Schmerz bei Palpation</li>
+                  <li><strong>Resistenz:</strong> tastbare Masse oder Verhärtung</li>
+                  <li><strong>Abwehrspannung (Défence musculaire):</strong> reflektorische Anspannung der Bauchmuskulatur bei Peritonealreizung</li>
+                  <li><strong>Loslassschmerz (ipsilateral):</strong> Hand wegziehen → Peritonitis, Appendizitis</li>
+                  <li><strong>Blumberg-Zeichen:</strong> kontralateraler Loslassschmerz im rechten Unterbauch</li>
+                  <li><strong>Murphy-Zeichen:</strong> Finger unter rechten Rippenbogen → bei tiefer Einatmung Druckschmerz (Cholezystitis)</li>
+                  <li><strong>Douglas-Schmerz:</strong> digital-rektale Untersuchung → Peritoneum im kleinen Becken betroffen</li>
+                  <li><strong>Milz/Leber:</strong> palpabel bei Vergrößerung</li>
+                  <li><strong>Hämoccult:</strong> okkultes Blut im Stuhl</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Intro text -->
+    <section class="intro-section">
+      <p>Die Reihenfolge <strong>Inspektion → Auskultation → Perkussion → Palpation</strong> ist beim Abdomen besonders wichtig: Durch Palpation können Darmgeräusche verändert werden, daher wird die Auskultation immer zuerst durchgeführt.</p>
+      <p>Im OSCE wird erwartet, dass man die Untersuchungsschritte aktiv <em>ansagt</em>, was man als nächstes tun würde.</p>
+    </section>
+
+    <!-- 4. Details (collapsible) -->
+    <details class="detail-section">
+      <summary>Vitalparameter</summary>
+      <div class="detail-body">
+        <table class="detail-table">
+          <thead>
+            <tr>
+              <th>Parameter</th>
+              <th>Was man prüft / Normwerte</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Blutdruck</td>
+              <td>Systolisch / diastolisch; Hypotonie bei Blutung oder Schock</td>
+            </tr>
+            <tr>
+              <td>Puls</td>
+              <td>Frequenz und Rhythmus; Tachykardie bei Schmerz, Infektion, Blutung</td>
+            </tr>
+            <tr>
+              <td>Atmung &amp; SpO₂</td>
+              <td>Atemfrequenz, Sauerstoffsättigung; Hinweis auf Begleitpathologien</td>
+            </tr>
+            <tr>
+              <td>Blutzucker</td>
+              <td>Hypoglykämie oder diabetische Ketoazidose als Ursache</td>
+            </tr>
+            <tr>
+              <td>Temperatur</td>
+              <td>Fieber bei Infektionen (Appendizitis, Cholezystitis, Peritonitis)</td>
+            </tr>
+            <tr>
+              <td>Herz, Lunge</td>
+              <td>Auskultation auf Begleitbefunde; Herzrhythmusstörungen etc.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+
+    <details class="detail-section">
+      <summary>Palpation im Detail</summary>
+      <div class="detail-body">
+
+        <div class="sub-section">
+          <div class="sub-title">Grundbefunde</div>
+          <div class="detail-grid">
+            <div class="detail-card">
+              <h4>Druckschmerz</h4>
+              <p>Lokalisierbarer Schmerz bei direktem Druck — wichtig zur Lokalisation der Pathologie (z.B. rechter Unterbauch bei Appendizitis).</p>
+            </div>
+            <div class="detail-card">
+              <h4>Resistenz</h4>
+              <p>Tastbare Verhärtung oder Masse im Abdomen. Kann Tumor, entzündliche Masse oder gefülltes Organ sein.</p>
+            </div>
+          </div>
+          <div class="def-box">
+            <strong>Défence musculaire — Abwehrspannung</strong>
+            Bei Reizung des Peritoneum parietale kommt es zur Lokalisierbarkeit des Schmerzes und zur reflektorischen Anspannung der Bauchmuskulatur. Zeigt auf eine peritoneale Beteiligung hin (z.B. Peritonitis, perforiertes Organ).
+          </div>
+        </div>
+
+        <div class="sub-section">
+          <div class="sub-title">Loslassschmerz &amp; Spezifische Zeichen</div>
+          <table class="detail-table">
+            <thead>
+              <tr>
+                <th>Zeichen</th>
+                <th>Durchführung &amp; Bedeutung</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Loslassschmerz (ipsilateral)</td>
+                <td>Hand langsam eindrücken, dann rasch loslassen → Schmerz bei Loslassen. Hinweis auf Peritonealreizung (Appendizitis, Peritonitis).</td>
+              </tr>
+              <tr>
+                <td>Blumberg-Zeichen</td>
+                <td>Kontralateraler Loslassschmerz: Palpation des <em>linken</em> Unterbauchs auslöst Schmerz im <em>rechten</em> Unterbauch → pathognomonisch für Appendizitis.</td>
+              </tr>
+              <tr>
+                <td>Murphy-Zeichen</td>
+                <td>Finger unter den rechten Rippenbogen legen, Patient tief einatmen lassen → Schmerz durch absteigende entzündete Gallenblase auf die Finger. Positiv bei Cholezystitis.</td>
+              </tr>
+              <tr>
+                <td>Douglas-Schmerz</td>
+                <td>Digital-rektale Untersuchung: Schmerz im Douglas-Raum (Excavatio rectouterina/rectovesicalis) → Peritoneum im kleinen Becken betroffen; Abszess oder Appendizitis.</td>
+              </tr>
+              <tr>
+                <td>Stoßwellenperkussion</td>
+                <td>Klopfen im Flankenbereich auf die Faust → Schmerz bei Nieren- oder Urolithiasisbeteiligung (kostovertebraler Klopfschmerz).</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="sub-section">
+          <div class="sub-title">Weitere Untersuchungen</div>
+          <table class="detail-table">
+            <thead>
+              <tr>
+                <th>Untersuchung</th>
+                <th>Bedeutung</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Hämoccult</td>
+                <td>Nachweis von okkultem Blut im Stuhl. Positiv bei gastrointestinaler Blutung, Kolorektalkarzinom, Colitis.</td>
+              </tr>
+              <tr>
+                <td>Digital-rektale Untersuchung (DRU)</td>
+                <td>Austastung des Rektums und Douglas-Raums. Detektiert Rektumtumoren, Douglas-Abszess, Prostatavergrößerung.</td>
+              </tr>
+              <tr>
+                <td>Milz/Leber palpabel?</td>
+                <td>Hepatomegalie (z.B. Stauungsleber, Hepatitis), Splenomegalie (z.B. Mononukleose, Leberzirrhose, hämatologische Erkrankungen).</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </details>
+
+    <p class="src-note">// Quelle: OSCE Ausarbeitung Bauchschmerz — Leonie (SoSe 24, MedUni Wien)</p>
+  </main>
+
+  <script>
+    const items = document.querySelectorAll('.step-item');
+
+    items.forEach(item => {
+      item.addEventListener('click', () => {
+        const isActive = item.classList.contains('active');
+        // Close all
+        items.forEach(i => i.classList.remove('active'));
+        // Toggle clicked
+        if (!isActive) {
+          item.classList.add('active');
+        }
+      });
+    });
+  </script>
+</body>
+</html>

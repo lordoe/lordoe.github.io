@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Colitis (C. difficile) — OSCE Bauchschmerz</title>
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    /* ── TIMELINE ── */
+    .timeline {
+      display: flex;
+      align-items: flex-start;
+      gap: 0;
+      position: relative;
+      overflow-x: auto;
+      padding-bottom: .5rem;
+    }
+
+    .tl-step {
+      flex: 1;
+      min-width: 140px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      cursor: pointer;
+    }
+
+    /* connector line between steps */
+    .tl-step:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      top: 1.4rem;
+      right: -1px;
+      width: calc(100% - 2.8rem + 2px);
+      left: calc(50% + 1.4rem);
+      height: 2px;
+      background: var(--border-2);
+      z-index: 0;
+      transition: background .3s;
+    }
+    .tl-step.active:not(:last-child)::after {
+      background: var(--accent);
+    }
+
+    .tl-dot {
+      width: 2.8rem;
+      height: 2.8rem;
+      border-radius: 50%;
+      background: var(--s2);
+      border: 2px solid var(--border-2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--mono);
+      font-size: .8rem;
+      color: var(--muted);
+      z-index: 1;
+      transition: border-color .25s, color .25s, background .25s;
+      position: relative;
+    }
+    .tl-step.active .tl-dot {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--blue-dim);
+    }
+
+    .tl-label {
+      margin-top: .65rem;
+      font-size: .82rem;
+      font-weight: 600;
+      color: var(--dim);
+      text-align: center;
+      transition: color .25s;
+      padding: 0 .25rem;
+    }
+    .tl-step.active .tl-label { color: var(--text); }
+
+    .tl-sub {
+      margin-top: .25rem;
+      font-size: .75rem;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.4;
+      padding: 0 .25rem;
+      transition: color .25s;
+    }
+    .tl-step.active .tl-sub { color: var(--dim); }
+
+    .tl-detail {
+      margin-top: 1.5rem;
+      padding: 1rem 1.1rem;
+      background: var(--s2);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      font-size: .9rem;
+      color: var(--dim);
+      line-height: 1.55;
+      min-height: 3.5rem;
+      transition: border-color .25s;
+    }
+    .tl-detail.active { border-color: var(--blue-glow); }
+    .tl-detail strong { color: var(--text); }
+
+    @media (max-width: 600px) {
+      .timeline {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
+      }
+      .tl-step {
+        flex-direction: row;
+        align-items: flex-start;
+        min-width: unset;
+        gap: 1rem;
+        padding-bottom: 1.25rem;
+      }
+      .tl-step:not(:last-child)::after {
+        top: 2.8rem;
+        left: 1.3rem;
+        right: auto;
+        width: 2px;
+        height: calc(100% - 2.8rem);
+      }
+      .tl-label, .tl-sub { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="breadcrumb">
+    <a href="../index.html">← Übersicht</a>
+    <span class="sep">/</span>
+    <span>Colitis (C. difficile)</span>
+  </nav>
+
+  <main class="page-wrap fade-in">
+
+    <header class="page-header">
+      <span class="topic-tag">// Krankheitsbild</span>
+      <h1>Colitis <span style="color:var(--dim);font-weight:400">(C. difficile)</span></h1>
+    </header>
+
+    <!-- Kernaussage -->
+    <section class="kern-section">
+      <p class="kern">„Nach einer Antibiotika-Gabe übernimmt <em>Clostridium difficile</em> den Darm — das Ergebnis ist schwallartiger Durchfall mit charakteristischem Foetor."</p>
+    </section>
+
+    <!-- Visualisierung: Timeline -->
+    <div class="viz-section">
+      <div class="viz-label">// Pathogenese-Timeline — Schritt anklicken</div>
+      <div class="viz-body">
+        <div class="timeline" id="timeline">
+          <div class="tl-step active" data-index="0" onclick="setStep(0)">
+            <div class="tl-dot">1</div>
+            <div class="tl-label">Antibiotikagabe</div>
+            <div class="tl-sub">Clindamycin, Cephalosporine, Aminopenicilline, Fluorchinolone</div>
+          </div>
+          <div class="tl-step" data-index="1" onclick="setStep(1)">
+            <div class="tl-dot">2</div>
+            <div class="tl-label">2–10 Tage später</div>
+            <div class="tl-sub">Normales Darmmikrobiom wird zerstört</div>
+          </div>
+          <div class="tl-step" data-index="2" onclick="setStep(2)">
+            <div class="tl-dot">3</div>
+            <div class="tl-label">C. difficile</div>
+            <div class="tl-sub">Übernimmt den Darm, produziert Toxine A &amp; B</div>
+          </div>
+          <div class="tl-step" data-index="3" onclick="setStep(3)">
+            <div class="tl-dot">4</div>
+            <div class="tl-label">Symptome</div>
+            <div class="tl-sub">Wässrige, faulig riechende Diarrhoe + Krampfschmerzen</div>
+          </div>
+        </div>
+        <div class="tl-detail active" id="tl-detail">
+          <strong>Antibiotikagabe:</strong> Bestimmte Breitbandantibiotika (v.a. Clindamycin, Cephalosporine, Aminopenicilline, Fluorchinolone) stören die physiologische Darmflora besonders stark.
+        </div>
+      </div>
+    </div>
+
+    <!-- Intro -->
+    <section class="intro-section">
+      <p>Die <em>Clostridioides difficile</em>-Infektion (CDI) ist eine der häufigsten nosokomialen Durchfallerkrankungen. Die Infektion bleibt häufig asymptomatisch — Diarrhoe entwickelt sich erst nach Antibiotikagabe und der daraus folgenden Vermehrung von C. difficile.</p>
+      <p>Charakteristisch ist das plötzliche Auftreten <strong style="color:var(--text)">wässriger, faulig-übelriechend (bisweilen blutiger) Diarrhoe</strong> mit krampfartigen Schmerzen in den unteren Quadranten, die sich nach dem Stuhlgang bessern. Bei schweren Verläufen kann eine pseudomembranöse Kolitis mit sichtbaren Pseudomembranen entstehen.</p>
+    </section>
+
+    <!-- Collapsible Details -->
+    <details class="detail-section">
+      <summary>OPQRST, Klinische Untersuchung, DD &amp; Diagnostik</summary>
+      <div class="detail-body">
+
+        <!-- OPQRST -->
+        <div class="sub-section">
+          <div class="sub-title">OPQRST — Schmerzanamnese</div>
+          <table class="detail-table">
+            <thead>
+              <tr>
+                <th>Kürzel</th>
+                <th>Bedeutung &amp; Befund</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>O — Onset</td><td>Plötzlich</td></tr>
+              <tr><td>P — Palliation</td><td>Besserung nach dem Stuhlgang</td></tr>
+              <tr><td>Q — Quality</td><td>Krampfartig</td></tr>
+              <tr><td>R — Region</td><td>Untere Quadranten (diffus)</td></tr>
+              <tr><td>S — Severity</td><td>Variabel, bei pseudomembranöser Kolitis stark</td></tr>
+              <tr><td>T — Timing</td><td>Verstärkung im Verlauf; akut einsetzend</td></tr>
+            </tbody>
+          </table>
+          <div class="info-box warn mt-2">
+            <strong>Anamnestisch wichtig:</strong> Antibiotikaeinnahme in den letzten <strong>2–10 Tagen</strong> erfragen (Clindamycin, Cephalosporine, Aminopenicilline, Fluorchinolone). Fieber, akut einsetzende wässrige, faulig-übelriechende (ggf. blutige) Diarrhoe.
+          </div>
+        </div>
+
+        <!-- Klinische Untersuchung -->
+        <div class="sub-section">
+          <div class="sub-title">Klinische Untersuchung</div>
+          <table class="detail-table">
+            <tbody>
+              <tr><td>Inspektion</td><td>Exsikkosezeichen? (trockene Schleimhäute, Hautturgor, Zungentrockenheit)</td></tr>
+              <tr><td>Auskultation</td><td>Darmgeräusche vermehrt (Hyperperistaltik)</td></tr>
+              <tr><td>Palpation</td><td>Diffuser Druckschmerz in allen Quadranten; Peritonismus / Abwehrspannung möglich</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Differentialdiagnosen -->
+        <div class="sub-section">
+          <div class="sub-title">Differentialdiagnosen</div>
+          <ul class="detail-list">
+            <li>Colitis ulcerosa</li>
+            <li>Kolorektalkarzinom</li>
+            <li>Laktoseintoleranz</li>
+            <li>Andere infektiöse Kolitiden (Salmonellen, Campylobacter, EHEC)</li>
+          </ul>
+        </div>
+
+        <!-- Diagnostik -->
+        <div class="sub-section">
+          <div class="sub-title">Diagnostik</div>
+          <table class="detail-table">
+            <tbody>
+              <tr>
+                <td>Labor</td>
+                <td>Leukozytose, CRP erhöht, Albumin ↓ (Hypalbuminämie als Zeichen des Proteinverlusts)</td>
+              </tr>
+              <tr>
+                <td>Stuhldiagnostik</td>
+                <td>Stuhlkultur, C.-difficile-Toxin-Nachweis (ELISA), PCR auf Toxingene</td>
+              </tr>
+              <tr>
+                <td>Endoskopie</td>
+                <td>Gastroskopie / Koloskopie → Nachweis typischer <strong>Pseudomembranen</strong> bei pseudomembranöser Kolitis</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="info-box accent">
+            <strong>Pathognomonisch:</strong> Gelblich-weißliche Pseudomembranen auf der Kolonmukosa in der Endoskopie — beweisend für pseudomembranöse Kolitis.
+          </div>
+        </div>
+
+      </div>
+    </details>
+
+    <p class="src-note">// Quelle: OSCE Ausarbeitung Bauchschmerz — Leonie (SoSe 24, MedUni Wien)</p>
+  </main>
+
+  <script>
+    const steps = document.querySelectorAll('.tl-step');
+    const detail = document.getElementById('tl-detail');
+
+    const details = [
+      '<strong>Antibiotikagabe:</strong> Bestimmte Breitbandantibiotika (v.a. Clindamycin, Cephalosporine, Aminopenicilline, Fluorchinolone) stören die physiologische Darmflora besonders stark.',
+      '<strong>2–10 Tage später:</strong> Das normale Darmmikrobiom wird durch das Antibiotikum dezimiert. Die Schutzfunktion der Kommensalen gegenüber Pathogenen (Kolonisationsresistenz) bricht zusammen.',
+      '<strong>C. difficile vermehrt sich:</strong> Ohne Konkurrenz durch die physiologische Flora übernimmt C. difficile den Darm. Es produziert Toxin A (Enterotoxin) und Toxin B (Zytotoxin), die die Kolonmukosa schädigen.',
+      '<strong>Symptome:</strong> Akut einsetzende, wässrige, faulig-übelriechende (bisweilen blutige) Diarrhoe mit krampfartigen Schmerzen in den unteren Quadranten. Fieber, Leukozytose. Schwere Verläufe: pseudomembranöse Kolitis, toxisches Megakolon.',
+    ];
+
+    function setStep(idx) {
+      steps.forEach((s, i) => {
+        s.classList.toggle('active', i === idx);
+      });
+      detail.classList.add('active');
+      detail.innerHTML = details[idx];
+    }
+  </script>
+</body>
+</html>

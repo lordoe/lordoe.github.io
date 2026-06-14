@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pankreatitis — OSCE Bauchschmerz</title>
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    /* ── Ekchymosen interactive dots ── */
+    .torso-dot {
+      cursor: pointer;
+      transition: r .15s;
+    }
+    .torso-dot:hover circle { r: 12; }
+
+    /* Tooltip / popover */
+    .dot-tooltip {
+      position: absolute;
+      background: var(--s2);
+      border: 1px solid var(--border-2);
+      border-radius: var(--r);
+      padding: .65rem .9rem;
+      font-size: .82rem;
+      color: var(--text);
+      max-width: 220px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity .15s;
+      z-index: 10;
+      box-shadow: 0 6px 20px rgba(0,0,0,.4);
+    }
+    .dot-tooltip.visible { opacity: 1; }
+    .dot-tooltip strong { color: var(--accent); display: block; margin-bottom: .2rem; font-family: var(--mono); font-size: .75rem; }
+
+    .viz-body-torso {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* Ranson score grid */
+    .ranson-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .5rem;
+    }
+    @media (max-width: 540px) { .ranson-grid { grid-template-columns: 1fr; } }
+
+    .ranson-col-head {
+      font-family: var(--mono);
+      font-size: .75rem;
+      color: var(--muted);
+      letter-spacing: .04em;
+      margin-bottom: .4rem;
+    }
+
+    .ranson-item {
+      display: flex;
+      align-items: flex-start;
+      gap: .5rem;
+      font-size: .84rem;
+      color: var(--dim);
+      padding: .25rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .ranson-item:last-child { border-bottom: none; }
+    .ranson-item::before {
+      content: '·';
+      color: var(--blue);
+      flex-shrink: 0;
+      font-size: 1rem;
+      line-height: 1.2;
+    }
+
+    /* Gürtelschmerz arc label */
+    .arc-label {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 9.5px;
+    }
+  </style>
+</head>
+<body>
+  <nav class="breadcrumb">
+    <a href="../index.html">← Übersicht</a>
+    <span class="sep">/</span>
+    <span>Pankreatitis</span>
+  </nav>
+
+  <main class="page-wrap fade-in">
+    <header class="page-header">
+      <span class="topic-tag">// Krankheitsbild</span>
+      <h1>Pankreatitis</h1>
+    </header>
+
+    <!-- Kernaussage -->
+    <section class="kern-section">
+      <p class="kern">„Vernichtungsschmerz im Oberbauch, der sich gürtelförmig in den Rücken zieht — typisch für eine Pankreatitis."</p>
+    </section>
+
+    <!-- Visualization: Torso + Gürtelschmerz + Ekchymosen -->
+    <section class="viz-section">
+      <p class="viz-label">// Schmerzlokalisation &amp; Ekchymosen-Zeichen — klickbare Punkte</p>
+      <div class="viz-body viz-body-torso">
+        <svg id="pankreas-svg" viewBox="0 0 400 380" xmlns="http://www.w3.org/2000/svg"
+             style="width:100%; max-width:420px; height:auto; overflow:visible;">
+
+          <!-- Body outline: torso front -->
+          <!-- Shoulders -->
+          <path d="M 130 80 Q 100 85 85 115 L 75 210 L 95 215 L 95 340 L 305 340 L 305 215 L 325 210 L 315 115 Q 300 85 270 80 Q 240 68 200 65 Q 160 68 130 80 Z"
+                fill="var(--s2)" stroke="var(--border-2)" stroke-width="1.5"/>
+
+          <!-- Neck -->
+          <rect x="178" y="40" width="44" height="30" rx="4" fill="var(--s2)" stroke="var(--border-2)" stroke-width="1.5"/>
+          <!-- Head simplified circle -->
+          <circle cx="200" cy="30" r="28" fill="var(--s2)" stroke="var(--border-2)" stroke-width="1.5"/>
+
+          <!-- Midline (dashed) -->
+          <line x1="200" y1="90" x2="200" y2="335" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 4"/>
+
+          <!-- Horizontal division (epigastrium / meso) -->
+          <line x1="90" y1="185" x2="315" y2="185" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 4"/>
+
+          <!-- Pancreas highlight area (upper abdomen, behind stomach) -->
+          <ellipse cx="200" cy="170" rx="72" ry="22"
+                   fill="rgba(91,156,246,.1)" stroke="rgba(91,156,246,.25)" stroke-width="1.5"
+                   stroke-dasharray="3 3"/>
+          <text x="200" y="174" font-family="'DM Mono', monospace" font-size="9" fill="#5b9cf6"
+                text-anchor="middle" font-weight="500">Pankreas</text>
+
+          <!-- Gürtelförmige Ausstrahlung: arc from epigastrium wrapping to back -->
+          <!-- Front band -->
+          <path d="M 108 158 Q 200 148 292 158"
+                fill="none" stroke="rgba(245,164,69,.5)" stroke-width="4" stroke-linecap="round"/>
+          <!-- Left side arc going "around" to back -->
+          <path d="M 108 158 Q 82 165 78 185 Q 76 200 90 210"
+                fill="none" stroke="rgba(245,164,69,.35)" stroke-width="3" stroke-linecap="round" stroke-dasharray="5 3"/>
+          <!-- Right side arc -->
+          <path d="M 292 158 Q 318 165 322 185 Q 324 200 310 210"
+                fill="none" stroke="rgba(245,164,69,.35)" stroke-width="3" stroke-linecap="round" stroke-dasharray="5 3"/>
+          <!-- "Rücken" label far right -->
+          <text x="330" y="195" font-family="'DM Mono', monospace" font-size="8.5" fill="#f5a445" opacity=".7">→ Rücken</text>
+          <text x="330" y="205" font-family="'DM Mono', monospace" font-size="8.5" fill="#f5a445" opacity=".7">(gürtelförmig)</text>
+
+          <!-- Cullen-Zeichen: periumbilical orange dot -->
+          <g class="torso-dot" data-tip="cullen" data-x="200" data-y="235">
+            <circle cx="200" cy="238" r="9" fill="rgba(245,164,69,.25)" stroke="#f5a445" stroke-width="1.5"/>
+            <circle cx="200" cy="238" r="4" fill="#f5a445"/>
+          </g>
+
+          <!-- Grey-Turner: flanks (teal) -->
+          <g class="torso-dot" data-tip="grey-turner-l" data-x="93" data-y="238">
+            <circle cx="93" cy="240" r="9" fill="rgba(62,207,168,.2)" stroke="#3ecfa8" stroke-width="1.5"/>
+            <circle cx="93" cy="240" r="4" fill="#3ecfa8"/>
+          </g>
+          <g class="torso-dot" data-tip="grey-turner-r" data-x="307" data-y="238">
+            <circle cx="307" cy="240" r="9" fill="rgba(62,207,168,.2)" stroke="#3ecfa8" stroke-width="1.5"/>
+            <circle cx="307" cy="240" r="4" fill="#3ecfa8"/>
+          </g>
+
+          <!-- Fox-Zeichen: groin (purple) -->
+          <g class="torso-dot" data-tip="fox-l" data-x="160" data-y="318">
+            <circle cx="160" cy="318" r="9" fill="rgba(167,139,250,.2)" stroke="#a78bfa" stroke-width="1.5"/>
+            <circle cx="160" cy="318" r="4" fill="#a78bfa"/>
+          </g>
+          <g class="torso-dot" data-tip="fox-r" data-x="240" data-y="318">
+            <circle cx="240" cy="318" r="9" fill="rgba(167,139,250,.2)" stroke="#a78bfa" stroke-width="1.5"/>
+            <circle cx="240" cy="318" r="4" fill="#a78bfa"/>
+          </g>
+
+          <!-- Legend labels -->
+          <!-- Cullen label -->
+          <line x1="209" y1="234" x2="230" y2="220" stroke="#f5a445" stroke-width="1" opacity=".5"/>
+          <text x="233" y="218" font-family="'DM Sans', sans-serif" font-size="9" fill="#f5a445">Cullen</text>
+
+          <!-- Grey-Turner label (left) -->
+          <line x1="84" y1="238" x2="70" y2="225" stroke="#3ecfa8" stroke-width="1" opacity=".5"/>
+          <text x="20" y="223" font-family="'DM Sans', sans-serif" font-size="9" fill="#3ecfa8">Grey-Turner</text>
+
+          <!-- Fox label (right) -->
+          <line x1="249" y1="315" x2="262" y2="305" stroke="#a78bfa" stroke-width="1" opacity=".5"/>
+          <text x="264" y="303" font-family="'DM Sans', sans-serif" font-size="9" fill="#a78bfa">Fox</text>
+
+          <!-- Click hint -->
+          <text x="200" y="370" font-family="'DM Mono', monospace" font-size="8.5" fill="#505878" text-anchor="middle">Punkte anklicken für Details</text>
+        </svg>
+
+        <!-- Tooltip element (positioned absolutely) -->
+        <div class="dot-tooltip" id="ekchy-tooltip">
+          <strong id="tt-title"></strong>
+          <span id="tt-body"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Intro -->
+    <section class="intro-section">
+      <p>Unterschieden werden akute und chronische Pankreatitis. Wichtigste Ursachen: <strong style="color:var(--text)">Alkohol</strong> und <strong style="color:var(--text)">Gallensteine (biliär)</strong>. Weitere: idiopathisch, iatrogen (post-ERCP).</p>
+    </section>
+
+    <!-- Anamnese -->
+    <section class="detail-section">
+      <details>
+        <summary>Anamnese (OPQRST) — akut vs. chronisch</summary>
+        <div class="detail-body">
+          <table class="detail-table compare-table">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Akut</th>
+                <th>Chronisch</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>O — Onset</td>
+                <td>Plötzlich nach dem Essen</td>
+                <td>Anhaltend</td>
+              </tr>
+              <tr>
+                <td>P — Provokation</td>
+                <td colspan="2">Nahrungskarenz → subjektive Erleichterung; Schonhaltung mit angezogenen Knien</td>
+              </tr>
+              <tr>
+                <td>Q — Qualität</td>
+                <td colspan="2"><strong>Vernichtungsschmerz</strong>; bei Gallensteinen kolikartig</td>
+              </tr>
+              <tr>
+                <td>R — Region</td>
+                <td colspan="2">Oberbauchschmerz, evtl. gürtelförmig mit Ausstrahlung in den Rücken</td>
+              </tr>
+              <tr>
+                <td>T — Zeitverlauf</td>
+                <td colspan="2">Verschlechterung</td>
+              </tr>
+              <tr>
+                <td>Begleitsymptome</td>
+                <td>Fieber, Übelkeit, Erbrechen, Meteorismus, Diarrhoe</td>
+                <td>Gewichtsverlust, Steatorrhö, Diabetes mellitus</td>
+              </tr>
+              <tr>
+                <td>Anamnestisch</td>
+                <td colspan="2">Alkoholkonsum?, vorangegangene ERCP → post-ERCP-Pankreatitis</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </section>
+
+    <!-- Klinische Untersuchung -->
+    <section class="detail-section">
+      <details>
+        <summary>Klinische Untersuchung</summary>
+        <div class="detail-body">
+          <div class="sub-section">
+            <p class="sub-title">Vitalparameter</p>
+            <ul class="detail-list">
+              <li>Tachykardie, Hypotonie, Hypoxie, Fieber</li>
+              <li>Diabetes mellitus (chronisch)</li>
+            </ul>
+          </div>
+          <div class="sub-section">
+            <p class="sub-title">Inspektion — Ekchymosen</p>
+            <table class="detail-table">
+              <tbody>
+                <tr>
+                  <td>Cullen-Zeichen</td>
+                  <td>Bläulich-livide Ekchymosen periumbilical</td>
+                </tr>
+                <tr>
+                  <td>Grey-Turner-Zeichen</td>
+                  <td>Grün-braune Ekchymosen in der Flankenregion (beidseits)</td>
+                </tr>
+                <tr>
+                  <td>Fox-Zeichen</td>
+                  <td>Ekchymosen in der Leistenregion</td>
+                </tr>
+                <tr>
+                  <td>Ikterus</td>
+                  <td>Bei biliärer Ursache oder Choledochuskompression</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="sub-section">
+            <p class="sub-title">Auskultation</p>
+            <p style="color:var(--dim);font-size:.92rem;">Paralytischer (Sub-)Ileus mit spärlichen / metallischen Darmgeräuschen oder <strong style="color:var(--text)">Totenstille</strong>.</p>
+          </div>
+          <div class="sub-section">
+            <p class="sub-title">Palpation</p>
+            <ul class="detail-list">
+              <li>Druckschmerz im medialen Oberbauch</li>
+              <li>Prallelastisches Abdomen (<strong style="color:var(--text)">"Gummibauch"</strong>)</li>
+              <li>Stoßwellenperkussion (evtl. bei Aszites)</li>
+            </ul>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <!-- Differentialdiagnosen -->
+    <section class="detail-section">
+      <details>
+        <summary>Differentialdiagnosen</summary>
+        <div class="detail-body">
+          <ul class="detail-list">
+            <li>Cholelithiasis, Cholezystitis, Gallenblasenperforation, Gallenkolik</li>
+            <li>Akute mesenteriale Ischämie</li>
+            <li>Appendizitis, Ileus</li>
+            <li>Ulcus pepticum</li>
+            <li>Pankreaskarzinom</li>
+            <li>Extrauterine Gravidität</li>
+            <li>Aortenaneurysma</li>
+            <li>Lungenembolie, Myokardinfarkt (immer ausschließen!)</li>
+          </ul>
+        </div>
+      </details>
+    </section>
+
+    <!-- Diagnostik -->
+    <section class="detail-section">
+      <details>
+        <summary>Diagnostik &amp; Ranson-Score</summary>
+        <div class="detail-body">
+          <div class="sub-section">
+            <p class="sub-title">Labor</p>
+            <ul class="detail-list">
+              <li>Leukozytose, CRP erhöht</li>
+              <li><strong style="color:var(--text)">Lipase</strong> und Amylase erhöht (Lipase sensitiver)</li>
+              <li>ALT, γ-GT, alkalische Phosphatase, Bilirubin (Cholestase?)</li>
+              <li>Elastase im Stuhl erniedrigt (chronisch)</li>
+            </ul>
+          </div>
+          <div class="sub-section">
+            <p class="sub-title">Bildgebung</p>
+            <ul class="detail-list">
+              <li>Sonographie, Endosonographie (Gallensteine?)</li>
+              <li>ERCP (therapeutisch bei biliärer Ursache)</li>
+              <li>MRT / CT (Nekrosen, Komplikationen)</li>
+            </ul>
+          </div>
+          <div class="sub-section">
+            <p class="sub-title">Ranson-Score — Prognoseabschätzung</p>
+            <div class="info-box" style="margin-bottom:.75rem;">
+              <strong>Aufnahme (5 Kriterien)</strong> und <strong>nach 48 h (3+ weitere Kriterien)</strong> — je höher der Score, desto schlechter die Prognose.
+            </div>
+            <div class="ranson-grid">
+              <div>
+                <p class="ranson-col-head">Bei Aufnahme</p>
+                <div class="ranson-item">Alter &gt; 55 Jahre</div>
+                <div class="ranson-item">Leukozyten &gt; 16.000 /µL</div>
+                <div class="ranson-item">Glukose &gt; 11 mmol/L</div>
+                <div class="ranson-item">LDH &gt; 350 U/L</div>
+                <div class="ranson-item">AST &gt; 250 U/L</div>
+              </div>
+              <div>
+                <p class="ranson-col-head">Nach 48 Stunden</p>
+                <div class="ranson-item">Hämatokrit-Abfall &gt; 10 %</div>
+                <div class="ranson-item">Harnstoff-Anstieg &gt; 1,8 mmol/L</div>
+                <div class="ranson-item">Kalzium &lt; 2 mmol/L</div>
+                <div class="ranson-item">pO₂ &lt; 60 mmHg</div>
+                <div class="ranson-item">Basendefizit &gt; 4 mEq/L</div>
+                <div class="ranson-item">Flüssigkeitssequester &gt; 6 L</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <p class="src-note">// Quelle: OSCE Ausarbeitung Bauchschmerz — Leonie (SoSe 24, MedUni Wien)</p>
+  </main>
+
+  <script>
+    const tips = {
+      'cullen': {
+        title: 'Cullen-Zeichen',
+        body: 'Bläulich-livide Ekchymosen periumbilical. Zeichen einer retroperitonealen Blutung mit Ausbreitung zum Nabel.'
+      },
+      'grey-turner-l': {
+        title: 'Grey-Turner-Zeichen',
+        body: 'Grün-braune Ekchymosen in der Flankenregion (beidseits). Blut breitet sich entlang der Retroperitonealfaszie aus.'
+      },
+      'grey-turner-r': {
+        title: 'Grey-Turner-Zeichen',
+        body: 'Grün-braune Ekchymosen in der Flankenregion (beidseits). Blut breitet sich entlang der Retroperitonealfaszie aus.'
+      },
+      'fox-l': {
+        title: 'Fox-Zeichen',
+        body: 'Ekchymosen in der Leistenregion (Inguinalfalte). Seltenes Zeichen einer retroperitonealen Hämorrhagie.'
+      },
+      'fox-r': {
+        title: 'Fox-Zeichen',
+        body: 'Ekchymosen in der Leistenregion (Inguinalfalte). Seltenes Zeichen einer retroperitonealen Hämorrhagie.'
+      }
+    };
+
+    const tooltip = document.getElementById('ekchy-tooltip');
+    const ttTitle = document.getElementById('tt-title');
+    const ttBody  = document.getElementById('tt-body');
+
+    document.querySelectorAll('.torso-dot').forEach(dot => {
+      dot.addEventListener('click', function(e) {
+        const key = this.getAttribute('data-tip');
+        const info = tips[key];
+        if (!info) return;
+
+        ttTitle.textContent = info.title;
+        ttBody.textContent  = info.body;
+
+        // Position near click
+        const svg = document.getElementById('pankreas-svg');
+        const rect = svg.getBoundingClientRect();
+        const wrapRect = svg.closest('.viz-body-torso').getBoundingClientRect();
+
+        // Use clientX/Y relative to wrapper
+        const x = e.clientX - wrapRect.left;
+        const y = e.clientY - wrapRect.top;
+
+        tooltip.style.left = Math.min(x + 12, wrapRect.width - 230) + 'px';
+        tooltip.style.top  = (y - 10) + 'px';
+        tooltip.classList.add('visible');
+
+        e.stopPropagation();
+      });
+    });
+
+    document.addEventListener('click', () => {
+      tooltip.classList.remove('visible');
+    });
+  </script>
+</body>
+</html>

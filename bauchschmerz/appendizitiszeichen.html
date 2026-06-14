@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Appendizitiszeichen — OSCE Bauchschmerz</title>
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    /* ── SVG diagram container ───────────────────────────────────── */
+    .abdomen-wrap {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 1.5rem;
+      align-items: start;
+    }
+    @media (max-width: 680px) {
+      .abdomen-wrap { grid-template-columns: 1fr; }
+    }
+
+    .abdomen-svg-wrap {
+      background: var(--s2);
+      border-radius: var(--r);
+      padding: 1rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .abdomen-svg-wrap svg {
+      width: 100%;
+      max-width: 340px;
+      height: auto;
+      display: block;
+    }
+
+    /* SVG landmark styles */
+    .svg-clickable {
+      cursor: pointer;
+    }
+    .svg-clickable circle {
+      transition: r .15s;
+    }
+    .svg-clickable:hover circle { r: 9; }
+    .svg-clickable.active-point circle {
+      filter: drop-shadow(0 0 6px currentColor);
+    }
+
+    /* Info panel */
+    .info-panel {
+      background: var(--s2);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 1rem;
+      min-height: 160px;
+      display: flex;
+      flex-direction: column;
+      gap: .5rem;
+    }
+    .info-panel-placeholder {
+      color: var(--muted);
+      font-size: .85rem;
+      font-style: italic;
+      margin: auto 0;
+    }
+    .info-panel-content { display: none; flex-direction: column; gap: .5rem; }
+    .info-panel-content.visible { display: flex; }
+
+    .info-panel-tag {
+      font-family: var(--mono);
+      font-size: .72rem;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .info-panel-tag.orange { color: var(--orange); }
+    .info-panel-tag.purple { color: var(--purple); }
+
+    .info-panel-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.3;
+    }
+    .info-panel-desc {
+      font-size: .85rem;
+      color: var(--dim);
+      line-height: 1.55;
+    }
+
+    /* ── Tab toggle ──────────────────────────────────────────────── */
+    .tab-bar {
+      display: flex;
+      gap: .5rem;
+      margin-bottom: 1.25rem;
+    }
+    .tab-btn {
+      font-family: var(--mono);
+      font-size: .8rem;
+      letter-spacing: .03em;
+      padding: .45rem 1rem;
+      border-radius: var(--r);
+      border: 1px solid var(--border-2);
+      background: var(--s2);
+      color: var(--dim);
+      cursor: pointer;
+      transition: border-color .15s, color .15s, background .15s;
+    }
+    .tab-btn:hover {
+      border-color: var(--border-2);
+      color: var(--text);
+    }
+    .tab-btn.active {
+      border-color: var(--orange);
+      color: var(--orange);
+      background: var(--orange-dim);
+    }
+    .tab-btn.active.purple-tab {
+      border-color: var(--purple);
+      color: var(--purple);
+      background: var(--purple-dim);
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Sign cards ──────────────────────────────────────────────── */
+    .sign-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .75rem;
+    }
+    @media (max-width: 560px) {
+      .sign-grid { grid-template-columns: 1fr; }
+    }
+
+    .sign-card {
+      background: var(--s2);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: .9rem 1rem;
+      transition: border-color .15s;
+      cursor: pointer;
+    }
+    .sign-card:hover { border-color: var(--border-2); }
+    .sign-card.orange-card { border-left: 3px solid var(--orange); }
+    .sign-card.purple-card { border-left: 3px solid var(--purple); }
+
+    .sign-card h4 {
+      font-size: .9rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: .35rem;
+    }
+    .sign-card p {
+      font-size: .82rem;
+      color: var(--dim);
+      line-height: 1.5;
+    }
+
+    /* ── Sherren triangle label ──────────────────────────────────── */
+    .sherren-label {
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <nav class="breadcrumb">
+    <a href="../index.html">← Übersicht</a>
+    <span class="sep">/</span>
+    <span>Appendizitiszeichen</span>
+  </nav>
+
+  <main class="page-wrap fade-in">
+    <header class="page-header">
+      <span class="topic-tag">// Klinische Untersuchung</span>
+      <h1>Appendizitiszeichen</h1>
+    </header>
+
+    <!-- 1. Kernaussage -->
+    <section class="kern-section">
+      <p class="kern">„Bestimmte Druckpunkte und Manöver am Bauch verraten, ob die Appendix entzündet ist."</p>
+    </section>
+
+    <!-- 2. SVG Visualization -->
+    <section class="viz-section">
+      <div class="viz-label">// Anatomische Druckpunkte — Klicken zum Anzeigen</div>
+      <div class="viz-body">
+        <div class="abdomen-wrap">
+
+          <!-- SVG abdomen diagram -->
+          <div class="abdomen-svg-wrap">
+            <svg viewBox="0 0 340 380" xmlns="http://www.w3.org/2000/svg" id="abdomSvg">
+
+              <!-- Abdomen outline -->
+              <ellipse cx="170" cy="175" rx="130" ry="160"
+                fill="#0f1219" stroke="#2a3050" stroke-width="2"/>
+
+              <!-- Midline -->
+              <line x1="170" y1="30" x2="170" y2="320"
+                stroke="#1f2438" stroke-width="1" stroke-dasharray="4 4"/>
+
+              <!-- Horizontal midline (quadrant divider) -->
+              <line x1="50" y1="175" x2="290" y2="175"
+                stroke="#1f2438" stroke-width="1" stroke-dasharray="4 4"/>
+
+              <!-- Quadrant labels -->
+              <text x="90" y="110" fill="#505878" font-size="10" font-family="'DM Mono', monospace" text-anchor="middle">OLQ</text>
+              <text x="250" y="110" fill="#505878" font-size="10" font-family="'DM Mono', monospace" text-anchor="middle">ORQ</text>
+              <text x="90" y="260" fill="#505878" font-size="10" font-family="'DM Mono', monospace" text-anchor="middle">ULQ</text>
+              <text x="250" y="260" fill="#505878" font-size="10" font-family="'DM Mono', monospace" text-anchor="middle">URQ</text>
+
+              <!-- Sherren triangle (dashed) -->
+              <!-- Points: right SIAS (255,290), Nabel (170,160), Symphyse (170,320) -->
+              <polygon points="255,295 170,160 170,320"
+                fill="rgba(91,156,246,0.05)"
+                stroke="#5b9cf6"
+                stroke-width="1.5"
+                stroke-dasharray="6 4"
+                class="sherren-label"/>
+              <text x="228" y="240" fill="#5b9cf6" font-size="9" font-family="'DM Mono', monospace"
+                transform="rotate(-15,228,240)">Sherren-Dreieck</text>
+
+              <!-- Lanz-Punkt line (between both SIAS) -->
+              <line x1="85" y1="295" x2="255" y2="295"
+                stroke="#2a3050" stroke-width="1" stroke-dasharray="3 3"/>
+
+              <!-- Nabel–re.SIAS Linie (für McBurney) -->
+              <line x1="170" y1="160" x2="255" y2="295"
+                stroke="#2a3050" stroke-width="1" stroke-dasharray="3 3"/>
+
+              <!-- ─── Anatomical landmarks ─────────────────────────── -->
+
+              <!-- Nabel -->
+              <g class="svg-clickable" id="pt-nabel" data-key="nabel">
+                <circle cx="170" cy="160" r="7" fill="#1c2130" stroke="#505878" stroke-width="1.5"/>
+                <circle cx="170" cy="160" r="3" fill="#505878"/>
+                <text x="155" y="152" fill="#505878" font-size="9" font-family="'DM Mono', monospace" text-anchor="end">Nabel</text>
+              </g>
+
+              <!-- Symphyse -->
+              <g class="svg-clickable" id="pt-symphyse" data-key="symphyse">
+                <circle cx="170" cy="320" r="6" fill="#1c2130" stroke="#505878" stroke-width="1.5"/>
+                <text x="170" y="340" fill="#505878" font-size="9" font-family="'DM Mono', monospace" text-anchor="middle">Symphyse</text>
+              </g>
+
+              <!-- Left SIAS -->
+              <g class="svg-clickable" id="pt-sias-l" data-key="sias-l">
+                <circle cx="85" cy="295" r="6" fill="#1c2130" stroke="#505878" stroke-width="1.5"/>
+                <text x="70" y="290" fill="#505878" font-size="9" font-family="'DM Mono', monospace" text-anchor="end">li. SIAS</text>
+              </g>
+
+              <!-- Right SIAS -->
+              <g class="svg-clickable" id="pt-sias-r" data-key="sias-r">
+                <circle cx="255" cy="295" r="6" fill="#1c2130" stroke="#505878" stroke-width="1.5"/>
+                <text x="268" y="290" fill="#505878" font-size="9" font-family="'DM Mono', monospace" text-anchor="start">re. SIAS</text>
+              </g>
+
+              <!-- McBurney-Punkt: 2/3 der Linie Nabel→re.SIAS von Nabel aus -->
+              <!-- Nabel=(170,160), re.SIAS=(255,295). 2/3 = (170+2/3*85, 160+2/3*135) = (226,250) -->
+              <g class="svg-clickable active-point" id="pt-mcburney" data-key="mcburney" style="color: var(--orange);">
+                <circle cx="226" cy="250" r="8" fill="rgba(245,164,69,0.15)" stroke="#f5a445" stroke-width="2"/>
+                <circle cx="226" cy="250" r="3.5" fill="#f5a445"/>
+                <text x="240" y="248" fill="#f5a445" font-size="9.5" font-family="'DM Mono', monospace" font-weight="500">McBurney</text>
+              </g>
+
+              <!-- Lanz-Punkt: 1/3 von re. SIAS auf Linie zwischen beiden SIAS -->
+              <!-- li.SIAS=(85,295), re.SIAS=(255,295). 1/3 von re. = 255 - 1/3*(255-85) = 255-56.7 = 198 -->
+              <g class="svg-clickable" id="pt-lanz" data-key="lanz" style="color: var(--orange);">
+                <circle cx="198" cy="295" r="8" fill="rgba(245,164,69,0.15)" stroke="#f5a445" stroke-width="2"/>
+                <circle cx="198" cy="295" r="3.5" fill="#f5a445"/>
+                <text x="195" y="315" fill="#f5a445" font-size="9.5" font-family="'DM Mono', monospace" text-anchor="middle">Lanz</text>
+              </g>
+
+            </svg>
+          </div>
+
+          <!-- Info panel -->
+          <div class="info-panel" id="infoPanel">
+            <p class="info-panel-placeholder" id="infoPanelPlaceholder">Klicke auf einen markierten Punkt im Diagramm.</p>
+            <div class="info-panel-content" id="infoPanelContent">
+              <span class="info-panel-tag" id="infoPanelTag"></span>
+              <span class="info-panel-title" id="infoPanelTitle"></span>
+              <span class="info-panel-desc" id="infoPanelDesc"></span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Tab section: Druckpunkte | Manöver -->
+    <section class="intro-section">
+      <div class="tab-bar">
+        <button class="tab-btn active" id="tab-druck" onclick="switchTab('druck')">Druckpunkte</button>
+        <button class="tab-btn purple-tab" id="tab-manoever" onclick="switchTab('manoever')">Manöver</button>
+      </div>
+
+      <!-- Druckpunkte -->
+      <div class="tab-panel active" id="panel-druck">
+        <div class="sign-grid">
+          <div class="sign-card orange-card">
+            <h4>McBurney-Punkt</h4>
+            <p>Zwischen lateralem und mittlerem Drittel der Linie <em>rechte SIAS → Bauchnabel</em>. Klassischer Druckpunkt bei Appendizitis.</p>
+          </div>
+          <div class="sign-card orange-card">
+            <h4>Lanz-Punkt</h4>
+            <p>Zwischen rechtem und mittlerem Drittel der Linie <em>rechte SIAS → linke SIAS</em>. Ebenfalls typisch für Appendizitis.</p>
+          </div>
+          <div class="sign-card orange-card">
+            <h4>Blumberg-Zeichen</h4>
+            <p>Kontralateraler Loslassschmerz: Palpation des <em>linken</em> Unterbauchs → Schmerz im <em>rechten</em> Unterbauch. Peritonealreizung.</p>
+          </div>
+          <div class="sign-card orange-card">
+            <h4>Sherren-Dreieck</h4>
+            <p>Gedachtes Dreieck: rechte SIAS – Bauchnabel – Symphyse. In diesem Bereich liegen die wichtigsten Appendizitisdruckpunkte.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Manöver -->
+      <div class="tab-panel" id="panel-manoever">
+        <div class="sign-grid">
+          <div class="sign-card purple-card">
+            <h4>Rovsing-Zeichen</h4>
+            <p>Retrograde Ausstreichen des Kolons entlang des Kolonrahmens → Schmerz im rechten Unterbauch. Druckübertragung zur Appendix.</p>
+          </div>
+          <div class="sign-card purple-card">
+            <h4>Douglas-Schmerz</h4>
+            <p>Schmerz beim Palpieren des Douglas-Raums (digital-rektal) → Peritoneum im kleinen Becken beteiligt. Abszess oder Appendizitis.</p>
+          </div>
+          <div class="sign-card purple-card">
+            <h4>Psoas-Zeichen</h4>
+            <p>Anheben des rechten gestreckten Beines gegen Widerstand → Schmerz im rechten Unterbauch. Hinweis auf <em>retrozökale</em> Appendizitis.</p>
+          </div>
+          <div class="sign-card purple-card">
+            <h4>Baldwin-Zeichen</h4>
+            <p>Fallenlassen des angehobenen rechten Beines → Schmerzen in der rechten Flanke. Ebenfalls Hinweis auf retrozökale Appendizitis.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. Details (collapsible): full clinical descriptions -->
+    <details class="detail-section">
+      <summary>Alle Zeichen im Detail</summary>
+      <div class="detail-body">
+
+        <div class="sub-section">
+          <div class="sub-title">Druckpunkte</div>
+          <table class="detail-table">
+            <thead>
+              <tr>
+                <th>Zeichen</th>
+                <th>Durchführung</th>
+                <th>Bedeutung</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>McBurney-Punkt</td>
+                <td>Druck auf den Punkt zwischen lateralem und mittlerem Drittel der Verbindungslinie rechte SIAS – Nabel</td>
+                <td>Klassischer Druckschmerz bei akuter Appendizitis; Lage der Appendixbasis projiziert auf die Bauchdecke</td>
+              </tr>
+              <tr>
+                <td>Lanz-Punkt</td>
+                <td>Druck auf den Punkt zwischen rechtem und mittlerem Drittel der Verbindungslinie beider Spinae iliacae</td>
+                <td>Alternativdruckpunkt bei Appendizitis, oft empfindlicher bei tiefer liegender Appendix</td>
+              </tr>
+              <tr>
+                <td>Blumberg-Zeichen</td>
+                <td>Langsam tief in den linken Unterbauch eindrücken, dann abrupt loslassen → Schmerz im rechten Unterbauch</td>
+                <td>Kontralateraler Loslassschmerz = Peritonealreizung; typisch für Appendizitis, aber auch andere Peritonitisursachen</td>
+              </tr>
+              <tr>
+                <td>Sherren-Dreieck</td>
+                <td>Gedachtes Dreieck zwischen rechter SIAS, Nabel und Symphyse — kein aktives Manöver, sondern anatomische Orientierung</td>
+                <td>Beschreibt den Bereich, in dem alle klassischen Appendizitisdruckpunkte liegen</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="sub-section">
+          <div class="sub-title">Manöver</div>
+          <table class="detail-table">
+            <thead>
+              <tr>
+                <th>Zeichen</th>
+                <th>Durchführung</th>
+                <th>Bedeutung</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Rovsing-Zeichen</td>
+                <td>Retrograde Ausstreichen des Kolons entlang des Kolonrahmens von links nach rechts in Richtung Zökum/Appendix</td>
+                <td>Schmerzen im rechten Unterbauch durch Gasverschiebung Richtung Appendix; positiv bei Appendizitis</td>
+              </tr>
+              <tr>
+                <td>Douglas-Schmerz</td>
+                <td>Digital-rektale Untersuchung: Finger im Rektum nach anterior/kranial tasten → Druckschmerz im Douglas-Raum</td>
+                <td>Beteiligung des Peritoneums im kleinen Becken; Douglas-Abszess, Appendizitis, Ovarialzyste, Adnexitis</td>
+              </tr>
+              <tr>
+                <td>Psoas-Zeichen</td>
+                <td>Patient liegt auf dem Rücken, rechtes Bein gestreckt anheben und gegen Widerstand des Untersuchers drücken lassen</td>
+                <td>Schmerz bei Kontraktion des M. iliopsoas → benachbarte Entzündung; Hinweis auf retrozökale Appendizitis</td>
+              </tr>
+              <tr>
+                <td>Baldwin-Zeichen</td>
+                <td>Im Liegen rechtes Bein gestreckt anheben, dann loslassen (Fallenlassen)</td>
+                <td>Schmerzen in der rechten Flanke durch Erschütterung → ebenfalls Hinweis auf retrozökale Appendizitis</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </details>
+
+    <p class="src-note">// Quelle: OSCE Ausarbeitung Bauchschmerz — Leonie (SoSe 24, MedUni Wien)</p>
+  </main>
+
+  <script>
+    // ── SVG point data ────────────────────────────────────────────
+    const pointData = {
+      nabel: {
+        tag: 'Anatomische Orientierung',
+        tagClass: '',
+        title: 'Bauchnabel (Umbilicus)',
+        desc: 'Zentraler Orientierungspunkt. Bildet eine Ecke des Sherren-Dreiecks und den medialen Endpunkt der McBurney-Linie.'
+      },
+      symphyse: {
+        tag: 'Anatomische Orientierung',
+        tagClass: '',
+        title: 'Symphyse (Symphysis pubica)',
+        desc: 'Unterer Orientierungspunkt des Sherren-Dreiecks. Hilft, den Bereich der Appendizitisdruckpunkte anatomisch abzugrenzen.'
+      },
+      'sias-l': {
+        tag: 'Anatomische Orientierung',
+        tagClass: '',
+        title: 'Linke Spina iliaca anterior superior',
+        desc: 'Knöcherner Vorsprung des linken Beckenkamms. Lateraler Endpunkt der Lanz-Linie. Wichtiger Orientierungspunkt.'
+      },
+      'sias-r': {
+        tag: 'Anatomische Orientierung',
+        tagClass: '',
+        title: 'Rechte Spina iliaca anterior superior',
+        desc: 'Knöcherner Vorsprung des rechten Beckenkamms. Lateraler Endpunkt für McBurney- und Lanz-Linie sowie Ecke des Sherren-Dreiecks.'
+      },
+      mcburney: {
+        tag: 'Druckpunkt',
+        tagClass: 'orange',
+        title: 'McBurney-Punkt',
+        desc: 'Zwischen lateralem und mittlerem Drittel der Linie rechte SIAS → Nabel. Projektion der Appendixbasis auf die Bauchdecke. Klassischer Druckpunkt bei Appendizitis.'
+      },
+      lanz: {
+        tag: 'Druckpunkt',
+        tagClass: 'orange',
+        title: 'Lanz-Punkt',
+        desc: 'Zwischen rechtem und mittlerem Drittel der Linie rechte SIAS → linke SIAS. Alternativer Appendizitisdruckpunkt, oft sensitiver bei tiefer Appendixlage.'
+      }
+    };
+
+    const clickablePoints = document.querySelectorAll('.svg-clickable');
+    const placeholder = document.getElementById('infoPanelPlaceholder');
+    const content = document.getElementById('infoPanelContent');
+    const panelTag = document.getElementById('infoPanelTag');
+    const panelTitle = document.getElementById('infoPanelTitle');
+    const panelDesc = document.getElementById('infoPanelDesc');
+
+    let activePoint = null;
+
+    clickablePoints.forEach(pt => {
+      pt.addEventListener('click', () => {
+        const key = pt.dataset.key;
+        const data = pointData[key];
+        if (!data) return;
+
+        // Toggle off if already active
+        if (activePoint === pt) {
+          pt.classList.remove('active-point');
+          activePoint = null;
+          placeholder.style.display = '';
+          content.classList.remove('visible');
+          return;
+        }
+
+        // Deactivate previous
+        if (activePoint) activePoint.classList.remove('active-point');
+
+        pt.classList.add('active-point');
+        activePoint = pt;
+
+        // Update panel
+        placeholder.style.display = 'none';
+        panelTag.textContent = data.tag;
+        panelTag.className = 'info-panel-tag ' + (data.tagClass || '');
+        panelTitle.textContent = data.title;
+        panelDesc.textContent = data.desc;
+        content.classList.add('visible');
+      });
+    });
+
+    // ── Tab switching ─────────────────────────────────────────────
+    function switchTab(name) {
+      // Panels
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('panel-' + name).classList.add('active');
+
+      // Buttons
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('tab-' + name).classList.add('active');
+    }
+  </script>
+</body>
+</html>

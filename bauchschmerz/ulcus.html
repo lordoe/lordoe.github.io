@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ulcus — OSCE Bauchschmerz</title>
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    /* ── SIDE-BY-SIDE COMPARE CARDS ── */
+    .compare-cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .ulcus-card {
+      background: var(--s2);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      overflow: hidden;
+    }
+    .ulcus-card.ventriculi { border-top: 2px solid var(--orange); }
+    .ulcus-card.duodeni    { border-top: 2px solid var(--blue); }
+
+    .ulcus-card-head {
+      padding: .75rem 1rem;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+      font-size: .92rem;
+    }
+    .ventriculi .ulcus-card-head { color: var(--orange); }
+    .duodeni    .ulcus-card-head { color: var(--blue); }
+
+    .ulcus-card-body {
+      padding: .85rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: .55rem;
+    }
+
+    .ulcus-row {
+      display: flex;
+      align-items: flex-start;
+      gap: .6rem;
+      font-size: .87rem;
+    }
+
+    .ulcus-icon {
+      flex-shrink: 0;
+      font-size: .9rem;
+      line-height: 1.4;
+    }
+
+    .ulcus-text {
+      color: var(--dim);
+      line-height: 1.45;
+    }
+    .ulcus-text strong { color: var(--text); }
+
+    /* ── DAY TIMELINE ── */
+    .day-timeline {
+      position: relative;
+      padding: .5rem 0 1rem;
+    }
+
+    .day-track {
+      display: flex;
+      align-items: stretch;
+      gap: 2px;
+      height: 2.5rem;
+      border-radius: var(--r);
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .day-seg {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--mono);
+      font-size: .72rem;
+      font-weight: 500;
+      letter-spacing: .02em;
+      color: var(--muted);
+      background: var(--s2);
+      transition: background .2s;
+      cursor: default;
+    }
+    .day-seg.pain-v { background: rgba(245,164,69,.22); color: var(--orange); }
+    .day-seg.pain-d { background: rgba(91,156,246,.18); color: var(--blue); }
+    .day-seg.pain-both { background: rgba(164,100,250,.15); color: var(--purple); }
+
+    .day-labels {
+      display: flex;
+      gap: 2px;
+      margin-top: .35rem;
+    }
+    .day-lbl {
+      flex: 1;
+      text-align: center;
+      font-size: .72rem;
+      color: var(--muted);
+      font-family: var(--mono);
+    }
+
+    .day-legend {
+      display: flex;
+      gap: 1rem;
+      margin-top: .75rem;
+      flex-wrap: wrap;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      font-size: .8rem;
+      color: var(--dim);
+    }
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+    .legend-dot.v    { background: rgba(245,164,69,.6); }
+    .legend-dot.d    { background: rgba(91,156,246,.5); }
+    .legend-dot.none { background: var(--s3); border: 1px solid var(--border); }
+
+    @media (max-width: 580px) {
+      .compare-cards { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="breadcrumb">
+    <a href="../index.html">← Übersicht</a>
+    <span class="sep">/</span>
+    <span>Ulcus</span>
+  </nav>
+
+  <main class="page-wrap fade-in">
+
+    <header class="page-header">
+      <span class="topic-tag">// Krankheitsbild</span>
+      <h1>Ulcus</h1>
+    </header>
+
+    <!-- Kernaussage -->
+    <section class="kern-section">
+      <p class="kern">„Ulcus ventriculi schmerzt <em>nach</em> dem Essen — Ulcus duodeni schmerzt auf <em>nüchternem Magen</em>. Dieser Unterschied ist diagnostisch entscheidend."</p>
+    </section>
+
+    <!-- Visualisierung -->
+    <div class="viz-section">
+      <div class="viz-label">// Vergleich &amp; Tages-Schmerzprofil</div>
+      <div class="viz-body">
+
+        <div class="compare-cards">
+          <div class="ulcus-card ventriculi">
+            <div class="ulcus-card-head">Ulcus ventriculi</div>
+            <div class="ulcus-card-body">
+              <div class="ulcus-row">
+                <span class="ulcus-icon" style="color:var(--red)">✕</span>
+                <span class="ulcus-text"><strong>Nach dem Essen</strong> → Schmerz (Magensäure + Nahrung reizt Ulkus)</span>
+              </div>
+              <div class="ulcus-row">
+                <span class="ulcus-icon" style="color:var(--teal)">✓</span>
+                <span class="ulcus-text">Besserung durch <strong>Antazida</strong></span>
+              </div>
+              <div class="ulcus-row">
+                <span class="ulcus-icon" style="color:var(--muted)">→</span>
+                <span class="ulcus-text">Häufiger bei älteren Patienten, NSAR-Assoziation</span>
+              </div>
+              <div class="ulcus-row">
+                <span class="ulcus-icon" style="color:var(--muted)">→</span>
+                <span class="ulcus-text">Malignitätsverdacht! Biopsie obligat</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="ulcus-card duodeni">
+            <div class="ulcus-card-head">Ulcus duodeni</div>
+            <div class="ulcus-card-body">
+              <div class="ulcus-row">
+                <span class="ulcus-icon" style="color:var(--teal)">✓</span>
+                <span class="ulcus-text"><strong>Nach dem Essen</strong> → Besserung (Nahrung puffert Säure)</span>
+              </div>
+              <div class="ulcus-row">
+                <span class="ulcus-icon" style="color:var(--red)">✕</span>
+                <span class="ulcus-text"><strong>Nüchternschmerz</strong>, insb. <strong>nachts</strong> (Hungerschmerz)</span>
+              </div>
+              <div class="ulcus-row">
+                <span class="ulcus-icon" style="color:var(--teal)">✓</span>
+                <span class="ulcus-text">Besserung durch Antazida &amp; Nahrungsaufnahme</span>
+              </div>
+              <div class="ulcus-row">
+                <span class="ulcus-icon" style="color:var(--muted)">→</span>
+                <span class="ulcus-text">Häufiger, stark H.-pylori-assoziiert (70–90 %)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sub-title" style="margin-bottom:.6rem">Tages-Schmerzprofil</div>
+        <div class="day-track">
+          <div class="day-seg pain-d">Nacht / Nüchtern</div>
+          <div class="day-seg">Frühstück</div>
+          <div class="day-seg pain-v">Nach Frühstück</div>
+          <div class="day-seg">Mittag</div>
+          <div class="day-seg pain-v">Nach Mittag</div>
+          <div class="day-seg">Abend</div>
+          <div class="day-seg pain-v">Nach Abend</div>
+          <div class="day-seg pain-d">Nacht</div>
+        </div>
+        <div class="day-labels">
+          <div class="day-lbl">0:00</div>
+          <div class="day-lbl">7:00</div>
+          <div class="day-lbl">9:00</div>
+          <div class="day-lbl">12:00</div>
+          <div class="day-lbl">14:00</div>
+          <div class="day-lbl">18:00</div>
+          <div class="day-lbl">20:00</div>
+          <div class="day-lbl">23:00</div>
+        </div>
+        <div class="day-legend">
+          <div class="legend-item"><div class="legend-dot v"></div> Ulcus ventriculi (postprandial)</div>
+          <div class="legend-item"><div class="legend-dot d"></div> Ulcus duodeni (nüchtern / nachts)</div>
+          <div class="legend-item"><div class="legend-dot none"></div> Schmerzfrei</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Intro -->
+    <section class="intro-section">
+      <p>Ein Ulcus ist ein Schleimhautdefekt, der die Muscularis mucosae überschreitet. Im Magen (Ulcus ventriculi) und im Zwölffingerdarm (Ulcus duodeni) entstehen Geschwüre vor allem durch das Ungleichgewicht zwischen schleimhautaggressiven und -protektiven Faktoren.</p>
+      <p>Wichtige Auslöser: <strong style="color:var(--text)">H. pylori</strong> (v.a. Ulcus duodeni), NSAR, Glucocorticoide, SSRI, Rauchen, Alkohol. Meläna (Teerstuhl) und hämodynamische Instabilität (Tachykardie, Hypotonie) zeigen eine akute Blutung an.</p>
+    </section>
+
+    <!-- Collapsible Details -->
+    <details class="detail-section">
+      <summary>OPQRST, Klinische Untersuchung, DD &amp; Diagnostik</summary>
+      <div class="detail-body">
+
+        <!-- OPQRST Vergleich -->
+        <div class="sub-section">
+          <div class="sub-title">OPQRST — Vergleich beider Ulkusformen</div>
+          <table class="detail-table compare-table">
+            <thead>
+              <tr>
+                <th>Kürzel</th>
+                <th>Ulcus ventriculi</th>
+                <th>Ulcus duodeni</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>O — Onset</td>
+                <td>Schleichend</td>
+                <td>Schleichend</td>
+              </tr>
+              <tr>
+                <td>P — Palliation</td>
+                <td>Besserung nach Antazida; <strong>Schmerz unmittelbar nach Nahrungsaufnahme</strong></td>
+                <td>Besserung durch Antazida &amp; Nahrung; <strong>Nüchternschmerzen (insb. nachts)</strong></td>
+              </tr>
+              <tr>
+                <td>Q — Quality</td>
+                <td>Brennend</td>
+                <td>Brennend</td>
+              </tr>
+              <tr>
+                <td>R — Region</td>
+                <td>Oberbauch (Epigastrium)</td>
+                <td>Oberbauch (Epigastrium)</td>
+              </tr>
+              <tr>
+                <td>S — Severity</td>
+                <td>Variabel</td>
+                <td>Variabel, oft stark nachts</td>
+              </tr>
+              <tr>
+                <td>T — Timing</td>
+                <td>Verstärkung, postprandial</td>
+                <td>Verstärkung, nüchtern / nächtlich</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="info-box warn mt-2">
+            <strong>Anamnese:</strong> Gewichtsverlust, Appetitlosigkeit, Völlegefühl, Übelkeit &amp; Erbrechen, Meläna, nächtlicher Schmerz. Medikamente: NSAR, Glucocorticoide, SSRI. Rauchen, Alkohol, Ulcus in Anamnese.
+          </div>
+        </div>
+
+        <!-- Klinische Untersuchung -->
+        <div class="sub-section">
+          <div class="sub-title">Klinische Untersuchung</div>
+          <table class="detail-table">
+            <tbody>
+              <tr><td>Vitalparameter</td><td>Tachykardie, Hypotonie (Schwindel, Kollaps, Schock), Vigilanzminderung → Zeichen akuter Blutung!</td></tr>
+              <tr><td>Auskultation</td><td>Normal</td></tr>
+              <tr><td>Palpation</td><td>Druckschmerz im Oberbauch; Peritonismus / Abwehrspannung bei Perforation möglich</td></tr>
+              <tr><td>Hämoccult</td><td>Positiv (okkultes Blut)</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Differentialdiagnosen -->
+        <div class="sub-section">
+          <div class="sub-title">Differentialdiagnosen</div>
+          <ul class="detail-list">
+            <li>Cholelithiasis / Cholezystitis / Gallenblasenperforation / Gallenkolik</li>
+            <li>Pankreaskarzinom</li>
+            <li>Extrauterine Gravidität</li>
+            <li>Aortenaneurysma (rupturiert)</li>
+            <li>Myokardinfarkt (Hinterwand)</li>
+          </ul>
+        </div>
+
+        <!-- Diagnostik -->
+        <div class="sub-section">
+          <div class="sub-title">Diagnostik</div>
+          <table class="detail-table">
+            <tbody>
+              <tr>
+                <td>Labor</td>
+                <td>Leukozytose, CRP, Blutbild (Anämie?), Gerinnung, Kreuzblut bei V.a. Blutung</td>
+              </tr>
+              <tr>
+                <td>Endoskopie</td>
+                <td>Ösophago-Gastro-Duodenoskopie (ÖGD) + Koloskopie; Biopsie des Ulcus ventriculi obligat (Malignomausschluss!); H.-pylori-Diagnostik</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="info-box accent">
+            <strong>Cave:</strong> Jedes Ulcus ventriculi muss biopsieret werden — ein Magenkarzinom kann ulkusartig imponieren!
+          </div>
+        </div>
+
+      </div>
+    </details>
+
+    <p class="src-note">// Quelle: OSCE Ausarbeitung Bauchschmerz — Leonie (SoSe 24, MedUni Wien)</p>
+  </main>
+</body>
+</html>

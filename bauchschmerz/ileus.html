@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ileus — OSCE Bauchschmerz</title>
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    /* ── Ileus type comparison cards ── */
+    .ileus-cards {
+      display: flex;
+      gap: 1rem;
+    }
+    @media (max-width: 560px) {
+      .ileus-cards { flex-direction: column; }
+    }
+
+    .ileus-card {
+      flex: 1;
+      background: var(--s2);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: .6rem;
+    }
+    .ileus-card.mechanisch {
+      border-top: 2px solid var(--orange);
+    }
+    .ileus-card.paralytisch {
+      border-top: 2px solid var(--teal);
+    }
+
+    .ileus-card-head {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+    .ileus-card-head .card-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .mechanisch .card-dot  { background: var(--orange); }
+    .paralytisch .card-dot { background: var(--teal); }
+
+    .ileus-card-row {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: .2rem .6rem;
+      font-size: .86rem;
+    }
+    .ileus-card-key {
+      font-family: var(--mono);
+      font-size: .74rem;
+      color: var(--muted);
+      padding-top: .05rem;
+      white-space: nowrap;
+    }
+    .ileus-card-val {
+      color: var(--dim);
+      line-height: 1.5;
+    }
+    .mechanisch .ileus-card-val strong  { color: var(--orange); }
+    .paralytisch .ileus-card-val strong { color: var(--teal); }
+
+    /* Auscultation icon indicator */
+    .ausk-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: .35rem;
+      font-size: .82rem;
+    }
+    .ausk-waves {
+      display: flex;
+      gap: 2px;
+      align-items: flex-end;
+      height: 16px;
+    }
+    .ausk-waves span {
+      display: block;
+      width: 3px;
+      border-radius: 2px;
+      background: var(--orange);
+    }
+    .wave-1 { height: 6px;  }
+    .wave-2 { height: 14px; }
+    .wave-3 { height: 10px; }
+    .wave-4 { height: 16px; }
+    .wave-5 { height: 8px;  }
+
+    .ausk-silent {
+      display: flex;
+      gap: 3px;
+      align-items: center;
+      height: 16px;
+    }
+    .ausk-silent span {
+      display: block;
+      width: 3px;
+      height: 2px;
+      border-radius: 1px;
+      background: var(--teal);
+      opacity: .5;
+    }
+
+    /* Röntgen schematic */
+    .roentgen-schematic {
+      background: #05070d;
+      border-radius: var(--r);
+      padding: .5rem;
+      margin-top: .4rem;
+    }
+
+    /* Warn box special */
+    .warn-box {
+      background: var(--red-dim);
+      border: 1px solid rgba(244,96,96,.3);
+      border-left: 3px solid var(--red);
+      border-radius: 0 var(--r) var(--r) 0;
+      padding: 1rem 1.1rem;
+      font-size: .92rem;
+      color: var(--dim);
+    }
+    .warn-box strong { color: var(--red); }
+    .warn-box .warn-label {
+      font-family: var(--mono);
+      font-size: .72rem;
+      color: var(--red);
+      letter-spacing: .05em;
+      display: block;
+      margin-bottom: .3rem;
+    }
+  </style>
+</head>
+<body>
+  <nav class="breadcrumb">
+    <a href="../index.html">← Übersicht</a>
+    <span class="sep">/</span>
+    <span>Ileus</span>
+  </nav>
+
+  <main class="page-wrap fade-in">
+    <header class="page-header">
+      <span class="topic-tag">// Krankheitsbild</span>
+      <h1>Ileus</h1>
+    </header>
+
+    <!-- Kernaussage -->
+    <section class="kern-section">
+      <p class="kern">„Der Darm steht still — kein Stuhl, kein Wind, das Erbrechen riecht nach Stuhl, und der Bauch klingt metallisch."</p>
+    </section>
+
+    <!-- Warnsignal box (prominent) -->
+    <div class="warn-box" style="margin-bottom: 2rem;">
+      <span class="warn-label">!! Alarmsymptom</span>
+      <strong>Schwallartiges, bräunliches Erbrechen (Miserere = Kotbrechen)</strong> — ist ein Zeichen für fortgeschrittenen Ileus mit retrogradem Darminhalt und erfordert sofortige Intervention.
+    </div>
+
+    <!-- Visualization: mechanisch vs. paralytisch -->
+    <section class="viz-section">
+      <p class="viz-label">// Mechanisch vs. Paralytisch — Vergleich</p>
+      <div class="viz-body">
+        <div class="ileus-cards">
+
+          <!-- Mechanischer Ileus -->
+          <div class="ileus-card mechanisch">
+            <div class="ileus-card-head">
+              <span class="card-dot"></span>
+              Mechanischer Ileus
+            </div>
+            <div class="ileus-card-row">
+              <span class="ileus-card-key">Ursache</span>
+              <span class="ileus-card-val"><strong>Physische Blockade</strong> — Briden, Hernie, Tumor, Gallenstein</span>
+
+              <span class="ileus-card-key">Auskultation</span>
+              <span class="ileus-card-val">
+                <span class="ausk-indicator">
+                  <span class="ausk-waves">
+                    <span class="wave-1"></span>
+                    <span class="wave-2"></span>
+                    <span class="wave-3"></span>
+                    <span class="wave-4"></span>
+                    <span class="wave-5"></span>
+                  </span>
+                  <strong>Metallisch klingende</strong> Hyperperistaltik
+                </span>
+              </span>
+
+              <span class="ileus-card-key">Schmerz</span>
+              <span class="ileus-card-val">Krampfartig, wellenartig</span>
+
+              <span class="ileus-card-key">Röntgen</span>
+              <span class="ileus-card-val"><strong>Spiegel ober der Engstelle</strong> — Darm proximal dilatiert</span>
+            </div>
+
+            <!-- Mini Röntgen schematic -->
+            <div class="roentgen-schematic">
+              <svg viewBox="0 0 160 90" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:auto;">
+                <!-- Darm Schlinge -->
+                <rect x="20" y="12" width="80" height="36" rx="6"
+                      fill="none" stroke="#3a3a4a" stroke-width="1.5"/>
+                <!-- Flüssigkeitsspiegel (oben) -->
+                <rect x="20" y="12" width="80" height="14" rx="5"
+                      fill="rgba(245,164,69,.15)"/>
+                <line x1="20" y1="26" x2="100" y2="26"
+                      stroke="#f5a445" stroke-width="1.5" stroke-dasharray="3 2"/>
+                <text x="108" y="29" font-family="'DM Mono', monospace" font-size="7" fill="#f5a445">Spiegel</text>
+
+                <!-- Luft oben -->
+                <text x="52" y="22" font-family="'DM Mono', monospace" font-size="7" fill="#505878" text-anchor="middle">Luft</text>
+                <!-- Flüssigkeit unten -->
+                <text x="52" y="40" font-family="'DM Mono', monospace" font-size="7" fill="#8d97c0" text-anchor="middle">Flüssigkeit</text>
+
+                <!-- Engstelle / Blockade -->
+                <rect x="22" y="52" width="30" height="22" rx="4"
+                      fill="none" stroke="#3a3a4a" stroke-width="1"/>
+                <line x1="37" y1="48" x2="37" y2="52" stroke="#3a3a4a" stroke-width="1"/>
+                <rect x="28" y="60" width="18" height="8" rx="2"
+                      fill="rgba(244,96,96,.3)" stroke="#f46060" stroke-width="1"/>
+                <text x="37" y="66" font-family="'DM Mono', monospace" font-size="6" fill="#f46060" text-anchor="middle">Blockade</text>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Paralytischer Ileus -->
+          <div class="ileus-card paralytisch">
+            <div class="ileus-card-head">
+              <span class="card-dot"></span>
+              Paralytischer Ileus
+            </div>
+            <div class="ileus-card-row">
+              <span class="ileus-card-key">Ursache</span>
+              <span class="ileus-card-val"><strong>Darmlähmung</strong> — post-OP, Peritonitis, Elektrolytmangel, Opiate</span>
+
+              <span class="ileus-card-key">Auskultation</span>
+              <span class="ileus-card-val">
+                <span class="ausk-indicator">
+                  <span class="ausk-silent">
+                    <span></span><span></span><span></span><span></span><span></span>
+                  </span>
+                  <strong>Totenstille</strong>
+                </span>
+              </span>
+
+              <span class="ileus-card-key">Schmerz</span>
+              <span class="ileus-card-val">Diffus, weniger kolikartig</span>
+
+              <span class="ileus-card-key">Röntgen</span>
+              <span class="ileus-card-val"><strong>Spiegel im gesamten Darm</strong> — generalisierte Gasverteilung</span>
+            </div>
+
+            <!-- Mini Röntgen schematic -->
+            <div class="roentgen-schematic">
+              <svg viewBox="0 0 160 90" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:auto;">
+                <!-- Mehrere Darmschlingen mit Spiegeln überall -->
+                <!-- Schlinge 1 -->
+                <rect x="10" y="8" width="55" height="28" rx="5"
+                      fill="none" stroke="#3a3a4a" stroke-width="1.5"/>
+                <rect x="10" y="8" width="55" height="11" rx="4"
+                      fill="rgba(62,207,168,.12)"/>
+                <line x1="10" y1="19" x2="65" y2="19"
+                      stroke="#3ecfa8" stroke-width="1.2" stroke-dasharray="3 2"/>
+
+                <!-- Schlinge 2 -->
+                <rect x="75" y="8" width="75" height="28" rx="5"
+                      fill="none" stroke="#3a3a4a" stroke-width="1.5"/>
+                <rect x="75" y="8" width="75" height="11" rx="4"
+                      fill="rgba(62,207,168,.12)"/>
+                <line x1="75" y1="19" x2="150" y2="19"
+                      stroke="#3ecfa8" stroke-width="1.2" stroke-dasharray="3 2"/>
+
+                <!-- Schlinge 3 -->
+                <rect x="10" y="46" width="65" height="30" rx="5"
+                      fill="none" stroke="#3a3a4a" stroke-width="1.5"/>
+                <rect x="10" y="46" width="65" height="12" rx="4"
+                      fill="rgba(62,207,168,.12)"/>
+                <line x1="10" y1="58" x2="75" y2="58"
+                      stroke="#3ecfa8" stroke-width="1.2" stroke-dasharray="3 2"/>
+
+                <!-- Schlinge 4 -->
+                <rect x="85" y="46" width="65" height="30" rx="5"
+                      fill="none" stroke="#3a3a4a" stroke-width="1.5"/>
+                <rect x="85" y="46" width="65" height="12" rx="4"
+                      fill="rgba(62,207,168,.12)"/>
+                <line x1="85" y1="58" x2="150" y2="58"
+                      stroke="#3ecfa8" stroke-width="1.2" stroke-dasharray="3 2"/>
+
+                <!-- Label -->
+                <text x="80" y="86" font-family="'DM Mono', monospace" font-size="7" fill="#3ecfa8" text-anchor="middle" opacity=".7">Spiegel überall</text>
+              </svg>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- Intro -->
+    <section class="intro-section">
+      <p>Beim Ileus unterscheidet man grundsätzlich zwischen einem <strong style="color:var(--text)">mechanischen</strong> (physische Obstruktion) und einem <strong style="color:var(--text)">paralytischen</strong> (funktionelle Darmlähmung) Ileus. Beide erfordern rasche Diagnostik und Behandlung.</p>
+    </section>
+
+    <!-- Anamnese -->
+    <section class="detail-section">
+      <details>
+        <summary>Anamnese (OPQRST)</summary>
+        <div class="detail-body">
+          <table class="detail-table">
+            <tbody>
+              <tr>
+                <td>O — Onset</td>
+                <td>Schleichend</td>
+              </tr>
+              <tr>
+                <td>Q — Qualität</td>
+                <td>Anfangs gelegentlich <strong>stechend</strong>, dann zunehmend <strong>krampfartig</strong></td>
+              </tr>
+              <tr>
+                <td>R — Region</td>
+                <td>Linker Unterbauch (häufig bei Dickdarm-Ileus)</td>
+              </tr>
+              <tr>
+                <td>T — Zeitverlauf</td>
+                <td>Wellenartige Zu- und Abnahme (Kolikcharakter)</td>
+              </tr>
+              <tr>
+                <td>Begleitsymptome</td>
+                <td>Fieber oder normotherm, Übelkeit, <strong>schwallartiges Erbrechen</strong> (bräunlich, übelriechend), Meteorismus, <strong>Stuhl- oder Windverhalt</strong></td>
+              </tr>
+              <tr>
+                <td>Anamnestisch</td>
+                <td>Vorangegangene OPs (Briden!), Alkoholkonsum?, Opiateinnahme?, bekannte Hernien?</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </section>
+
+    <!-- Klinische Untersuchung -->
+    <section class="detail-section">
+      <details>
+        <summary>Klinische Untersuchung</summary>
+        <div class="detail-body">
+          <div class="sub-section">
+            <p class="sub-title">Inspektion</p>
+            <ul class="detail-list">
+              <li>Pralles, geblähtes Abdomen (Meteorismus)</li>
+              <li>Sichtbare Hernien? (Inguinal, Umbilikal, Narben)</li>
+            </ul>
+          </div>
+          <div class="sub-section">
+            <p class="sub-title">Auskultation</p>
+            <table class="detail-table">
+              <tbody>
+                <tr>
+                  <td>Mechanisch</td>
+                  <td>Metallisch klingende, hochgestellte Darmgeräusche (Hyperperistaltik proximal der Engstelle)</td>
+                </tr>
+                <tr>
+                  <td>Paralytisch</td>
+                  <td><strong>Totenstille</strong> oder spärliche, metallische Geräusche</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="sub-section">
+            <p class="sub-title">Palpation</p>
+            <ul class="detail-list">
+              <li>Allerorts diffuser Druckschmerz</li>
+              <li>Hernien ertasten</li>
+              <li>Peritonismus / Abwehrspannung möglich (Komplikation)</li>
+            </ul>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <!-- Differentialdiagnosen -->
+    <section class="detail-section">
+      <details>
+        <summary>Differentialdiagnosen</summary>
+        <div class="detail-body">
+          <ul class="detail-list">
+            <li>Cholelithiasis, Cholezystitis, Gallenblasenperforation, Gallenkolik</li>
+            <li>Divertikel, chronisch entzündliche Darmerkrankungen (CED)</li>
+            <li>Akute mesenteriale Ischämie</li>
+            <li>Appendizitis, Ulcus pepticum, Pankreaskarzinom</li>
+            <li>Extrauterine Gravidität</li>
+            <li>Aortenaneurysma</li>
+            <li>Myokardinfarkt (immer ausschließen!)</li>
+          </ul>
+        </div>
+      </details>
+    </section>
+
+    <!-- Diagnostik -->
+    <section class="detail-section">
+      <details>
+        <summary>Diagnostik</summary>
+        <div class="detail-body">
+          <div class="sub-section">
+            <p class="sub-title">Labor</p>
+            <ul class="detail-list">
+              <li>Blutbild, CRP</li>
+              <li><strong style="color:var(--text)">Kalium</strong> — Hypokaliämie als Ursache des paralytischen Ileus</li>
+              <li>Blutgruppe (präoperativ)</li>
+            </ul>
+          </div>
+          <div class="sub-section">
+            <p class="sub-title">Bildgebung</p>
+            <ul class="detail-list">
+              <li><strong style="color:var(--text)">Abdomen-Leeraufnahme (Röntgen)</strong> — Flüssigkeitsspiegelbildung; Dickdarm gasarm und kollabiert distal der Engstelle</li>
+              <li>CT-Abdomen (Standarddiagnostik, Lokalisation der Engstelle)</li>
+            </ul>
+          </div>
+          <div class="info-box warn">
+            <strong>Wichtig:</strong> Die Abdomen-Leeraufnahme zeigt beim mechanischen Ileus Spiegel ober der Engstelle, beim paralytischen Ileus sind Spiegel im gesamten Darmrohr verteilt.
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <!-- Formen / Ursachen -->
+    <section class="detail-section">
+      <details>
+        <summary>Ursachen im Detail</summary>
+        <div class="detail-body">
+          <table class="detail-table">
+            <thead>
+              <tr>
+                <th>Form</th>
+                <th>Häufige Ursachen</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Mechanisch</td>
+                <td>Briden (post-OP), inkarzerierte Hernien, Tumor, Volvulus, Invagination, Gallenstein-Ileus, Koprostase</td>
+              </tr>
+              <tr>
+                <td>Paralytisch</td>
+                <td>Postoperativ, Peritonitis, Elektrolytmangel (Hypokaliämie), Opiate/Medikamente, Mesenterialgefäßverschluss, Retroperitonealblutung</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </section>
+
+    <p class="src-note">// Quelle: OSCE Ausarbeitung Bauchschmerz — Leonie (SoSe 24, MedUni Wien)</p>
+  </main>
+</body>
+</html>

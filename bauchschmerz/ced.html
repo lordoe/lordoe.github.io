@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CED — Morbus Crohn & Colitis ulcerosa — OSCE Bauchschmerz</title>
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    /* ── CED COMPARE CARDS ── */
+    .ced-compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .ced-card {
+      background: var(--s2);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+    }
+    .ced-card.crohn  { border-top: 3px solid var(--blue); }
+    .ced-card.cu     { border-top: 3px solid var(--teal); }
+
+    .ced-card-head {
+      padding: .8rem 1.1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .ced-card-head .ced-title {
+      font-weight: 700;
+      font-size: 1rem;
+    }
+    .crohn  .ced-title { color: var(--blue); }
+    .cu     .ced-title { color: var(--teal); }
+    .ced-card-head .ced-sub {
+      font-size: .78rem;
+      color: var(--muted);
+      margin-top: .15rem;
+      font-family: var(--mono);
+    }
+
+    .ced-card-body {
+      padding: .85rem 1.1rem;
+      display: flex;
+      flex-direction: column;
+      gap: .5rem;
+    }
+
+    .ced-fact {
+      display: grid;
+      grid-template-columns: 7rem 1fr;
+      gap: .4rem .6rem;
+      font-size: .85rem;
+    }
+    .ced-fact-key {
+      font-family: var(--mono);
+      font-size: .73rem;
+      color: var(--muted);
+      letter-spacing: .03em;
+      padding-top: .05rem;
+    }
+    .ced-fact-val {
+      color: var(--dim);
+      line-height: 1.45;
+    }
+    .ced-fact-val strong { color: var(--text); }
+
+    /* ── BODY WALL DIAGRAM ── */
+    .wall-diagram {
+      display: flex;
+      gap: 1.25rem;
+      align-items: flex-start;
+    }
+
+    .wall-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: .5rem;
+    }
+
+    .wall-label {
+      font-family: var(--mono);
+      font-size: .73rem;
+      font-weight: 600;
+      letter-spacing: .03em;
+    }
+    .crohn-label  { color: var(--blue); }
+    .cu-label     { color: var(--teal); }
+
+    .wall-layers {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      border-radius: var(--r);
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .wall-layer {
+      padding: .4rem .7rem;
+      font-size: .78rem;
+      color: var(--muted);
+      background: var(--s3);
+      line-height: 1.3;
+    }
+    .wall-layer.affected-blue {
+      background: var(--blue-dim);
+      color: var(--text);
+      font-weight: 500;
+      border-left: 2px solid var(--blue);
+    }
+    .wall-layer.affected-teal {
+      background: var(--teal-dim);
+      color: var(--text);
+      font-weight: 500;
+      border-left: 2px solid var(--teal);
+    }
+
+    /* ── EXTRAINTESTINAL MANIFESTATIONS ── */
+    .extrait-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: .6rem;
+    }
+
+    .extrait-card {
+      background: var(--s2);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: .75rem .9rem;
+    }
+
+    .extrait-organ {
+      font-family: var(--mono);
+      font-size: .72rem;
+      color: var(--accent);
+      letter-spacing: .04em;
+      margin-bottom: .4rem;
+      display: flex;
+      align-items: center;
+      gap: .35rem;
+    }
+
+    .extrait-items {
+      font-size: .83rem;
+      color: var(--dim);
+      line-height: 1.5;
+    }
+
+    @media (max-width: 600px) {
+      .ced-compare { grid-template-columns: 1fr; }
+      .wall-diagram { flex-direction: column; }
+      .ced-fact { grid-template-columns: 6rem 1fr; }
+      .extrait-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="breadcrumb">
+    <a href="../index.html">← Übersicht</a>
+    <span class="sep">/</span>
+    <span>CED</span>
+  </nav>
+
+  <main class="page-wrap fade-in">
+
+    <header class="page-header">
+      <span class="topic-tag">// Krankheitsbild</span>
+      <h1>CED — Morbus Crohn &amp; Colitis ulcerosa</h1>
+    </header>
+
+    <!-- Kernaussage -->
+    <section class="kern-section">
+      <p class="kern">„Beide Erkrankungen verlaufen chronisch und in Schüben — der entscheidende Unterschied liegt darin, <em>wo</em> und <em>wie tief</em> die Entzündung sitzt."</p>
+    </section>
+
+    <!-- Visualisierung: Vergleich + Wandschichten -->
+    <div class="viz-section">
+      <div class="viz-label">// Morbus Crohn vs. Colitis ulcerosa — Vergleich</div>
+      <div class="viz-body">
+
+        <div class="ced-compare">
+          <!-- Morbus Crohn -->
+          <div class="ced-card crohn">
+            <div class="ced-card-head">
+              <div class="ced-title">Morbus Crohn</div>
+              <div class="ced-sub">// Chronisch entzündlich</div>
+            </div>
+            <div class="ced-card-body">
+              <div class="ced-fact">
+                <span class="ced-fact-key">Lokalisation</span>
+                <span class="ced-fact-val"><strong>Gesamter GI-Trakt</strong> — Mund bis After möglich</span>
+              </div>
+              <div class="ced-fact">
+                <span class="ced-fact-key">Befallsmuster</span>
+                <span class="ced-fact-val"><strong>Segmental, diskontinuierlich</strong> (Skip Lesions)</span>
+              </div>
+              <div class="ced-fact">
+                <span class="ced-fact-key">Tiefe</span>
+                <span class="ced-fact-val"><strong>Transmural</strong> — alle Darmwandschichten betroffen</span>
+              </div>
+              <div class="ced-fact">
+                <span class="ced-fact-key">Leitsymptom</span>
+                <span class="ced-fact-val">Krampfschmerz <strong>rechter Unterbauch</strong>, Diarrhoe</span>
+              </div>
+              <div class="ced-fact">
+                <span class="ced-fact-key">Komplikationen</span>
+                <span class="ced-fact-val">Fisteln, Stenosen, Abszesse, Malabsorption</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Colitis ulcerosa -->
+          <div class="ced-card cu">
+            <div class="ced-card-head">
+              <div class="ced-title">Colitis ulcerosa</div>
+              <div class="ced-sub">// Chronisch entzündlich</div>
+            </div>
+            <div class="ced-card-body">
+              <div class="ced-fact">
+                <span class="ced-fact-key">Lokalisation</span>
+                <span class="ced-fact-val"><strong>Kolon &amp; Rektum</strong> — Rektum immer betroffen</span>
+              </div>
+              <div class="ced-fact">
+                <span class="ced-fact-key">Befallsmuster</span>
+                <span class="ced-fact-val"><strong>Kontinuierlich</strong>, von rektal nach proximal</span>
+              </div>
+              <div class="ced-fact">
+                <span class="ced-fact-key">Tiefe</span>
+                <span class="ced-fact-val"><strong>Mukosa</strong> — nur oberste Schicht der Darmwand</span>
+              </div>
+              <div class="ced-fact">
+                <span class="ced-fact-key">Leitsymptom</span>
+                <span class="ced-fact-val"><strong>Blutige Diarrhoe</strong>, Tenesmen</span>
+              </div>
+              <div class="ced-fact">
+                <span class="ced-fact-key">Komplikationen</span>
+                <span class="ced-fact-val">Toxisches Megakolon, erhöhtes Karzinomrisiko</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Wandschichten-Diagramm -->
+        <div class="sub-title" style="margin-bottom:.75rem">Tiefe der Entzündung — Darmwandschichten</div>
+        <div class="wall-diagram">
+          <div class="wall-item">
+            <div class="wall-label crohn-label">Morbus Crohn — transmural</div>
+            <div class="wall-layers">
+              <div class="wall-layer affected-blue">Mukosa</div>
+              <div class="wall-layer affected-blue">Submukosa</div>
+              <div class="wall-layer affected-blue">Muscularis propria</div>
+              <div class="wall-layer affected-blue">Serosa</div>
+            </div>
+            <div style="font-size:.78rem;color:var(--muted);margin-top:.35rem">Alle Schichten betroffen → Fisteln, Abszesse möglich</div>
+          </div>
+          <div class="wall-item">
+            <div class="wall-label cu-label">Colitis ulcerosa — auf Mukosa begrenzt</div>
+            <div class="wall-layers">
+              <div class="wall-layer affected-teal">Mukosa</div>
+              <div class="wall-layer">Submukosa</div>
+              <div class="wall-layer">Muscularis propria</div>
+              <div class="wall-layer">Serosa</div>
+            </div>
+            <div style="font-size:.78rem;color:var(--muted);margin-top:.35rem">Nur oberste Schicht → Blutung, Ulzerationen der Mukosa</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Intro -->
+    <section class="intro-section">
+      <p>Chronisch-entzündliche Darmerkrankungen (CED) verlaufen schubhaft mit krampfartigen Schmerzen im rechten Unterbauch, Gewichtsverlust und subfebrilen Temperaturen. Tenesmen (schmerzhafter Stuhldrang mit Krämpfen) sind typisch, ebenso Diarrhoe und Steatorrhö.</p>
+      <p>Beide Erkrankungen gehen mit extraintestinalen Manifestationen einher, die Gelenke, Haut, Augen und Leber betreffen können.</p>
+    </section>
+
+    <!-- Extraintestinale Manifestationen -->
+    <div class="viz-section">
+      <div class="viz-label">// Extraintestinale Manifestationen</div>
+      <div class="viz-body">
+        <div class="extrait-grid">
+          <div class="extrait-card">
+            <div class="extrait-organ">Leber / Gallengänge</div>
+            <div class="extrait-items">Primär sklerosierende Cholangitis (PSC) — häufiger bei CU</div>
+          </div>
+          <div class="extrait-card">
+            <div class="extrait-organ">Gelenke</div>
+            <div class="extrait-items">Arthritis, Spondylitis ankylosans, Sakroiliitis</div>
+          </div>
+          <div class="extrait-card">
+            <div class="extrait-organ">Haut</div>
+            <div class="extrait-items">Erythema nodosum, Pyoderma gangraenosum, Pyostomatitis vegetans</div>
+          </div>
+          <div class="extrait-card">
+            <div class="extrait-organ">Auge</div>
+            <div class="extrait-items">Iritis, Episkleritis, Uveitis</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Collapsible Details -->
+    <details class="detail-section">
+      <summary>OPQRST, Klinische Untersuchung, DD &amp; Diagnostik</summary>
+      <div class="detail-body">
+
+        <!-- OPQRST -->
+        <div class="sub-section">
+          <div class="sub-title">OPQRST — Schmerzanamnese</div>
+          <table class="detail-table">
+            <thead>
+              <tr>
+                <th>Kürzel</th>
+                <th>Bedeutung &amp; Befund</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>O — Onset</td><td>Schubhaft</td></tr>
+              <tr><td>P — Palliation</td><td>Kein klarer Auslöser; Schübe spontan oder durch Stress, Infekte, NSAR getriggert</td></tr>
+              <tr><td>Q — Quality</td><td>Krampfartig</td></tr>
+              <tr><td>R — Region</td><td>Rechter Unterbauch (Morbus Crohn), diffus / linker Unterbauch (Colitis ulcerosa)</td></tr>
+              <tr><td>S — Severity</td><td>Variabel je nach Schubaktivität</td></tr>
+              <tr><td>T — Timing</td><td>Schubhaft (Remission und Schübe wechseln sich ab)</td></tr>
+            </tbody>
+          </table>
+          <div class="info-box warn mt-2">
+            <strong>Weitere Symptome:</strong> Gewichtsverlust, subfebrile Temperaturen, Appetitlosigkeit, Tenesmen (schmerzhafter Stuhldrang + Krämpfe), Diarrhoe, Steatorrhö.
+          </div>
+          <div class="info-box mt-2">
+            <strong>Medikamente erfragen:</strong> NSAR, Glucocorticoide, SSRI (können Schübe triggern oder maskieren).
+          </div>
+        </div>
+
+        <!-- Klinische Untersuchung -->
+        <div class="sub-section">
+          <div class="sub-title">Klinische Untersuchung</div>
+          <table class="detail-table">
+            <tbody>
+              <tr><td>Inspektion</td><td>Hautveränderungen (Erythema nodosum, Pyoderma gangraenosum), perianale Fisteln (Morbus Crohn)</td></tr>
+              <tr><td>Auskultation</td><td>Normal (ggf. vermindert bei Ileus/Stenose)</td></tr>
+              <tr><td>Palpation</td><td>Diffuser Druckschmerz; Peritonismus / Abwehrspannung bei Komplikation (Perforation, Abszess) möglich</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Differentialdiagnosen -->
+        <div class="sub-section">
+          <div class="sub-title">Differentialdiagnosen</div>
+          <ul class="detail-list">
+            <li>Cholelithiasis / Cholezystitis / Gallenblasenperforation / Gallenkolik</li>
+            <li>Exsudativ-entzündliche Diarrhoe</li>
+            <li>Infektiöse Kolitis (bakteriell, viral, parasitär)</li>
+            <li>Divertikulitis</li>
+            <li>Appendizitis</li>
+            <li>Ischämische Kolitis</li>
+          </ul>
+        </div>
+
+        <!-- Diagnostik -->
+        <div class="sub-section">
+          <div class="sub-title">Diagnostik</div>
+          <table class="detail-table">
+            <tbody>
+              <tr>
+                <td>Labor</td>
+                <td>Leukozytose, CRP, Blutbild (Anämie?), Leberparameter (ALT, AST, γ-GT), Calprotectin im Stuhl (sensitiver Marker für intestinale Entzündung)</td>
+              </tr>
+              <tr>
+                <td>Stuhlkultur</td>
+                <td>Ausschluss bakterieller Infektionen (Salmonellen, Campylobacter, C. difficile etc.)</td>
+              </tr>
+              <tr>
+                <td>Sonographie</td>
+                <td>Wandverdickung des Darms, Divertikelausschluss, Abszesssuche</td>
+              </tr>
+              <tr>
+                <td>Endoskopie</td>
+                <td>Gastro- und Koloskopie mit Biopsie — Goldstandard zur Diagnosestellung und Aktivitätsbewertung</td>
+              </tr>
+              <tr>
+                <td>MRT</td>
+                <td>Verdickung der Darmschlingen, Fisteln, Abszesse (MRT-Sellink bei Morbus Crohn)</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="info-box teal">
+            <strong>Calprotectin:</strong> Stuhlmarker aus Granulozyten — bei aktiver intestinaler Entzündung stark erhöht. Gutes nicht-invasives Screening und Verlaufsparameter.
+          </div>
+          <div class="info-box accent">
+            <strong>Endoskopisches Bild:</strong> Morbus Crohn → Pflastersteinrelief, aphthoide Ulzera, Skip Lesions. Colitis ulcerosa → kontinuierliche Rötung, Granulositas, Ulzerationen von rektal.
+          </div>
+        </div>
+
+      </div>
+    </details>
+
+    <p class="src-note">// Quelle: OSCE Ausarbeitung Bauchschmerz — Leonie (SoSe 24, MedUni Wien)</p>
+  </main>
+</body>
+</html>

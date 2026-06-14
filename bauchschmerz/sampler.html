@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SAMPLER-Schema — OSCE Bauchschmerz</title>
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    .sampler-accordion {
+      display: flex;
+      flex-direction: column;
+      gap: .5rem;
+    }
+
+    .sampler-card {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      transition: border-color .2s;
+    }
+
+    .sampler-card.open {
+      border-color: var(--blue);
+    }
+
+    .sampler-card-header {
+      display: flex;
+      align-items: center;
+      gap: .85rem;
+      padding: .85rem 1rem;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .sampler-card-header:hover {
+      background: var(--s2);
+    }
+
+    .letter-badge {
+      background: var(--blue-dim);
+      color: var(--blue);
+      font-family: var(--mono);
+      font-weight: 700;
+      font-size: 1.1rem;
+      width: 2.2rem;
+      height: 2.2rem;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .sampler-card.open .letter-badge {
+      background: var(--blue);
+      color: #090b10;
+    }
+
+    .sampler-card-title {
+      flex: 1;
+      font-weight: 500;
+      color: var(--text);
+      font-size: .95rem;
+    }
+
+    .sampler-card-subtitle {
+      font-size: .78rem;
+      color: var(--dim);
+      font-family: var(--mono);
+      margin-top: .1rem;
+    }
+
+    .chevron {
+      color: var(--muted);
+      font-size: .85rem;
+      transition: transform .2s;
+    }
+
+    .sampler-card.open .chevron {
+      transform: rotate(180deg);
+    }
+
+    .sampler-card-body {
+      display: none;
+      padding: 0 1rem 1rem 1rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .sampler-card.open .sampler-card-body {
+      display: block;
+    }
+
+    .sampler-q-list {
+      list-style: none;
+      padding: 0;
+      margin: .75rem 0 0 0;
+      display: flex;
+      flex-direction: column;
+      gap: .4rem;
+    }
+
+    .sampler-q-list li {
+      color: var(--dim);
+      font-size: .9rem;
+      padding: .35rem .6rem;
+      border-radius: var(--r);
+      background: var(--s2);
+      display: flex;
+      gap: .5rem;
+    }
+
+    .sampler-q-list li::before {
+      content: '›';
+      color: var(--blue);
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .opqrst-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: .4rem;
+      margin-top: .75rem;
+    }
+
+    .opqrst-item {
+      background: var(--s2);
+      border-radius: var(--r);
+      padding: .5rem .65rem;
+    }
+
+    .opqrst-label {
+      font-family: var(--mono);
+      font-size: .75rem;
+      color: var(--blue);
+      margin-bottom: .15rem;
+    }
+
+    .opqrst-q {
+      font-size: .85rem;
+      color: var(--dim);
+    }
+
+    .veg-section {
+      margin-top: 1rem;
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+    }
+
+    .veg-header {
+      display: flex;
+      align-items: center;
+      gap: .85rem;
+      padding: .85rem 1rem;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .veg-header:hover {
+      background: var(--s2);
+    }
+
+    .veg-badge {
+      background: var(--teal-dim, rgba(62,207,168,.09));
+      color: var(--teal);
+      font-family: var(--mono);
+      font-weight: 700;
+      font-size: .75rem;
+      padding: .25rem .5rem;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .veg-header .chevron {
+      margin-left: auto;
+    }
+
+    .veg-body {
+      display: none;
+      padding: 0 1rem 1rem 1rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .veg-section.open {
+      border-color: var(--teal);
+    }
+
+    .veg-section.open .veg-body {
+      display: block;
+    }
+
+    .veg-section.open .chevron {
+      transform: rotate(180deg);
+    }
+
+    .veg-section.open .veg-badge {
+      background: var(--teal);
+      color: #090b10;
+    }
+
+    .intro-text {
+      color: var(--dim);
+      font-size: .95rem;
+      margin-bottom: 1.5rem;
+    }
+  </style>
+</head>
+<body>
+  <nav class="breadcrumb">
+    <a href="../index.html">← Übersicht</a>
+    <span class="sep">/</span>
+    <span>SAMPLER-Schema</span>
+  </nav>
+  <main class="page-wrap fade-in">
+    <header class="page-header">
+      <span class="topic-tag">// Anamnese</span>
+      <h1>SAMPLER-Schema</h1>
+    </header>
+
+    <!-- 1. Kernaussage -->
+    <section class="kern-section">
+      <p class="kern">„Eine strukturierte Anamnese stellt sicher, dass in der Befragung nichts Wichtiges vergessen wird."</p>
+    </section>
+
+    <!-- 2. Visualization -->
+    <section class="viz-section">
+      <p class="viz-label">// Interaktiv — SAMPLER Accordion</p>
+      <div class="viz-body">
+        <div class="sampler-accordion" id="samplerAccordion">
+
+          <!-- S -->
+          <div class="sampler-card" data-key="S">
+            <div class="sampler-card-header" onclick="toggleCard(this)">
+              <div class="letter-badge">S</div>
+              <div>
+                <div class="sampler-card-title">Symptome</div>
+                <div class="sampler-card-subtitle">OPQRST</div>
+              </div>
+              <span class="chevron">▾</span>
+            </div>
+            <div class="sampler-card-body">
+              <div class="opqrst-grid">
+                <div class="opqrst-item">
+                  <div class="opqrst-label">O — Onset</div>
+                  <div class="opqrst-q">Wann haben die Beschwerden begonnen?</div>
+                </div>
+                <div class="opqrst-item">
+                  <div class="opqrst-label">P — Provocation/Palliation</div>
+                  <div class="opqrst-q">Was macht es besser oder schlechter?</div>
+                </div>
+                <div class="opqrst-item">
+                  <div class="opqrst-label">Q — Quality</div>
+                  <div class="opqrst-q">Wie würden Sie den Schmerz beschreiben — stechend, brennend, dumpf?</div>
+                </div>
+                <div class="opqrst-item">
+                  <div class="opqrst-label">R — Radiation</div>
+                  <div class="opqrst-q">Strahlt der Schmerz irgendwohin aus?</div>
+                </div>
+                <div class="opqrst-item">
+                  <div class="opqrst-label">S — Severity</div>
+                  <div class="opqrst-q">Wie stark ist der Schmerz auf einer Skala von 1–10?</div>
+                </div>
+                <div class="opqrst-item">
+                  <div class="opqrst-label">T — Time</div>
+                  <div class="opqrst-q">Wie hat sich der Schmerz über die Zeit verändert?</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- A -->
+          <div class="sampler-card" data-key="A">
+            <div class="sampler-card-header" onclick="toggleCard(this)">
+              <div class="letter-badge">A</div>
+              <div>
+                <div class="sampler-card-title">Allergien</div>
+                <div class="sampler-card-subtitle">Medikamente &amp; Nahrungsmittel</div>
+              </div>
+              <span class="chevron">▾</span>
+            </div>
+            <div class="sampler-card-body">
+              <ul class="sampler-q-list">
+                <li>Haben Sie bekannte Medikamentenallergien?</li>
+                <li>Haben Sie bekannte Nahrungsmittelallergien oder Unverträglichkeiten?</li>
+                <li>Wie hat sich die allergische Reaktion geäußert?</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- M -->
+          <div class="sampler-card" data-key="M">
+            <div class="sampler-card-header" onclick="toggleCard(this)">
+              <div class="letter-badge">M</div>
+              <div>
+                <div class="sampler-card-title">Medikation</div>
+                <div class="sampler-card-subtitle">NSAR · Cortison · SSRI</div>
+              </div>
+              <span class="chevron">▾</span>
+            </div>
+            <div class="sampler-card-body">
+              <ul class="sampler-q-list">
+                <li>Welche Medikamente nehmen Sie regelmäßig ein?</li>
+                <li>Nehmen Sie Schmerzmittel (NSAR wie Ibuprofen, Diclofenac)?</li>
+                <li>Nehmen Sie Cortison oder Antidepressiva (SSRI)?</li>
+                <li>Nehmen Sie Blutverdünner oder Antibiotika?</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- P -->
+          <div class="sampler-card" data-key="P">
+            <div class="sampler-card-header" onclick="toggleCard(this)">
+              <div class="letter-badge">P</div>
+              <div>
+                <div class="sampler-card-title">Patient:innengeschichte</div>
+                <div class="sampler-card-subtitle">Vorerkrankungen · OPs · Familienanamnese</div>
+              </div>
+              <span class="chevron">▾</span>
+            </div>
+            <div class="sampler-card-body">
+              <ul class="sampler-q-list">
+                <li>Haben Sie Vorerkrankungen (z.B. Diabetes, Herz-Kreislauf-Erkrankungen, CED)?</li>
+                <li>Wurden Sie schon einmal operiert? Wenn ja, was und wann?</li>
+                <li>Familienanamnese: Haben Eltern, Geschwister oder Großeltern ähnliche Beschwerden?</li>
+                <li>Bekannte Erkrankungen in der Familie (Leberzirrhose, CED, Karzinom)?</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- L -->
+          <div class="sampler-card" data-key="L">
+            <div class="sampler-card-header" onclick="toggleCard(this)">
+              <div class="letter-badge">L</div>
+              <div>
+                <div class="sampler-card-title">Letzte</div>
+                <div class="sampler-card-subtitle">Nahrungsaufnahme · Stuhlgang · Harnabgabe</div>
+              </div>
+              <span class="chevron">▾</span>
+            </div>
+            <div class="sampler-card-body">
+              <ul class="sampler-q-list">
+                <li>Wann haben Sie zuletzt gegessen oder getrunken?</li>
+                <li>Wann war Ihr letzter Stuhlgang? War er normal?</li>
+                <li>Wann haben Sie zuletzt Wasser gelassen?</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- E -->
+          <div class="sampler-card" data-key="E">
+            <div class="sampler-card-header" onclick="toggleCard(this)">
+              <div class="letter-badge">E</div>
+              <div>
+                <div class="sampler-card-title">Ereignisse</div>
+                <div class="sampler-card-subtitle">Vor Einsetzen der Symptome</div>
+              </div>
+              <span class="chevron">▾</span>
+            </div>
+            <div class="sampler-card-body">
+              <ul class="sampler-q-list">
+                <li>Was ist kurz vor den Beschwerden passiert?</li>
+                <li>Gab es besondere körperliche oder emotionale Belastung?</li>
+                <li>Waren Sie kürzlich auf Reisen?</li>
+                <li>Haben Sie etwas Ungewöhnliches gegessen?</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- R -->
+          <div class="sampler-card" data-key="R">
+            <div class="sampler-card-header" onclick="toggleCard(this)">
+              <div class="letter-badge">R</div>
+              <div>
+                <div class="sampler-card-title">Risikofaktoren</div>
+                <div class="sampler-card-subtitle">Lebensstil · Schwangerschaft</div>
+              </div>
+              <span class="chevron">▾</span>
+            </div>
+            <div class="sampler-card-body">
+              <ul class="sampler-q-list">
+                <li>Trinken Sie Alkohol? Wenn ja, wie viel und wie oft?</li>
+                <li>Rauchen Sie oder haben Sie geraucht?</li>
+                <li>Nehmen Sie Drogen?</li>
+                <li>Haben Sie Übergewicht?</li>
+                <li>Könnte eine Schwangerschaft möglich sein?</li>
+              </ul>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Vegetative Anamnese -->
+        <div class="veg-section" id="vegSection">
+          <div class="veg-header" onclick="toggleVeg()">
+            <div class="veg-badge">+ Veg</div>
+            <div>
+              <div class="sampler-card-title">Vegetative Anamnese</div>
+              <div class="sampler-card-subtitle">Immer dazu erfragen</div>
+            </div>
+            <span class="chevron">▾</span>
+          </div>
+          <div class="veg-body">
+            <ul class="sampler-q-list" style="margin-top:.75rem">
+              <li>B-Symptomatik: Fieber, ungewollter Gewichtsverlust, Nachtschweiß?</li>
+              <li>Übelkeit oder Erbrechen?</li>
+              <li>Wie ist Ihr Appetit?</li>
+              <li>Stuhl und Harn: Regelmäßigkeit, Farbe, Konsistenz, Inkontinenz?</li>
+              <li>Schlafstörungen oder Schmerzen in der Nacht?</li>
+              <li>Alkohol- und Nikotinkonsum?</li>
+              <li>Extraintestinale Symptome: Augenbeschwerden, Hautveränderungen, Gelenkschmerzen, Juckreiz?</li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 3. Intro text -->
+    <p class="intro-text">
+      Das SAMPLER-Schema strukturiert die Anamnese in 7 Kategorien, ergänzt durch die vegetative Anamnese. Beim Bauchschmerz ist besonders die genaue Charakterisierung der Symptome (S) und die Medikamentenanamnese (M) entscheidend — NSAR, Cortison und SSRI können direkt gastrointestinale Beschwerden verursachen.
+    </p>
+
+    <!-- 4. Detail section -->
+    <details class="detail-section">
+      <summary>Vollständige Inhalte — SAMPLER &amp; Vegetative Anamnese</summary>
+      <div class="detail-body">
+
+        <p class="sub-title">S — Symptome (OPQRST)</p>
+        <table class="detail-table">
+          <thead>
+            <tr><th>Kürzel</th><th>Begriff</th><th>Frage</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>O</td><td>Onset</td><td>Wann haben die Beschwerden begonnen?</td></tr>
+            <tr><td>P</td><td>Provocation/Palliation</td><td>Was macht es besser oder schlechter?</td></tr>
+            <tr><td>Q</td><td>Quality</td><td>Wie würden Sie den Schmerz beschreiben — stechend, brennend, dumpf?</td></tr>
+            <tr><td>R</td><td>Radiation</td><td>Strahlt der Schmerz irgendwohin aus?</td></tr>
+            <tr><td>S</td><td>Severity</td><td>Wie stark ist der Schmerz auf einer Skala von 1–10?</td></tr>
+            <tr><td>T</td><td>Time</td><td>Wie hat sich der Schmerz über die Zeit verändert?</td></tr>
+          </tbody>
+        </table>
+
+        <p class="sub-title" style="margin-top:1.5rem">A — Allergien</p>
+        <ul class="detail-list">
+          <li>Bekannte Medikamenten- oder Nahrungsmittelallergien?</li>
+        </ul>
+
+        <p class="sub-title" style="margin-top:1.5rem">M — Medikation</p>
+        <ul class="detail-list">
+          <li>Welche Medikamente nehmen Sie ein?</li>
+          <li>Besonders relevant: NSAR, Cortison, SSRI</li>
+        </ul>
+
+        <p class="sub-title" style="margin-top:1.5rem">P — Patient:innengeschichte</p>
+        <ul class="detail-list">
+          <li>Vorerkrankungen?</li>
+          <li>Frühere Operationen (was, wann)?</li>
+          <li>Familienanamnese (Eltern, Geschwister, Großeltern — z.B. Leberzirrhose, CED, Karzinom)</li>
+        </ul>
+
+        <p class="sub-title" style="margin-top:1.5rem">L — Letzte</p>
+        <ul class="detail-list">
+          <li>Wann zuletzt gegessen?</li>
+          <li>Letzter Stuhlgang?</li>
+          <li>Letzte Harnabgabe?</li>
+        </ul>
+
+        <p class="sub-title" style="margin-top:1.5rem">E — Ereignisse</p>
+        <ul class="detail-list">
+          <li>Was ist kurz vor den Beschwerden passiert?</li>
+          <li>Besondere Belastung, Reisen, ungewöhnliche Nahrung?</li>
+        </ul>
+
+        <p class="sub-title" style="margin-top:1.5rem">R — Risikofaktoren</p>
+        <ul class="detail-list">
+          <li>Alkohol, Nikotin, Drogen, Übergewicht?</li>
+          <li>Schwangerschaft möglich?</li>
+        </ul>
+
+        <p class="sub-title" style="margin-top:1.5rem">Vegetative Anamnese (immer dazu)</p>
+        <ul class="detail-list">
+          <li>B-Symptomatik: Fieber, ungewollter Gewichtsverlust, Nachtschweiß</li>
+          <li>Übelkeit, Erbrechen</li>
+          <li>Appetit</li>
+          <li>Stuhl und Harn: Regelmäßigkeit, Farbe, Konsistenz, Inkontinenz</li>
+          <li>Schlaf: Störungen, Schmerzen</li>
+          <li>Alkohol, Nikotin</li>
+          <li>Extraintestinale Symptome (Augen, Haut, Gelenke) → Juckreiz!</li>
+        </ul>
+
+      </div>
+    </details>
+
+    <!-- 5. Source note -->
+    <p class="src-note">// Quelle: OSCE Ausarbeitung Bauchschmerz — Leonie (SoSe 24, MedUni Wien)</p>
+  </main>
+
+  <script>
+    function toggleCard(header) {
+      const card = header.closest('.sampler-card');
+      const isOpen = card.classList.contains('open');
+      card.classList.toggle('open', !isOpen);
+    }
+
+    function toggleVeg() {
+      document.getElementById('vegSection').classList.toggle('open');
+    }
+  </script>
+</body>
+</html>
