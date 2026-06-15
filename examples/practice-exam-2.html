@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Practice Exam 2 — Fragen &amp; Lösungen</title>
+<script>
+  MathJax = {
+    tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+    options: { skipHtmlTags: ['script','noscript','style','textarea'] }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0e11;
+    --bg2: #16161b;
+    --bg3: #1e1e26;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #e8e6f0;
+    --muted: #7a7890;
+    --accent: #c9488e;
+    --accent-dim: rgba(201,72,142,0.15);
+    --green: #4ecdc4;
+    --green-dim: rgba(78,205,196,0.12);
+    --blue: #2970c4;
+    --blue-dim: rgba(41,112,196,0.12);
+    --yellow: #ffd93d;
+    --yellow-dim: rgba(255,217,61,0.12);
+    --orange: #e8934a;
+    --orange-dim: rgba(232,147,74,0.12);
+    --red: #ff6b6b;
+    --red-dim: rgba(255,107,107,0.12);
+  }
+
+  mjx-container { color: var(--text) !important; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem 4rem;
+  }
+
+  header {
+    width: 100%;
+    max-width: 900px;
+    margin-bottom: 1.6rem;
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  h1 {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.05rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+  }
+
+  .subtitle {
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .main {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+  }
+
+  .section-head {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.82rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-top: 1.2rem;
+    padding-bottom: 0.4rem;
+  }
+
+  .intro {
+    font-size: 0.88rem;
+    line-height: 1.7;
+    color: #c0bdd0;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 10px;
+    padding: 1.1rem 1.4rem;
+  }
+
+  .qa {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.1rem 1.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+
+  .qhead { display: flex; gap: 0.7rem; align-items: baseline; }
+  .qnum {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--bg);
+    background: var(--accent);
+    border-radius: 5px;
+    padding: 0.12rem 0.45rem;
+    flex-shrink: 0;
+    font-weight: 500;
+  }
+  .question { font-size: 0.88rem; line-height: 1.6; color: var(--text); }
+  .alabel {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--green);
+  }
+  .answer { font-size: 0.88rem; line-height: 1.7; color: #c0bdd0; }
+  .answer em { color: var(--text); font-style: normal; font-weight: 400; }
+
+  .formula-box {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-left: 3px solid var(--green);
+    border-radius: 8px;
+    padding: 0.8rem 1.1rem;
+    font-size: 0.95rem;
+    overflow-x: auto;
+  }
+  .formula-box.center { text-align: center; }
+
+  pre.code {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-left: 3px solid var(--yellow);
+    border-radius: 8px;
+    padding: 0.9rem 1.1rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    line-height: 1.65;
+    color: #d6d3e6;
+    overflow-x: auto;
+    white-space: pre;
+  }
+  pre.code .kw { color: var(--accent); }
+  pre.code .cm { color: var(--muted); }
+  pre.code .fn { color: var(--blue); }
+
+  .subpart {
+    border-left: 2px solid var(--border2);
+    padding-left: 1rem;
+    margin-left: 0.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+  .subpart-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--yellow);
+  }
+
+  /* ── schritt-für-schritt derivation ── */
+  details.deriv {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg3);
+    padding: 0.2rem 0.9rem;
+  }
+  details.deriv > summary {
+    cursor: pointer;
+    list-style: none;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    color: var(--blue);
+    padding: 0.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    user-select: none;
+  }
+  details.deriv > summary::-webkit-details-marker { display: none; }
+  details.deriv > summary::before { content: "▸"; transition: transform 0.15s; }
+  details.deriv[open] > summary::before { transform: rotate(90deg); }
+  details.deriv > summary:hover { color: var(--text); }
+  .dsteps {
+    list-style: none;
+    counter-reset: dstep;
+    margin: 0.3rem 0 0.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+  .dstep {
+    counter-increment: dstep;
+    position: relative;
+    padding-left: 2rem;
+    font-size: 0.85rem;
+    line-height: 1.65;
+    color: #c0bdd0;
+  }
+  .dstep::before {
+    content: counter(dstep);
+    position: absolute;
+    left: 0; top: 0.05rem;
+    width: 1.35rem; height: 1.35rem;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Mono', monospace; font-size: 0.66rem;
+    color: var(--blue); background: var(--blue-dim);
+    border: 1px solid rgba(41,112,196,0.35); border-radius: 50%;
+  }
+  .dstep .di { color: var(--text); }
+  .dstep .dformula {
+    display: block;
+    margin-top: 0.35rem;
+    font-size: 0.9rem;
+    overflow-x: auto;
+  }
+
+  .wlinks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: center;
+    margin-top: 0.2rem;
+  }
+  .wlinks-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.66rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .wlink {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--blue);
+    background: var(--blue-dim);
+    border: 1px solid rgba(41,112,196,0.3);
+    border-radius: 5px;
+    padding: 0.18rem 0.5rem;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .wlink::before { content: "↗ "; opacity: 0.7; }
+  .wlink:hover { background: rgba(41,112,196,0.25); border-color: var(--blue); }
+
+  .src-note {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: #6a6866;
+    text-align: center;
+    margin-top: 2rem;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>192.183 Machine Learning 2026S — Practice Exam 2</h1>
+  <span class="subtitle">// Fragen &amp; ausgearbeitete Lösungen</span>
+</header>
+
+<div class="main">
+
+  <div class="intro">
+    Vollständige Ausarbeitung der <em>Practice Exam 2</em>. Jede Lösung verlinkt
+    (<span style="color:var(--blue)">↗ blaue Chips</span>) die interaktive Karte mit dem
+    benötigten Wissen — Klick öffnet sie im Notebook.
+  </div>
+
+  <div class="section-head">Part 1 — Simple Questions (15 Fragen, je 1 Punkt)</div>
+
+  <!-- Q1 -->
+  <div class="qa">
+    <div class="qhead"><span class="qnum">1</span>
+      <div class="question">Forward-Pass-Gleichung eines MLP mit einer Hidden-Schicht (Input \(\mathbf{x}\) → Output \(\mathbf{y}\), Hidden-Gewichte \(\mathbf{W}^{(1)}\), Output-Gewichte \(\mathbf{W}^{(2)}\), elementweise Aktivierung \(f\), Biases optional).</div>
+    </div>
+    <span class="alabel">Lösung</span>
+    <div class="formula-box center">\[ \mathbf{y} = \mathbf{W}^{(2)}\, f\!\big(\mathbf{W}^{(1)}\mathbf{x}\big) \]</div>
+    <div class="wlinks"><span class="wlinks-label">Wissen:</span>
+      <a class="wlink" data-src="deep-learning/mlp-netz.html" data-title="MLP — Forward Pass &amp; Loss Functions">MLP &amp; Loss Functions</a>
+    </div>
+  </div>
+
+  <!-- Q2 -->
+  <div class="qa">
+    <div class="qhead"><span class="qnum">2</span>
+      <div class="question">Wie viele verschiedene Werte kann eine <code>int8</code>-Zahl darstellen?</div>
+    </div>
+    <span class="alabel">Lösung</span>
+    <div class="formula-box center">\[ 2^8 = 256 \]</div>
+    <div class="wlinks"><span class="wlinks-label">Wissen:</span>
+      <a class="wlink" data-src="weitere-themen/ressourcen-effizienz.html" data-title="Resource Efficient Deep Learning">Ressourceneffizienz (Quantisierung)</a>
+    </div>
+  </div>
+
+  <!-- Q3 -->
+  <div class="qa">
+    <div class="qhead"><span class="qnum">3</span>
+      <div class="question">Logistische Regression: vorhergesagte Wahrscheinlichkeit, dass \(\mathbf{x}\) zur positiven Klasse gehört (Gewichte \(\mathbf{w}\), Bias \(b\)).</div>
+    </div>
+    <span class="alabel">Lösung</span>
+    <div class="formula-box center">\[ p(y{=}1\mid\mathbf{x}) = \sigma\!\big(\mathbf{w}^\top\mathbf{x}+b\big) = \frac{1}{1+e^{-(\mathbf{w}^\top\mathbf{x}+b)}} \]</div>
+    <div class="wlinks"><span class="wlinks-label">Wissen:</span>
+      <a class="wlink" data-src="supervised/logistische-regression.html" data-title="Logistische Regression — Sigmoid-Klassifikator">Logistische Regression</a>
+      <a class="wlink" data-src="examples/logistic-regression-mnist.html" data-title="EX1 — Logistic Regression on MNIST">EX1 — Logistic Regression</a>
+    </div>
+  </div>
+
+  <!-- Q4 -->
+  <div class="qa">
+    <div class="qhead"><span class="qnum">4</span>
+      <div class="question">Conv1d-Schicht mit Kernelgröße \(K\), \(D\) Eingangs- und \(D'\) Ausgangskanälen: Anzahl Gewichte (ohne Bias)?</div>
+    </div>
+    <span class="alabel">Lösung</span>
+    <div class="formula-box center">\[ K \cdot D \cdot D' \]</div>
+    <div class="wlinks"><span class="wlinks-label">Wissen:</span>
+      <a class="wlink" data-src="deep-learning/conv1d.html" data-title="Conv1D &amp; TCN — Convolutional Networks für Sequenzen">Conv1D &amp; TCN</a>
+    </div>
+  </div>
+
+  <!-- Q5 -->
+  <div class="qa">
+    <div class="qhead"><span class="qnum">5</span>
+      <div class="question">Welche Größe minimiert der K-means-Algorithmus?</div>
+    </div>
+    <span class="alabel">Lösung</span>
+    <div class="answer">Die Summe der quadrierten Distanzen aller Punkte zu ihrem zugewiesenen Zentroid (within-cluster sum of squares / Inertia):</div>
+    <div class="formula-box center">\[ J = \sum_{n=1}^{N} \big\lVert \mathbf{x}_n - \boldsymbol\mu_{c_n} \big\rVert^2 \]</div>
+    <div class="wlinks"><span class="wlinks-label">Wissen:</span>
+      <a class="wlink" data-src="unsupervized/lloyd-algorithmus.html" data-title="Lloyd-Algorithmus — K-Means Clustering">Lloyd-Algorithmus (K-Means)</a>
+    </div>
+  </div>
+
+  <!-- Q6 -->
+  <div class="qa">
+    <div class="qhead"><span class="qnum">6</span>
+      <div class="question">PCA projiziert die Daten auf die Richtungen, die welche Größe maximieren?</div>
+    </div>
+    <span class="alabel">Lösung</span>
+    <div class="answer">Die <em>Varianz</em> der projizierten Daten (gleichbedeutend: die größten Eigenwerte der Kovarianzmatrix).</div>
+    <div class="wlinks"><span class="wlinks-label">Wissen:</span>
+      <a class="wlink" data-src="unsupervized/pca_visualisierung.html" data-title="PCA — Schritt für Schritt">PCA</a>
+      <a class="wlink" data-src="grundlagen/kovarianzmatrix.html" data-title="Kovarianz &amp; Kovarianzmatrix">Kovarianzmatrix</a>
+    </div>
+  </div>
+
+  <!-- Q7 -->
+  <div class="qa">
+    <div class="qhead"><span class="qnum">7</span>
+      <div class="question">\(L\) gestapelte Conv1d-Schichten mit Kernelgröße 5 (Stride 1, keine Dilation): Größe des rezeptiven Feldes?</div>
+    </div>
+    <span class="alabel">Lösung</span>
+    <div class="answer">Jede Schicht erweitert das rezeptive Feld um \(K-1=4\):</div>
+    <div class="formula-box center">\[ \text{RF} = 1 + L\,(K-1) = 1 + 4L \]</div>
+    <div class="wlinks"><span class="wlinks-label">Wissen:</span>
+      <a class="wlink" data-src="deep-learning/conv1d.html" data-title="Conv1D &amp; TCN — Convolutional Networks für Sequenzen">Conv1D &amp; TCN (Rezeptives Feld)</a>
+    </div>
+  </div>
+
+  <!-- Q8 -->
+  <div class="qa">
+    <div class="qhead"><span class="qnum">8</span>
+      <div class="question">Self-Attention mit Input \(\mathbf{x}\in\mathbb{R}^{T\times D}\) und \(\mathbf{W}_K,\mathbf{W}_Q\in\mathbb{R}^{D\times d}\): Definition der Attention-Matrix und ihre Form (Skalierung mit \(\sqrt d\) optional)?</div>
+    </div>
+    <span class="alabel">Lösung</span>
+    <div class="formula-box center">\[ \mathbf{A} = \mathrm{softmax}\!\left( \frac{(\mathbf{x}\mathbf{W}_Q)(\mathbf{x}\mathbf{W}_K)^\top}{\sqrt{d}} \right), \qquad \mathbf{A}\in\mathbb{R}^{T\times T} \]</div>
+    <div class="answer">Softmax zeilenweise; Form \(T\times T\).</div>
+    <div class="wlinks"><span class="wlinks-label">Wissen:</span>
+      <a class="wlink" data-src="deep-learning/transformer.html" data-title="Transformer &amp; Attention">Transformer &amp; Attention</a>
+    </div>
+  </div>
+
+  <!-- Q9 -->
+  <div class="qa">
+    <div class="qhead"><span class="qnum">9</span>
+      <div class="question">Actor-Critic: Definition des Advantage \(A_t\) aus Return \(R_t\) und Wertschätzung \(v(\mathbf{o}_t)\).</div>
+    </div>
+    <span class="alabel">Lösung</span>
+    <div class="formula-box center">\[ A_t = R_t - v(\mathbf{o}_t) \]</div>
+    <div class="wlinks"><span class="wlinks-label">Wissen:</span>
+      <a class="wlink" data-src="reinforcement/actor-critic.html" data-title="Policy Gradient, REINFORCE &amp; Actor-Critic">Actor-Critic &amp; REINFORCE</a>
+    </div>
+  </div>
+
+  <!-- Q10 -->
+  <div class="qa">
+    <div class="qhead"><span class="qnum">10</span>
+      <div class="question">Batch Normalization \(\mathbf{x}' = \mathrm{BN}(\mathbf{x})\): Was sind (erwarteter) Mittelwert und Varianz von \(\mathbf{x}'\)?</div>
+    </div>
+    <span class="alabel">Lösung</span>
+    <div class="formula-box center">\[ \mathbb{E}[\mathbf{x}'] = 0, \qquad \mathrm{Var}[\mathbf{x}'] = 1 \]</div>
+    <div class="answer">(vor der optionalen affinen Skalierung/Shift mit \(\gamma,\beta\)).</div>
+    <div class="wlinks"><span class="wlinks-label">Wissen:</span>
+      <a class="wlink" data-src="deep-learning/training-stabilisierung.html" data-title="Training Stabilization">Training Stabilization (BatchNorm)</a>
+    </div>
+  </div>
+
+  <!-- Q11 -->
+  <div class="qa">
+    <div class="qhead"><span class="qnum">11</span>
+      <div class="question">Wie skalieren Compute und gespeicherter Speicher von Vanilla-Self-Attention mit der Sequenzlänge \(T\)?</div>
+    </div>
+    <span class="alabel">Lösung</span>
+    <div class="formula-box center">\[ \text{Compute: } \mathcal{O}(T^2), \qquad \text{Speicher: } \mathcal{O}(T^2) \]</div>
+    <div class="answer">Beide <em>quadratisch</em> in \(T\) — die \(T\times T\)-Attention-Matrix dominiert.</div>
+    <div class="wlinks"><span class="wlinks-label">Wissen:</span>
+      <a class="wlink" data-src="deep-learning/transformer.html" data-title="Transformer &amp; Attention">Transformer &amp; Attention</a>
+      <a class="wlink" data-src="weitere-themen/ressourcen-effizienz.html" data-title="Resource Efficient Deep Learning">Ressourceneffizienz</a>
+    </div>
+  </div>
+
+  <!-- Q12 -->
+  <div class="qa">
+    <div class="qhead"><span class="qnum">12</span>
+      <div class="question">Linearer RNN mit größtem Eigenwert-Betrag \(|\lambda|\) der rekurrenten Matrix: Um welchen Faktor wächst die Norm einer kleinen Störung nach \(T\) Zeitschritten?</div>
+    </div>
+    <span class="alabel">Lösung</span>
+    <div class="formula-box center">\[ |\lambda|^{T} \]</div>
+    <div class="answer">\(|\lambda|>1\) → exploding, \(|\lambda|<1\) → vanishing gradients.</div>
+    <div class="wlinks"><span class="wlinks-label">Wissen:</span>
+      <a class="wlink" data-src="deep-learning/rnn.html" data-title="Recurrent Neural Networks &amp; LSTM">RNN &amp; LSTM</a>
+    </div>
+  </div>
+
+  <!-- Q13 -->
+  <div class="qa">
+    <div class="qhead"><span class="qnum">13</span>
+      <div class="question">Nenne einen bekannten Algorithmus, der den RAM-Verbrauch der Attention-Schicht reduziert und ihre Berechnung beschleunigt.</div>
+    </div>
+    <span class="alabel">Lösung</span>
+    <div class="formula-box center"><b>FlashAttention</b></div>
+    <div class="answer">Berechnet Attention blockweise (Tiling) ohne die volle \(T\times T\)-Matrix zu materialisieren → \(\mathcal{O}(T)\) statt \(\mathcal{O}(T^2)\) Speicher, IO-effizient.</div>
+    <div class="wlinks"><span class="wlinks-label">Wissen:</span>
+      <a class="wlink" data-src="deep-learning/flash-attention.html" data-title="FlashAttention — IO-effiziente Attention">FlashAttention</a>
+      <a class="wlink" data-src="weitere-themen/ressourcen-effizienz.html" data-title="Resource Efficient Deep Learning">Ressourceneffizienz</a>
+    </div>
+  </div>
+
+  <!-- Q14 -->
+  <div class="qa">
+    <div class="qhead"><span class="qnum">14</span>
+      <div class="question">Beim Backprop senkt <em>Checkpointing</em> den Spitzenspeicher — auf Kosten von was?</div>
+    </div>
+    <span class="alabel">Lösung</span>
+    <div class="answer">Auf Kosten von zusätzlichem <em>Rechenaufwand</em>: nicht gespeicherte Zwischenaktivierungen werden im Backward-Pass neu berechnet (Recomputation).</div>
+    <div class="wlinks"><span class="wlinks-label">Wissen:</span>
+      <a class="wlink" data-src="deep-learning/backpropagation.html" data-title="Backpropagation">Backpropagation</a>
+      <a class="wlink" data-src="weitere-themen/ressourcen-effizienz.html" data-title="Resource Efficient Deep Learning">Ressourceneffizienz</a>
+    </div>
+  </div>
+
+  <!-- Q15 -->
+  <div class="qa">
+    <div class="qhead"><span class="qnum">15</span>
+      <div class="question">Contrastive Learning mit Bildern: Wie erzeugt man positive und negative Paare?</div>
+    </div>
+    <span class="alabel">Lösung</span>
+    <div class="answer"><em>Positive Paare:</em> zwei verschiedene Augmentierungen (Crop, Farbe, Flip …) <em>desselben</em> Bildes. <em>Negative Paare:</em> Augmentierungen <em>unterschiedlicher</em> Bilder (z. B. andere Bilder im Batch).</div>
+    <div class="wlinks"><span class="wlinks-label">Wissen:</span>
+      <a class="wlink" data-src="unsupervized/ssl-deep.html" data-title="Deep Self-Supervised Learning">Deep SSL (SimCLR/Contrastive)</a>
+    </div>
+  </div>
+
+  <div class="section-head">Part 2 — Problems (3 Probleme, je 5 Punkte)</div>
+
+  <!-- Problem 1 -->
+  <div class="qa">
+    <div class="qhead"><span class="qnum">P1</span>
+      <div class="question"><em>Peak-Memory in einem MLP.</em> Input \(\mathbf{x}_0\in\mathbb{R}^{d\times B}\), \(L\) Hidden-Schichten, \(\mathbf{W}_\ell\in\mathbb{R}^{d\times d}\), \(\mathbf{x}_\ell=\sigma(\mathbf{W}_\ell \mathbf{x}_{\ell-1})\).</div>
+    </div>
+    <div class="subpart">
+      <span class="subpart-label">(a) Peak-Memory \(d^2+2Bd\) für \(\mathbf{y}=\mathbf{W}\mathbf{x}\) — was bedeuten die Terme?</span>
+      <div class="formula-box center">\[ \text{Peak}(\mathbf{y}=\mathbf{W}\mathbf{x}) = \underbrace{d^2}_{\mathbf{W}} + \underbrace{2Bd}_{\mathbf{x}\,+\,\mathbf{y}} \]</div>
+      <details class="deriv"><summary>Schritt für Schritt</summary>
+        <ol class="dsteps">
+          <li class="dstep"><span class="di">Gewichtsmatrix:</span> \(\mathbf{W}\) hat Form \(d\times d\) → \(d^2\) Skalare.</li>
+          <li class="dstep"><span class="di">Eingabe:</span> \(\mathbf{x}\) hat Form \(d\times B\) → \(Bd\) Skalare.</li>
+          <li class="dstep"><span class="di">Ausgabe:</span> \(\mathbf{y}\) hat ebenfalls Form \(d\times B\) → \(Bd\) Skalare. Beide gleichzeitig im Speicher ⇒ \(2Bd\).</li>
+          <li class="dstep"><span class="di">Summe:</span> \(d^2+2Bd\).</li>
+        </ol>
+      </details>
+    </div>
+    <div class="subpart">
+      <span class="subpart-label">(b) Peak-Memory eines vollen Inference-Passes</span>
+      <div class="formula-box center">\[ \text{Peak} = d^2 + 2Bd \quad (\text{unabhängig von } L) \]</div>
+      <details class="deriv"><summary>Schritt für Schritt</summary>
+        <ol class="dsteps">
+          <li class="dstep"><span class="di">Schichtweise rechnen:</span> \(\mathbf{x}_\ell=\sigma(\mathbf{W}_\ell\mathbf{x}_{\ell-1})\) braucht nur die vorige Aktivierung \(\mathbf{x}_{\ell-1}\).</li>
+          <li class="dstep"><span class="di">Aktivierungen freigeben:</span> sobald \(\mathbf{x}_\ell\) berechnet ist, kann \(\mathbf{x}_{\ell-1}\) verworfen werden (bei Inferenz braucht man keine Backward-Werte).</li>
+          <li class="dstep"><span class="di">Gewichte streamen:</span> immer nur die aktuelle Matrix \(\mathbf{W}_\ell\) (\(d^2\)) im Speicher.</li>
+          <li class="dstep"><span class="di">Momentaufnahme:</span> 1 Matrix + 2 Aktivierungen = \(d^2+2Bd\) — konstant, <em>unabhängig von \(L\)</em>.</li>
+        </ol>
+      </details>
+    </div>
+    <div class="subpart">
+      <span class="subpart-label">(c) Peak-Memory für Backpropagation</span>
+      <div class="formula-box center">\[ \text{Peak} = d^2 + (L+1)\,Bd + 2Bd \;=\; \mathcal{O}\big(L\,Bd + d^2\big) \]</div>
+      <details class="deriv"><summary>Schritt für Schritt</summary>
+        <ol class="dsteps">
+          <li class="dstep"><span class="di">Backward braucht die Forward-Aktivierungen:</span> um den Gradienten an Schicht \(\ell\) zu bilden, wird deren Eingabe \(\mathbf{x}_{\ell-1}\) benötigt — sie darf <em>nicht</em> verworfen werden.</li>
+          <li class="dstep"><span class="di">Alle Aktivierungen speichern:</span> \(\mathbf{x}_0,\dots,\mathbf{x}_L\) sind \(L{+}1\) Stück à \(Bd\) ⇒ \((L+1)\,Bd\).</li>
+          <li class="dstep"><span class="di">Arbeitsspeicher pro Schritt:</span> aktuelle Gewichtsmatrix \(d^2\) plus Aktivierungs-/Gradientenpaar \(\sim 2Bd\).</li>
+          <li class="dstep"><span class="di">Summe:</span> \(d^2+(L+1)Bd+2Bd=\mathcal{O}(L\,Bd+d^2)\) — der Aktivierungsspeicher wächst jetzt <em>linear mit der Tiefe \(L\)</em> (Motivation für Checkpointing).</li>
+        </ol>
+      </details>
+    </div>
+    <div class="wlinks"><span class="wlinks-label">Wissen:</span>
+      <a class="wlink" data-src="deep-learning/backpropagation.html" data-title="Backpropagation">Backpropagation (Peak-Speicher)</a>
+      <a class="wlink" data-src="weitere-themen/ressourcen-effizienz.html" data-title="Resource Efficient Deep Learning">Ressourceneffizienz</a>
+    </div>
+  </div>
+
+  <!-- Problem 2 -->
+  <div class="qa">
+    <div class="qhead"><span class="qnum">P2</span>
+      <div class="question"><em>Unsupervised Learning mit PCA.</em> Datenmatrix \(\mathbf{X}\in\mathbb{R}^{B\times D}\), Projektion \(\mathbf{w}\in\mathbb{R}^{D\times k}\).</div>
+    </div>
+    <div class="subpart">
+      <span class="subpart-label">(a) Pseudocode <code>z_score</code> (zentrieren + auf Std 1 normieren)</span>
+<pre class="code"><span class="kw">def</span> <span class="fn">z_score</span>(X):
+    mu    = X.mean(axis=0)        <span class="cm"># pro Feature</span>
+    sigma = X.std(axis=0)
+    <span class="kw">return</span> (X - mu) / sigma</pre>
+      <details class="deriv"><summary>Schritt für Schritt</summary>
+        <ol class="dsteps">
+          <li class="dstep"><span class="di">Mittelwert pro Spalte (Feature):</span> <code>axis=0</code> mittelt über die \(B\) Datenpunkte → ein \(\mu\) je Dimension.</li>
+          <li class="dstep"><span class="di">Zentrieren:</span> \(X-\mu\) verschiebt jedes Feature auf Mittelwert 0 — PCA setzt zentrierte Daten voraus.</li>
+          <li class="dstep"><span class="di">Standardabweichung pro Feature</span> berechnen und damit teilen → jedes Feature hat Varianz 1.</li>
+          <li class="dstep"><span class="di">Warum normieren?</span> Sonst dominieren Features mit großer Skala die Kovarianz und damit die Hauptkomponenten.</li>
+        </ol>
+      </details>
+    </div>
+    <div class="subpart">
+      <span class="subpart-label">(b) \(k=1\): beschränktes Optimierungsproblem für die 1. Hauptkomponente</span>
+      <div class="formula-box center">\[ \max_{\mathbf{w}\in\mathbb{R}^{D\times 1}} \; \mathbf{w}^\top\mathbf{X}^\top\mathbf{X}\,\mathbf{w} \quad \text{u.d.N.}\quad \lVert\mathbf{w}\rVert^2 = 1 \]</div>
+      <details class="deriv"><summary>Schritt für Schritt</summary>
+        <ol class="dsteps">
+          <li class="dstep"><span class="di">Projektion:</span> die Daten auf Richtung \(\mathbf{w}\) projiziert ergeben \(\mathbf{X}\mathbf{w}\) (ein Skalar pro Punkt).</li>
+          <li class="dstep"><span class="di">Varianz der Projektion:</span> bei zentriertem \(\mathbf{X}\) ist sie \(\tfrac1B\lVert\mathbf{X}\mathbf{w}\rVert^2=\mathbf{w}^\top\big(\tfrac1B\mathbf{X}^\top\mathbf{X}\big)\mathbf{w}=\mathbf{w}^\top\mathbf{C}\,\mathbf{w}\).</li>
+          <li class="dstep"><span class="di">PCA-Ziel:</span> diese Varianz <em>maximieren</em> — das ist die Richtung größter Streuung.</li>
+          <li class="dstep"><span class="di">Nebenbedingung \(\lVert\mathbf{w}\rVert=1\):</span> ohne sie wäre das Objektiv durch Skalieren von \(\mathbf{w}\) unbeschränkt. Die Lösung ist der Eigenvektor zum größten Eigenwert von \(\mathbf{C}\).</li>
+        </ol>
+      </details>
+    </div>
+    <div class="subpart">
+      <span class="subpart-label">(c) \(k>1\): Pseudocode <code>PCA(X)</code> mit <code>eig(A)</code></span>
+<pre class="code"><span class="kw">def</span> <span class="fn">PCA</span>(X, k):
+    C = (X.T @ X) / X.shape[0]    <span class="cm"># Kovarianz (X zentriert/normiert)</span>
+    vals, vecs = <span class="fn">eig</span>(C)           <span class="cm"># Eigenwerte + -vektoren</span>
+    idx = argsort(vals)[::-1]     <span class="cm"># absteigend sortieren</span>
+    <span class="kw">return</span> vecs[:, idx[:k]]         <span class="cm"># w in R^{D x k}</span></pre>
+      <details class="deriv"><summary>Schritt für Schritt</summary>
+        <ol class="dsteps">
+          <li class="dstep"><span class="di">Kovarianzmatrix bilden:</span> \(\mathbf{C}=\tfrac1B\mathbf{X}^\top\mathbf{X}\in\mathbb{R}^{D\times D}\) (X ist bereits zentriert/normiert).</li>
+          <li class="dstep"><span class="di">Eigenzerlegung:</span> <code>eig(C)</code> liefert Eigenwerte \(\lambda_i\) (= Varianz je Richtung) und Eigenvektoren (= Hauptkomponenten-Richtungen).</li>
+          <li class="dstep"><span class="di">Absteigend sortieren:</span> die größten Eigenwerte erfassen die meiste Varianz.</li>
+          <li class="dstep"><span class="di">Top-\(k\) wählen:</span> die ersten \(k\) Eigenvektoren als Spalten ergeben die Projektionsmatrix \(\mathbf{w}\in\mathbb{R}^{D\times k}\).</li>
+        </ol>
+      </details>
+    </div>
+    <div class="subpart">
+      <span class="subpart-label">(d) Erklärter Varianzanteil der Top-\(k\) Komponenten (\(\lambda_1\ge\dots\ge\lambda_D\))</span>
+      <div class="formula-box center">\[ \frac{\sum_{i=1}^{k}\lambda_i}{\sum_{j=1}^{D}\lambda_j} \]</div>
+      <details class="deriv"><summary>Schritt für Schritt</summary>
+        <ol class="dsteps">
+          <li class="dstep"><span class="di">Eigenwert = Varianz:</span> \(\lambda_i\) ist die Varianz der Daten entlang Hauptkomponente \(i\).</li>
+          <li class="dstep"><span class="di">Gesamtvarianz:</span> Summe aller Eigenwerte \(\sum_{j=1}^{D}\lambda_j\) (= Spur der Kovarianzmatrix).</li>
+          <li class="dstep"><span class="di">Anteil der Top-\(k\):</span> erfasste Varianz \(\sum_{i=1}^{k}\lambda_i\) geteilt durch die Gesamtvarianz — ein Wert in \([0,1]\), Maß für den Informationsverlust der Reduktion.</li>
+        </ol>
+      </details>
+    </div>
+    <div class="wlinks"><span class="wlinks-label">Wissen:</span>
+      <a class="wlink" data-src="unsupervized/pca_visualisierung.html" data-title="PCA — Schritt für Schritt">PCA</a>
+      <a class="wlink" data-src="grundlagen/eigenwerte.html" data-title="Eigenwerte &amp; Eigenvektoren">Eigenwerte</a>
+      <a class="wlink" data-src="grundlagen/kovarianzmatrix.html" data-title="Kovarianz &amp; Kovarianzmatrix">Kovarianzmatrix</a>
+    </div>
+  </div>
+
+  <!-- Problem 3 -->
+  <div class="qa">
+    <div class="qhead"><span class="qnum">P3</span>
+      <div class="question"><em>Self-Attention und ihre Kosten.</em> Input \(\mathbf{X}\in\mathbb{R}^{T\times D}\), Parameter \(\mathbf{W}_Q,\mathbf{W}_K,\mathbf{W}_V\in\mathbb{R}^{D\times d}\).</div>
+    </div>
+    <div class="subpart">
+      <span class="subpart-label">(a) Queries, Keys, Values</span>
+      <div class="formula-box center">\[ \mathbf{Q}=\mathbf{X}\mathbf{W}_Q,\quad \mathbf{K}=\mathbf{X}\mathbf{W}_K,\quad \mathbf{V}=\mathbf{X}\mathbf{W}_V \quad (\text{je } T\times d) \]</div>
+      <details class="deriv"><summary>Schritt für Schritt</summary>
+        <ol class="dsteps">
+          <li class="dstep"><span class="di">Jede ist eine lineare Projektion</span> des Inputs \(\mathbf{X}\) mit ihrer eigenen Parametermatrix.</li>
+          <li class="dstep"><span class="di">Formen multiplizieren:</span> \(\mathbf{X}\,(T\times D)\cdot\mathbf{W}\,(D\times d)\) ergibt jeweils \(T\times d\).</li>
+          <li class="dstep"><span class="di">Interpretation:</span> Query = „wonach suche ich", Key = „was biete ich an", Value = „welche Information trage ich".</li>
+        </ol>
+      </details>
+    </div>
+    <div class="subpart">
+      <span class="subpart-label">(b) Skalierte Dot-Product-Attention-Matrix \(\mathbf{A}\) + Form</span>
+      <div class="formula-box center">\[ \mathbf{A} = \mathrm{softmax}\!\left(\frac{\mathbf{Q}\mathbf{K}^\top}{\sqrt d}\right), \qquad \mathbf{A}\in\mathbb{R}^{T\times T} \]</div>
+      <details class="deriv"><summary>Schritt für Schritt</summary>
+        <ol class="dsteps">
+          <li class="dstep"><span class="di">Scores:</span> \(\mathbf{Q}\mathbf{K}^\top\) bildet das Skalarprodukt jeder Query mit jedem Key → \(T\times T\) Ähnlichkeiten.</li>
+          <li class="dstep"><span class="di">Skalieren mit \(1/\sqrt d\):</span> hält die Score-Varianz für großes \(d\) im Zaum, damit das Softmax nicht in flache Gradienten sättigt.</li>
+          <li class="dstep"><span class="di">Softmax pro Zeile:</span> macht aus den Scores jeder Query eine Wahrscheinlichkeitsverteilung über die Keys (Zeilensumme 1).</li>
+        </ol>
+      </details>
+    </div>
+    <div class="subpart">
+      <span class="subpart-label">(c) Output \(\mathbf{O}\) + Form</span>
+      <div class="formula-box center">\[ \mathbf{O} = \mathbf{A}\mathbf{V}, \qquad \mathbf{O}\in\mathbb{R}^{T\times d} \]</div>
+      <details class="deriv"><summary>Schritt für Schritt</summary>
+        <ol class="dsteps">
+          <li class="dstep"><span class="di">Gewichtete Summe:</span> jede Output-Zeile ist die mit den Attention-Gewichten gewichtete Mischung aller Value-Vektoren.</li>
+          <li class="dstep"><span class="di">Formen:</span> \(\mathbf{A}\,(T\times T)\cdot\mathbf{V}\,(T\times d)\) ergibt \(T\times d\) — gleiche Form wie die Eingabe-Tokens.</li>
+        </ol>
+      </details>
+    </div>
+    <div class="subpart">
+      <span class="subpart-label">(d) Skalare Multiplikationen + Peak-Memory (Funktion von \(d,D,T\))</span>
+      <div class="formula-box center">\[ \#\text{Mult} = 3\,T D d + 2\,T^2 d \]</div>
+      <div class="formula-box center">\[ \text{Peak} = \underbrace{T^2}_{\mathbf{A}} + \underbrace{3Dd}_{\text{Params}} + \underbrace{4Td}_{\mathbf{Q},\mathbf{K},\mathbf{V},\mathbf{O}} \;=\; \mathcal{O}(T^2) \]</div>
+      <details class="deriv"><summary>Schritt für Schritt</summary>
+        <ol class="dsteps">
+          <li class="dstep"><span class="di">Multiplikationen einer Matmul</span> \(\mathbf{A}\,(m\times n)\cdot\mathbf{B}\,(n\times p)\) = \(m\cdot n\cdot p\).</li>
+          <li class="dstep"><span class="di">Projektionen Q,K,V:</span> je \(\mathbf{X}(T\times D)\cdot\mathbf{W}(D\times d)=T D d\), dreimal ⇒ \(3TDd\).</li>
+          <li class="dstep"><span class="di">Scores \(\mathbf{Q}\mathbf{K}^\top\):</span> \((T\times d)(d\times T)=T^2 d\); Output \(\mathbf{A}\mathbf{V}\): \((T\times T)(T\times d)=T^2 d\). Zusammen \(2T^2 d\).</li>
+          <li class="dstep"><span class="di">Summe:</span> \(3TDd+2T^2 d\) — für \(T\gg D\) dominiert \(T^2\) (quadratisch).</li>
+          <li class="dstep"><span class="di">Peak-Memory:</span> die \(T\times T\)-Matrix \(\mathbf{A}\) (\(T^2\)) dominiert, dazu Parameter \(3Dd\) und \(\mathbf{Q},\mathbf{K},\mathbf{V},\mathbf{O}\) (\(4Td\)) ⇒ \(\mathcal{O}(T^2)\) (Motivation für FlashAttention).</li>
+        </ol>
+      </details>
+    </div>
+    <div class="wlinks"><span class="wlinks-label">Wissen:</span>
+      <a class="wlink" data-src="deep-learning/transformer.html" data-title="Transformer &amp; Attention">Transformer &amp; Attention</a>
+      <a class="wlink" data-src="weitere-themen/ressourcen-effizienz.html" data-title="Resource Efficient Deep Learning">Ressourceneffizienz</a>
+      <a class="wlink" data-src="grundlagen/rechenkosten.html" data-title="Rechenkosten — FLOPs &amp; Peak-Memory">Rechenkosten (FLOPs)</a>
+    </div>
+  </div>
+
+</div>
+
+<p class="src-note">// Quelle: 192.183 Machine Learning 2026S — Practice Exam 2 (ML SS2026)</p>
+
+<script>
+  document.querySelectorAll('.wlink').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const src = a.dataset.src, title = a.dataset.title;
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'open-card', src, title }, '*');
+      } else {
+        window.open(src, '_blank');
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

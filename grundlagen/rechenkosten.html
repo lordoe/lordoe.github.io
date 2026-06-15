@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rechenkosten — FLOPs &amp; Peak-Memory</title>
+<script>
+  MathJax = {
+    tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+    options: { skipHtmlTags: ['script','noscript','style','textarea'] }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#0e0e11; --bg2:#16161b; --bg3:#1e1e26;
+    --border:rgba(255,255,255,0.08); --border2:rgba(255,255,255,0.14);
+    --text:#e8e6f0; --muted:#7a7890;
+    --accent:#4ecdc4; --accent-dim:rgba(78,205,196,0.15);
+    --green:#4ecdc4; --green-dim:rgba(78,205,196,0.12);
+    --blue:#2970c4; --blue-dim:rgba(41,112,196,0.12);
+    --yellow:#ffd93d; --yellow-dim:rgba(255,217,61,0.12);
+    --orange:#e8934a; --orange-dim:rgba(232,147,74,0.12);
+    --red:#ff6b6b; --red-dim:rgba(255,107,107,0.12);
+    --purple:#7b6cf6;
+  }
+  mjx-container { color: var(--text) !important; }
+  body { background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; font-weight:300; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:2rem 1rem 4rem; }
+  header { width:100%; max-width:900px; margin-bottom:1.6rem; display:flex; align-items:baseline; gap:1rem; flex-wrap:wrap; padding-bottom:1rem; border-bottom:1px solid var(--border); }
+  h1 { font-family:'DM Mono',monospace; font-size:1.05rem; font-weight:500; letter-spacing:0.04em; color:var(--accent); }
+  .subtitle { font-size:0.78rem; color:var(--muted); font-family:'DM Mono',monospace; }
+  .main { width:100%; max-width:900px; display:flex; flex-direction:column; gap:1.2rem; }
+  .card { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:1.3rem 1.5rem; display:flex; flex-direction:column; gap:1rem; }
+  .card-title { font-family:'DM Mono',monospace; font-size:0.75rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--accent); padding-bottom:0.6rem; border-bottom:1px solid var(--border); }
+  .card-title.blue{color:var(--blue);border-color:rgba(41,112,196,0.2);} .card-title.orange{color:var(--orange);border-color:rgba(232,147,74,0.2);} .card-title.purple{color:var(--purple);border-color:rgba(123,108,246,0.2);}
+  .prose { font-size:0.88rem; line-height:1.75; color:#c0bdd0; }
+  .prose b { color:var(--text); font-weight:400; }
+  .formula-box { background:var(--bg3); border:1px solid var(--border2); border-radius:8px; padding:0.9rem 1.2rem; font-size:0.95rem; overflow-x:auto; }
+  .formula-box.center{text-align:center;}
+  .formula-box.accent{border-left:3px solid var(--accent); background:var(--accent-dim);}
+  .formula-box.blue{border-left:3px solid var(--blue); background:var(--blue-dim);}
+  .formula-box.orange{border-left:3px solid var(--orange); background:var(--orange-dim);}
+  .dim { display:inline-block; font-family:'DM Mono',monospace; font-size:0.8rem; padding:0.1rem 0.4rem; border-radius:4px; background:var(--bg3); border:1px solid var(--border2); }
+  .controls { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:0.8rem 1.4rem; }
+  .ctl { display:flex; flex-direction:column; gap:0.3rem; }
+  .ctl label { font-family:'DM Mono',monospace; font-size:0.75rem; color:var(--muted); display:flex; justify-content:space-between; }
+  .ctl label b { color:var(--accent); }
+  input[type=range]{ accent-color:var(--accent); width:100%; }
+  .results { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+  @media(max-width:640px){ .results{grid-template-columns:1fr;} }
+  .res { background:var(--bg3); border:1px solid var(--border2); border-radius:8px; padding:1rem; }
+  .res h4 { font-family:'DM Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.7rem; color:var(--muted); }
+  .res .big { font-family:'DM Mono',monospace; font-size:1.15rem; font-weight:500; }
+  .res .formula { font-family:'DM Mono',monospace; font-size:0.74rem; color:var(--muted); margin-top:0.3rem; }
+  .res.flop .big{color:var(--blue);} .res.mem .big{color:var(--orange);}
+  table { width:100%; border-collapse:collapse; font-size:0.82rem; }
+  th,td { text-align:left; padding:0.5rem 0.7rem; border-bottom:1px solid var(--border); }
+  th { font-family:'DM Mono',monospace; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.04em; color:var(--muted); }
+  td.mono { font-family:'DM Mono',monospace; }
+  .tabs { display:flex; gap:0.4rem; flex-wrap:wrap; }
+  .tab-btn { font-family:'DM Mono',monospace; font-size:0.74rem; background:var(--bg3); color:var(--muted); border:1px solid var(--border2); border-radius:6px; padding:0.4rem 0.8rem; cursor:pointer; }
+  .tab-btn.active { color:var(--accent); border-color:var(--accent); background:var(--accent-dim); }
+  .src-note { font-family:'DM Mono',monospace; font-size:0.7rem; color:#6a6866; text-align:center; margin-top:2rem; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Rechenkosten</h1>
+  <span class="subtitle">// Skalare Multiplikationen (FLOPs) &amp; Peak-Memory zählen</span>
+</header>
+
+<div class="main">
+
+  <div class="card">
+    <div class="card-title">Matrixmultiplikation: wie viele skalare Multiplikationen?</div>
+    <div class="prose">
+      Für \(\mathbf{W}\in\mathbb{R}^{m\times n}\) und \(\mathbf{x}\in\mathbb{R}^{n\times B}\) hat das Produkt
+      \(\mathbf{W}\mathbf{x}\) die Form \(m\times B\). Jeder der \(m\cdot B\) Einträge ist ein Skalarprodukt über
+      \(n\) Terme → \(n\) Multiplikationen pro Eintrag:
+    </div>
+    <div class="formula-box center accent">
+      \[ \#\text{Mult}(\mathbf{W}\mathbf{x}) = m\cdot n\cdot B \]
+    </div>
+    <div class="prose">
+      Spezialfall der Prüfung: \(\mathbf{W}\in\mathbb{R}^{d\times d}\), \(\mathbf{x}\in\mathbb{R}^{d\times B}\)
+      ⇒ <span class="dim">d · d · B = d²B</span>. Eine voll verbundene Schicht
+      \(\mathbb{R}^{d_{in}}\to\mathbb{R}^{d_{out}}\) hat
+      \(d_{out}d_{in}+d_{out}=d_{out}(d_{in}+1)\) Parameter (Gewichte + Bias).
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title orange">Peak-Memory einer Matrixmultiplikation</div>
+    <div class="prose">
+      Gleichzeitig im Speicher liegen müssen: die Gewichtsmatrix und die beiden Aktivierungen (Ein- und Ausgabe):
+    </div>
+    <div class="formula-box center orange">
+      \[ \text{Peak}(\mathbf{y}=\mathbf{W}\mathbf{x}) = \underbrace{d^2}_{\text{Gewichte }\mathbf{W}} + \underbrace{2Bd}_{\mathbf{x}\,(Bd)\;+\;\mathbf{y}\,(Bd)} \]
+    </div>
+    <div class="prose">
+      Bei <b>Inferenz</b> eines \(L\)-schichtigen MLP bleibt der Peak konstant \(d^2+2Bd\) — frühere Aktivierungen
+      werden verworfen. Bei <b>Backpropagation</b> müssen <em>alle</em> \(L{+}1\) Aktivierungen für den Backward-Pass
+      gehalten werden ⇒ der Aktivierungsspeicher wächst linear mit der Tiefe:
+    </div>
+    <div class="formula-box center">
+      \[ \text{Peak}_{\text{infer}} = d^2 + 2Bd \qquad\quad \text{Peak}_{\text{backprop}} = d^2 + (L+1)\,Bd + 2Bd \]
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title blue">Interaktiver Rechner</div>
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="fc">Lineare Schicht / MLP</button>
+      <button class="tab-btn" data-tab="attn">Self-Attention</button>
+    </div>
+
+    <div class="controls" id="ctl-fc">
+      <div class="ctl"><label>Dimension d <b id="l-d">512</b></label><input id="s-d" type="range" min="16" max="4096" step="16" value="512"></div>
+      <div class="ctl"><label>Batch B <b id="l-B">32</b></label><input id="s-B" type="range" min="1" max="512" step="1" value="32"></div>
+      <div class="ctl"><label>Schichten L <b id="l-L">8</b></label><input id="s-L" type="range" min="1" max="64" step="1" value="8"></div>
+    </div>
+
+    <div class="controls" id="ctl-attn" style="display:none">
+      <div class="ctl"><label>Sequenzlänge T <b id="l-T">1024</b></label><input id="s-T" type="range" min="16" max="8192" step="16" value="1024"></div>
+      <div class="ctl"><label>Modell-Dim D <b id="l-D">512</b></label><input id="s-D" type="range" min="16" max="4096" step="16" value="512"></div>
+      <div class="ctl"><label>Kopf-Dim d <b id="l-hd">64</b></label><input id="s-hd" type="range" min="8" max="512" step="8" value="64"></div>
+    </div>
+
+    <div class="results">
+      <div class="res flop"><h4>Skalare Multiplikationen</h4><div class="big" id="r-flop">–</div><div class="formula" id="f-flop"></div></div>
+      <div class="res mem"><h4>Peak-Memory (Skalare)</h4><div class="big" id="r-mem">–</div><div class="formula" id="f-mem"></div></div>
+    </div>
+    <div class="prose" id="extra" style="font-size:0.82rem"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title purple">Self-Attention — Kostenformeln</div>
+    <table>
+      <tr><th>Schritt</th><th>Form</th><th>Skalare Mult.</th></tr>
+      <tr><td>Q,K,V = X·W</td><td class="mono">T×d</td><td class="mono">3·T·D·d</td></tr>
+      <tr><td>S = Q·Kᵀ</td><td class="mono">T×T</td><td class="mono">T²·d</td></tr>
+      <tr><td>O = A·V</td><td class="mono">T×d</td><td class="mono">T²·d</td></tr>
+      <tr><td><b>Summe</b></td><td></td><td class="mono" style="color:var(--blue)">3TDd + 2T²d</td></tr>
+    </table>
+    <div class="formula-box center purple">
+      \[ \text{Peak} = \underbrace{T^2}_{\mathbf{A}} + \underbrace{3Dd}_{\text{Params}} + \underbrace{4Td}_{\mathbf{Q},\mathbf{K},\mathbf{V},\mathbf{O}} = \mathcal{O}(T^2) \]
+    </div>
+    <div class="prose" style="font-size:0.82rem">
+      Für \(T\gg D\) dominiert der \(T^2\)-Term — Attention ist quadratisch in der Sequenzlänge
+      (Motivation für FlashAttention).
+    </div>
+  </div>
+
+</div>
+
+<p class="src-note">// Quelle: Foliensätze 08 — RNN &amp; Transformers, 09 — Resource Efficient Deep Learning (ML SS2026)</p>
+
+<script>
+  function fmt(n) {
+    if (n >= 1e12) return (n/1e12).toFixed(2)+' T';
+    if (n >= 1e9)  return (n/1e9).toFixed(2)+' G';
+    if (n >= 1e6)  return (n/1e6).toFixed(2)+' M';
+    if (n >= 1e3)  return (n/1e3).toFixed(2)+' K';
+    return n.toFixed(0);
+  }
+  function bytes(scalars) { // assume float32 = 4 bytes
+    const b = scalars * 4;
+    if (b >= 1e9) return (b/1e9).toFixed(2)+' GB';
+    if (b >= 1e6) return (b/1e6).toFixed(2)+' MB';
+    if (b >= 1e3) return (b/1e3).toFixed(1)+' KB';
+    return b.toFixed(0)+' B';
+  }
+  let tab = 'fc';
+  const ids = ['d','B','L','T','D','hd'];
+  const el = {};
+  ids.forEach(k => { el['s_'+k]=document.getElementById('s-'+k); el['l_'+k]=document.getElementById('l-'+k); });
+
+  function update() {
+    if (tab === 'fc') {
+      const d=+el.s_d.value, B=+el.s_B.value, L=+el.s_L.value;
+      el.l_d.textContent=d; el.l_B.textContent=B; el.l_L.textContent=L;
+      const flop = L * d*d*B;                  // L Matmuls Wx
+      const memBack = d*d + (L+1)*B*d + 2*B*d;  // backprop peak
+      document.getElementById('r-flop').textContent = fmt(flop)+' Mult';
+      document.getElementById('f-flop').textContent = `L·d²·B = ${L}·${d}²·${B}`;
+      document.getElementById('r-mem').textContent = fmt(memBack)+' ( '+bytes(memBack)+' )';
+      document.getElementById('f-mem').textContent = `Backprop: d² + (L+1)·B·d + 2Bd`;
+      document.getElementById('extra').innerHTML =
+        `Inferenz-Peak (konstant): <b>${fmt(d*d+2*B*d)}</b> Skalare = ${bytes(d*d+2*B*d)}. `+
+        `Backprop hält zusätzlich alle ${L+1} Aktivierungen → linearer Anstieg mit L.`;
+    } else {
+      const T=+el.s_T.value, D=+el.s_D.value, hd=+el.s_hd.value;
+      el.l_T.textContent=T; el.l_D.textContent=D; el.l_hd.textContent=hd;
+      const flop = 3*T*D*hd + 2*T*T*hd;
+      const mem  = T*T + 3*D*hd + 4*T*hd;
+      document.getElementById('r-flop').textContent = fmt(flop)+' Mult';
+      document.getElementById('f-flop').textContent = `3TDd + 2T²d`;
+      document.getElementById('r-mem').textContent = fmt(mem)+' ( '+bytes(mem)+' )';
+      document.getElementById('f-mem').textContent = `T² + 3Dd + 4Td`;
+      const frac = (T*T)/(mem)*100;
+      document.getElementById('extra').innerHTML =
+        `Die T×T-Attention-Matrix macht <b>${frac.toFixed(0)}%</b> des Peak-Speichers aus — quadratisch in T.`;
+    }
+  }
+  document.querySelectorAll('.tab-btn').forEach(b => b.onclick = () => {
+    document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active'); tab = b.dataset.tab;
+    document.getElementById('ctl-fc').style.display = tab==='fc' ? 'grid':'none';
+    document.getElementById('ctl-attn').style.display = tab==='attn' ? 'grid':'none';
+    update();
+  });
+  ids.forEach(k => el['s_'+k].addEventListener('input', update));
+  update();
+</script>
+</body>
+</html>

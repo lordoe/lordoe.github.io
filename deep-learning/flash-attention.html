@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlashAttention — IO-effiziente Attention</title>
+<script>
+  MathJax = {
+    tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+    options: { skipHtmlTags: ['script','noscript','style','textarea'] }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#0e0e11; --bg2:#16161b; --bg3:#1e1e26;
+    --border:rgba(255,255,255,0.08); --border2:rgba(255,255,255,0.14);
+    --text:#e8e6f0; --muted:#7a7890;
+    --accent:#e8934a; --accent-dim:rgba(232,147,74,0.15);
+    --green:#4ecdc4; --green-dim:rgba(78,205,196,0.12);
+    --blue:#2970c4; --blue-dim:rgba(41,112,196,0.12);
+    --yellow:#ffd93d; --yellow-dim:rgba(255,217,61,0.12);
+    --red:#ff6b6b; --red-dim:rgba(255,107,107,0.12);
+    --purple:#7b6cf6;
+  }
+  mjx-container { color: var(--text) !important; }
+  body { background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; font-weight:300; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:2rem 1rem 4rem; }
+  header { width:100%; max-width:900px; margin-bottom:1.6rem; display:flex; align-items:baseline; gap:1rem; flex-wrap:wrap; padding-bottom:1rem; border-bottom:1px solid var(--border); }
+  h1 { font-family:'DM Mono',monospace; font-size:1.05rem; font-weight:500; letter-spacing:0.04em; color:var(--accent); }
+  .subtitle { font-size:0.78rem; color:var(--muted); font-family:'DM Mono',monospace; }
+  .main { width:100%; max-width:900px; display:flex; flex-direction:column; gap:1.2rem; }
+  .card { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:1.3rem 1.5rem; display:flex; flex-direction:column; gap:1rem; }
+  .card-title { font-family:'DM Mono',monospace; font-size:0.75rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--accent); padding-bottom:0.6rem; border-bottom:1px solid var(--border); }
+  .card-title.green{color:var(--green);border-color:rgba(78,205,196,0.2);} .card-title.blue{color:var(--blue);border-color:rgba(41,112,196,0.2);} .card-title.red{color:var(--red);border-color:rgba(255,107,107,0.2);}
+  .prose { font-size:0.88rem; line-height:1.75; color:#c0bdd0; }
+  .prose b { color:var(--text); font-weight:400; }
+  .formula-box { background:var(--bg3); border:1px solid var(--border2); border-radius:8px; padding:0.9rem 1.2rem; font-size:0.95rem; overflow-x:auto; }
+  .formula-box.center{text-align:center;}
+  .formula-box.accent{border-left:3px solid var(--accent); background:var(--accent-dim);}
+  .formula-box.green{border-left:3px solid var(--green); background:var(--green-dim);}
+  .formula-box.red{border-left:3px solid var(--red); background:var(--red-dim);}
+  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+  @media(max-width:640px){ .two-col{grid-template-columns:1fr;} }
+  .mini { background:var(--bg3); border:1px solid var(--border2); border-radius:8px; padding:1rem; }
+  .mini h4 { font-family:'DM Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.6rem; }
+  /* memory hierarchy */
+  .mem { display:flex; flex-direction:column; gap:0.5rem; }
+  .mem-row { display:flex; align-items:center; gap:0.8rem; }
+  .mem-bar { height:30px; border-radius:6px; display:flex; align-items:center; padding-left:0.7rem; font-family:'DM Mono',monospace; font-size:0.72rem; color:#fff; }
+  /* tiling grid */
+  .grid-wrap { display:flex; gap:1.4rem; align-items:center; flex-wrap:wrap; justify-content:center; }
+  .attn-grid { display:grid; gap:2px; }
+  .cell { width:22px; height:22px; border-radius:3px; background:var(--bg3); border:1px solid var(--border); transition:background .15s,border-color .15s; }
+  .cell.active { background:var(--accent); border-color:var(--accent); }
+  .cell.done { background:var(--green-dim); border-color:var(--green); }
+  .controls { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; }
+  button { font-family:'DM Mono',monospace; font-size:0.75rem; background:var(--bg3); color:var(--text); border:1px solid var(--border2); border-radius:6px; padding:0.45rem 0.9rem; cursor:pointer; }
+  button:hover { border-color:var(--accent); }
+  .stat { font-family:'DM Mono',monospace; font-size:0.8rem; color:var(--muted); }
+  table { width:100%; border-collapse:collapse; font-size:0.82rem; }
+  th,td { text-align:left; padding:0.5rem 0.7rem; border-bottom:1px solid var(--border); }
+  th { font-family:'DM Mono',monospace; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.04em; color:var(--muted); }
+  .src-note { font-family:'DM Mono',monospace; font-size:0.7rem; color:#6a6866; text-align:center; margin-top:2rem; }
+</style>
+</head>
+<body>
+<header>
+  <h1>FlashAttention</h1>
+  <span class="subtitle">// Attention ohne die T×T-Matrix im Speicher</span>
+</header>
+
+<div class="main">
+
+  <div class="card">
+    <div class="card-title red">Das Problem: die T×T-Matrix materialisieren</div>
+    <div class="prose">
+      Standard-Attention berechnet erst die volle Score-Matrix \(\mathbf{S}=\tfrac{\mathbf{Q}\mathbf{K}^\top}{\sqrt d}\),
+      dann \(\mathbf{A}=\mathrm{softmax}(\mathbf{S})\), dann \(\mathbf{O}=\mathbf{A}\mathbf{V}\). Die Zwischenmatrix
+      \(\mathbf{A}\in\mathbb{R}^{T\times T}\) muss komplett in den GPU-Hauptspeicher (HBM) geschrieben und
+      wieder gelesen werden:
+    </div>
+    <div class="formula-box center red">
+      \[ \text{Speicher} = \mathcal{O}(T^2), \qquad \text{HBM-IO} = \mathcal{O}(T^2) \]
+    </div>
+    <div class="prose">
+      Bei großem \(T\) ist Attention <b>memory-bound</b>: die GPU wartet auf das Lesen/Schreiben der \(T^2\)-Matrix,
+      nicht auf das Rechnen. Genau hier setzt FlashAttention an.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">GPU-Speicherhierarchie — die Kernidee</div>
+    <div class="prose">
+      FlashAttention ist <b>IO-aware</b>: Es nutzt, dass der schnelle On-Chip-Speicher (SRAM) klein, aber sehr
+      schnell ist, während HBM groß, aber langsam ist. Ziel: möglichst wenig HBM-Zugriffe.
+    </div>
+    <div class="mem">
+      <div class="mem-row"><span class="stat" style="width:70px">SRAM</span>
+        <div class="mem-bar" style="width:22%; background:var(--green)">~20 MB · ~19 TB/s</div></div>
+      <div class="mem-row"><span class="stat" style="width:70px">HBM</span>
+        <div class="mem-bar" style="width:80%; background:var(--red)">~40 GB · ~1.5 TB/s</div></div>
+    </div>
+    <div class="prose" style="font-size:0.82rem">
+      Statt die ganze \(\mathbf{A}\) in HBM abzulegen, wird Attention <b>blockweise</b> im SRAM berechnet —
+      die \(T\times T\)-Matrix entsteht nie als Ganzes.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title green">Tiling + Online-Softmax</div>
+    <div class="prose">
+      \(\mathbf{Q},\mathbf{K},\mathbf{V}\) werden in Blöcke zerlegt. Pro Q-Block iteriert FlashAttention über die
+      K/V-Blöcke und akkumuliert das Ergebnis mit einem <b>numerisch stabilen Online-Softmax</b>, der laufendes
+      Maximum \(m\) und laufende Summe \(\ell\) mitführt:
+    </div>
+    <div class="formula-box center green">
+      \[ m^{(j)}=\max\!\big(m^{(j-1)},\,\max_i S^{(j)}_i\big),\quad
+         \ell^{(j)}=e^{\,m^{(j-1)}-m^{(j)}}\ell^{(j-1)}+\textstyle\sum_i e^{\,S^{(j)}_i-m^{(j)}} \]
+    </div>
+    <div class="prose">
+      Der Output wird beim Wechsel des Maximums mit \(e^{\,m^{(j-1)}-m^{(j)}}\) reskaliert. So entsteht exakt das
+      gleiche Resultat wie volle Attention — aber ohne je \(\mathbf{A}\) als \(T\times T\)-Matrix zu speichern.
+    </div>
+
+    <div class="grid-wrap">
+      <div>
+        <div class="attn-grid" id="grid"></div>
+        <div class="stat" style="margin-top:0.5rem; text-align:center">A ∈ ℝ<sup>T×T</sup> · blockweise</div>
+      </div>
+      <div style="min-width:200px">
+        <div class="controls">
+          <button id="step">▶ Nächster Block</button>
+          <button id="reset">↺ Reset</button>
+        </div>
+        <div class="stat" style="margin-top:0.8rem">SRAM-Block aktiv: <b id="blk" style="color:var(--accent)">–</b></div>
+        <div class="stat">HBM für A: <b style="color:var(--green)">0 — nie materialisiert</b></div>
+        <div class="stat">Output O: <b style="color:var(--blue)">inkrementell akkumuliert</b></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title blue">Ergebnis</div>
+    <table>
+      <tr><th></th><th>Standard-Attention</th><th>FlashAttention</th></tr>
+      <tr><td>Speicher (HBM)</td><td style="color:var(--red)">O(T²)</td><td style="color:var(--green)">O(T)</td></tr>
+      <tr><td>HBM-IO</td><td style="color:var(--red)">O(T²)</td><td style="color:var(--green)">O(T² d / SRAM) — deutlich weniger</td></tr>
+      <tr><td>Rechen-FLOPs</td><td>O(T² d)</td><td>O(T² d) — gleich</td></tr>
+      <tr><td>Resultat</td><td colspan="2" style="color:var(--green)">exakt identisch (keine Approximation)</td></tr>
+    </table>
+    <div class="prose" style="font-size:0.82rem">
+      FlashAttention reduziert <b>nicht</b> die FLOPs, sondern die teuren HBM-Zugriffe — dadurch wird die
+      memory-bound Attention spürbar schneller und der Peak-Speicher linear in \(T\).
+    </div>
+  </div>
+
+</div>
+
+<p class="src-note">// Quelle: Foliensatz 09 — Resource Efficient Deep Learning (ML SS2026)</p>
+
+<script>
+  const N = 6; // T-Blöcke (kausal: untere Dreiecksmatrix)
+  const grid = document.getElementById('grid');
+  grid.style.gridTemplateColumns = `repeat(${N}, 22px)`;
+  const cells = [];
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+    const d = document.createElement('div');
+    d.className = 'cell';
+    if (c > r) d.style.visibility = 'hidden'; // causal mask
+    grid.appendChild(d); cells.push({el:d, r, c});
+  }
+  let blk = -1;
+  function paint() {
+    cells.forEach(o => {
+      if (o.c > o.r) return;
+      o.el.classList.remove('active','done');
+      if (o.r < blk) o.el.classList.add('done');
+      else if (o.r === blk) o.el.classList.add('active');
+    });
+    document.getElementById('blk').textContent = blk < 0 ? '–' : ('Q-Block ' + (blk+1) + '/' + N);
+  }
+  document.getElementById('step').onclick = () => { blk = blk + 1 >= N ? 0 : blk + 1; paint(); };
+  document.getElementById('reset').onclick = () => { blk = -1; paint(); };
+  paint();
+</script>
+</body>
+</html>

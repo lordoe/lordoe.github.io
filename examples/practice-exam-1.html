@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Practice Exam 1 — Fragen &amp; Lösungen</title>
+<script>
+  MathJax = {
+    tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+    options: { skipHtmlTags: ['script','noscript','style','textarea'] }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0e11;
+    --bg2: #16161b;
+    --bg3: #1e1e26;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #e8e6f0;
+    --muted: #7a7890;
+    --accent: #c9488e;
+    --accent-dim: rgba(201,72,142,0.15);
+    --green: #4ecdc4;
+    --green-dim: rgba(78,205,196,0.12);
+    --blue: #2970c4;
+    --blue-dim: rgba(41,112,196,0.12);
+    --yellow: #ffd93d;
+    --yellow-dim: rgba(255,217,61,0.12);
+    --orange: #e8934a;
+    --orange-dim: rgba(232,147,74,0.12);
+    --red: #ff6b6b;
+    --red-dim: rgba(255,107,107,0.12);
+  }
+
+  mjx-container { color: var(--text) !important; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem 4rem;
+  }
+
+  header {
+    width: 100%;
+    max-width: 900px;
+    margin-bottom: 1.6rem;
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  h1 {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.05rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+  }
+
+  .subtitle {
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .main {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+  }
+
+  .section-head {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.82rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-top: 1.2rem;
+    padding-bottom: 0.4rem;
+  }
+
+  .intro {
+    font-size: 0.88rem;
+    line-height: 1.7;
+    color: #c0bdd0;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 10px;
+    padding: 1.1rem 1.4rem;
+  }
+
+  /* ── Q&A card ── */
+  .qa {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.1rem 1.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+
+  .qhead {
+    display: flex;
+    gap: 0.7rem;
+    align-items: baseline;
+  }
+  .qnum {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--bg);
+    background: var(--accent);
+    border-radius: 5px;
+    padding: 0.12rem 0.45rem;
+    flex-shrink: 0;
+    font-weight: 500;
+  }
+  .question {
+    font-size: 0.88rem;
+    line-height: 1.6;
+    color: var(--text);
+  }
+  .alabel {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--green);
+  }
+  .answer {
+    font-size: 0.88rem;
+    line-height: 1.7;
+    color: #c0bdd0;
+  }
+  .answer em { color: var(--text); font-style: normal; font-weight: 400; }
+
+  .formula-box {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-left: 3px solid var(--green);
+    border-radius: 8px;
+    padding: 0.8rem 1.1rem;
+    font-size: 0.95rem;
+    overflow-x: auto;
+  }
+  .formula-box.center { text-align: center; }
+
+  .subpart {
+    border-left: 2px solid var(--border2);
+    padding-left: 1rem;
+    margin-left: 0.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+  .subpart-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--yellow);
+  }
+
+  /* ── schritt-für-schritt derivation ── */
+  details.deriv {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg3);
+    padding: 0.2rem 0.9rem;
+  }
+  details.deriv > summary {
+    cursor: pointer;
+    list-style: none;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    color: var(--blue);
+    padding: 0.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    user-select: none;
+  }
+  details.deriv > summary::-webkit-details-marker { display: none; }
+  details.deriv > summary::before { content: "▸"; transition: transform 0.15s; }
+  details.deriv[open] > summary::before { transform: rotate(90deg); }
+  details.deriv > summary:hover { color: var(--text); }
+  .dsteps {
+    list-style: none;
+    counter-reset: dstep;
+    margin: 0.3rem 0 0.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+  .dstep {
+    counter-increment: dstep;
+    position: relative;
+    padding-left: 2rem;
+    font-size: 0.85rem;
+    line-height: 1.65;
+    color: #c0bdd0;
+  }
+  .dstep::before {
+    content: counter(dstep);
+    position: absolute;
+    left: 0; top: 0.05rem;
+    width: 1.35rem; height: 1.35rem;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Mono', monospace; font-size: 0.66rem;
+    color: var(--blue); background: var(--blue-dim);
+    border: 1px solid rgba(41,112,196,0.35); border-radius: 50%;
+  }
+  .dstep .di { color: var(--text); }
+  .dstep .dformula {
+    display: block;
+    margin-top: 0.35rem;
+    font-size: 0.9rem;
+    overflow-x: auto;
+  }
+
+  /* ── wissen links ── */
+  .wlinks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: center;
+    margin-top: 0.2rem;
+  }
+  .wlinks-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.66rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .wlink {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--blue);
+    background: var(--blue-dim);
+    border: 1px solid rgba(41,112,196,0.3);
+    border-radius: 5px;
+    padding: 0.18rem 0.5rem;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .wlink::before { content: "↗ "; opacity: 0.7; }
+  .wlink:hover { background: rgba(41,112,196,0.25); border-color: var(--blue); }
+
+  .src-note {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: #6a6866;
+    text-align: center;
+    margin-top: 2rem;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>192.183 Machine Learning 2026S — Practice Exam 1</h1>
+  <span class="subtitle">// Fragen &amp; ausgearbeitete Lösungen</span>
+</header>
+
+<div class="main">
+
+  <div class="intro">
+    Vollständige Ausarbeitung der <em>Practice Exam 1</em>. Jede Lösung verlinkt
+    (<span style="color:var(--blue)">↗ blaue Chips</span>) die interaktive Karte, in der das
+    benötigte Wissen erklärt ist — Klick öffnet sie im Notebook.
+  </div>
+
+  <div class="section-head">Part 1 — Simple Questions (1 Punkt pro Frage)</div>
+
+  <!-- Q1 -->
+  <div class="qa">
+    <div class="qhead"><span class="qnum">1</span>
+      <div class="question">Mathematische Definition der <em>Softmax</em>-Wahrscheinlichkeit \(p_k\) als Funktion der Logits \(l_k\) jeder Klasse \(k\).</div>
+    </div>
+    <span class="alabel">Lösung</span>
+    <div class="formula-box center">\[ p_k = \frac{e^{l_k}}{\sum_{j} e^{l_j}} \]</div>
+    <div class="wlinks"><span class="wlinks-label">Wissen:</span>
+      <a class="wlink" data-src="deep-learning/mlp-netz.html" data-title="MLP — Forward Pass &amp; Loss Functions">MLP &amp; Loss Functions</a>
+    </div>
+  </div>
+
+  <!-- Q2 -->
+  <div class="qa">
+    <div class="qhead"><span class="qnum">2</span>
+      <div class="question"><em>ReLU</em>-Aktivierungsfunktion \(f(a)\) für skalares \(a \in \mathbb{R}\).</div>
+    </div>
+    <span class="alabel">Lösung</span>
+    <div class="formula-box center">\[ f(a) = \max(0,\, a) \]</div>
+    <div class="wlinks"><span class="wlinks-label">Wissen:</span>
+      <a class="wlink" data-src="deep-learning/mlp-netz.html" data-title="MLP — Forward Pass &amp; Loss Functions">MLP &amp; Loss Functions</a>
+      <a class="wlink" data-src="deep-learning/training-stabilisierung.html" data-title="Training Stabilization">Training Stabilization</a>
+    </div>
+  </div>
+
+  <!-- Q3 -->
+  <div class="qa">
+    <div class="qhead"><span class="qnum">3</span>
+      <div class="question">Batch \(\mathbf{x}\) der Form \((d, B)\), Gewichte \(\mathbf{W}\) der Form \((d, d)\). Wie viele skalare Multiplikationen braucht das Produkt \(\mathbf{W}\mathbf{x}\)?</div>
+    </div>
+    <span class="alabel">Lösung</span>
+    <div class="answer">Das Ergebnis \(\mathbf{W}\mathbf{x}\) hat Form \((d, B)\). Jeder der \(d \cdot B\) Einträge ist ein Skalarprodukt über die \(d\)-dimensionale Reihe von \(\mathbf{W}\) → \(d\) Multiplikationen pro Eintrag.</div>
+    <div class="formula-box center">\[ d \cdot d \cdot B = d^2 B \quad \text{skalare Multiplikationen} \]</div>
+    <div class="wlinks"><span class="wlinks-label">Wissen:</span>
+      <a class="wlink" data-src="grundlagen/rechenkosten.html" data-title="Rechenkosten — FLOPs &amp; Peak-Memory">Rechenkosten (FLOPs)</a>
+    </div>
+  </div>
+
+  <!-- Q4 -->
+  <div class="qa">
+    <div class="qhead"><span class="qnum">4</span>
+      <div class="question">Voll verbundene (lineare) Schicht \(\mathbb{R}^{d_{in}} \to \mathbb{R}^{d_{out}}\) mit Gewichtsmatrix und Bias-Vektor. Anzahl trainierbarer Parameter?</div>
+    </div>
+    <span class="alabel">Lösung</span>
+    <div class="answer">Gewichtsmatrix \(d_{out}\times d_{in}\) plus Bias \(d_{out}\):</div>
+    <div class="formula-box center">\[ d_{out}\,d_{in} + d_{out} = d_{out}\,(d_{in}+1) \]</div>
+    <div class="wlinks"><span class="wlinks-label">Wissen:</span>
+      <a class="wlink" data-src="deep-learning/mlp-netz.html" data-title="MLP — Forward Pass &amp; Loss Functions">MLP &amp; Loss Functions</a>
+    </div>
+  </div>
+
+  <!-- Q5 -->
+  <div class="qa">
+    <div class="qhead"><span class="qnum">5</span>
+      <div class="question">K-means: Der Algorithmus lieferte \(K\) Zentroiden \(\boldsymbol\mu_k \in \mathbb{R}^d\). Welcher Cluster-Index \(k\) wird einem neuen Testpunkt \(\mathbf{x}\in\mathbb{R}^d\) zugewiesen?</div>
+    </div>
+    <span class="alabel">Lösung</span>
+    <div class="formula-box center">\[ k = \arg\min_{k}\; \lVert \mathbf{x} - \boldsymbol\mu_k \rVert^2 \]</div>
+    <div class="answer">Der Index des nächstgelegenen Zentroids (kleinste euklidische Distanz).</div>
+    <div class="wlinks"><span class="wlinks-label">Wissen:</span>
+      <a class="wlink" data-src="unsupervized/lloyd-algorithmus.html" data-title="Lloyd-Algorithmus — K-Means Clustering">Lloyd-Algorithmus (K-Means)</a>
+    </div>
+  </div>
+
+  <!-- Q6 -->
+  <div class="qa">
+    <div class="qhead"><span class="qnum">6</span>
+      <div class="question">Cross-Entropy-Loss \(\mathcal{L}_{CE}\) für \(N\) Samples, wobei \(p_{n,c_n}\) die vorhergesagte Wahrscheinlichkeit der wahren Klasse \(c_n\) von Sample \(n\) ist.</div>
+    </div>
+    <span class="alabel">Lösung</span>
+    <div class="formula-box center">\[ \mathcal{L}_{CE} = -\frac{1}{N}\sum_{n=1}^{N} \log p_{n,c_n} \]</div>
+    <div class="wlinks"><span class="wlinks-label">Wissen:</span>
+      <a class="wlink" data-src="deep-learning/mlp-netz.html" data-title="MLP — Forward Pass &amp; Loss Functions">MLP &amp; Loss Functions</a>
+      <a class="wlink" data-src="examples/logistic-regression-mnist.html" data-title="EX1 — Logistic Regression on MNIST">EX1 — Logistic Regression</a>
+    </div>
+  </div>
+
+  <!-- Q7 -->
+  <div class="qa">
+    <div class="qhead"><span class="qnum">7</span>
+      <div class="question">Standard-Initialisierung \(\mathbf{W}\in\mathbb{R}^{d\times d}\) als \(\mathbf{W}=\texttt{randn}(d,d)\,\sigma\). Welcher Wert ist korrekt: \(0,\;1,\;\sqrt{d},\;d,\;\tfrac{1}{\sqrt{d}},\;\tfrac{1}{d}\)?</div>
+    </div>
+    <span class="alabel">Lösung</span>
+    <div class="formula-box center">\[ \sigma = \frac{1}{\sqrt{d}} \]</div>
+    <div class="answer">So bleibt die Varianz der Aktivierungen über die Schichten erhalten (vgl. He-/Xavier-Initialisierung): Varianz der Summe über \(d\) Terme \(\propto d\cdot\sigma^2 = 1\).</div>
+    <div class="wlinks"><span class="wlinks-label">Wissen:</span>
+      <a class="wlink" data-src="deep-learning/training-stabilisierung.html" data-title="Training Stabilization">Training Stabilization (He-Init)</a>
+    </div>
+  </div>
+
+  <!-- Q8 -->
+  <div class="qa">
+    <div class="qhead"><span class="qnum">8</span>
+      <div class="question">Ausgabe eines Residual- (ResNet-) Blocks mit Input \(\mathbf{x}\) und Residual-Zweig \(f(\mathbf{x})\).</div>
+    </div>
+    <span class="alabel">Lösung</span>
+    <div class="formula-box center">\[ \text{out} = \mathbf{x} + f(\mathbf{x}) \]</div>
+    <div class="wlinks"><span class="wlinks-label">Wissen:</span>
+      <a class="wlink" data-src="deep-learning/training-stabilisierung.html" data-title="Training Stabilization">Training Stabilization (Skip Connections)</a>
+    </div>
+  </div>
+
+  <!-- Q9 -->
+  <div class="qa">
+    <div class="qhead"><span class="qnum">9</span>
+      <div class="question">RL: Definition des diskontierten <em>Returns</em> \(R_t\) über unendlichen Horizont, gegeben Rewards \(r_{t'}\) und Diskontfaktor \(\gamma\).</div>
+    </div>
+    <span class="alabel">Lösung</span>
+    <div class="formula-box center">\[ R_t = \sum_{t'=t}^{\infty} \gamma^{\,t'-t}\, r_{t'} \]</div>
+    <div class="wlinks"><span class="wlinks-label">Wissen:</span>
+      <a class="wlink" data-src="reinforcement/mdp-grundlagen.html" data-title="MDP — Grundlagen">MDP Grundlagen</a>
+      <a class="wlink" data-src="reinforcement/actor-critic.html" data-title="Policy Gradient, REINFORCE &amp; Actor-Critic">Actor-Critic</a>
+    </div>
+  </div>
+
+  <!-- Q10 -->
+  <div class="qa">
+    <div class="qhead"><span class="qnum">10</span>
+      <div class="question">Conv2d-Schicht mit \(K\times K\)-Kernel, \(D\) Eingangs- und \(D'\) Ausgangskanälen: Anzahl Gewichte (ohne Bias)?</div>
+    </div>
+    <span class="alabel">Lösung</span>
+    <div class="formula-box center">\[ K \cdot K \cdot D \cdot D' \]</div>
+    <div class="wlinks"><span class="wlinks-label">Wissen:</span>
+      <a class="wlink" data-src="deep-learning/conv2d.html" data-title="Conv2D — Convolutional Networks für Bilder">Conv2D &amp; CNN</a>
+    </div>
+  </div>
+
+  <!-- Q11 -->
+  <div class="qa">
+    <div class="qhead"><span class="qnum">11</span>
+      <div class="question">Zu welchem einfachen Ausdruck vereinfacht sich der Gradient des Softmax-Cross-Entropy-Loss bzgl. der Logits (mit vorhergesagten Wahrscheinlichkeiten und One-Hot-Target)?</div>
+    </div>
+    <span class="alabel">Lösung</span>
+    <div class="formula-box center">\[ \frac{\partial \mathcal{L}}{\partial \mathbf{l}} = \mathbf{p} - \mathbf{y} \]</div>
+    <div class="answer">Vorhergesagte Wahrscheinlichkeiten \(\mathbf{p}\) minus One-Hot-Target \(\mathbf{y}\).</div>
+    <div class="wlinks"><span class="wlinks-label">Wissen:</span>
+      <a class="wlink" data-src="examples/logistic-regression-mnist.html" data-title="EX1 — Logistic Regression on MNIST">EX1 — Logistic Regression (Herleitung \(P-Y\))</a>
+      <a class="wlink" data-src="deep-learning/mlp-netz.html" data-title="MLP — Forward Pass &amp; Loss Functions">MLP &amp; Loss Functions (Softmax + CE)</a>
+    </div>
+  </div>
+
+  <!-- Q12 -->
+  <div class="qa">
+    <div class="qhead"><span class="qnum">12</span>
+      <div class="question">Autoregressiver Transformer: Wie viele Forward-Passes braucht die Auswertung des Next-Token-Trainings-Losses auf einer Sequenz der Länge \(T\)?</div>
+    </div>
+    <span class="alabel">Lösung</span>
+    <div class="formula-box center"><b>1</b> Forward-Pass</div>
+    <div class="answer">Beim Training (Teacher Forcing) werden mit kausaler Maske alle \(T\) Positionen parallel in einem einzigen Durchlauf ausgewertet.</div>
+    <div class="wlinks"><span class="wlinks-label">Wissen:</span>
+      <a class="wlink" data-src="deep-learning/transformer.html" data-title="Transformer &amp; Attention">Transformer &amp; Attention</a>
+    </div>
+  </div>
+
+  <!-- Q13 -->
+  <div class="qa">
+    <div class="qhead"><span class="qnum">13</span>
+      <div class="question">Was speichert der <em>KV-Cache</em> während autoregressiver Generierung und warum?</div>
+    </div>
+    <span class="alabel">Lösung</span>
+    <div class="answer">Er speichert die <em>Keys</em> und <em>Values</em> aller bereits verarbeiteten Tokens. So müssen sie bei jedem neuen Generierungsschritt nicht neu berechnet werden — pro Schritt fällt nur die Berechnung für das eine neue Token an. Das senkt die Generierungskosten von \(\mathcal{O}(T^2)\) (Neuberechnung) auf \(\mathcal{O}(T)\) je Schritt.</div>
+    <div class="wlinks"><span class="wlinks-label">Wissen:</span>
+      <a class="wlink" data-src="deep-learning/kv-cache.html" data-title="KV-Cache — Autoregressive Generierung">KV-Cache</a>
+      <a class="wlink" data-src="deep-learning/transformer.html" data-title="Transformer &amp; Attention">Transformer &amp; Attention</a>
+    </div>
+  </div>
+
+  <!-- Q14 -->
+  <div class="qa">
+    <div class="qhead"><span class="qnum">14</span>
+      <div class="question">RL: Welche Größe approximiert eine Q-Funktion \(Q(\mathbf{o}_t, a_t)\)?</div>
+    </div>
+    <span class="alabel">Lösung</span>
+    <div class="answer">Den <em>erwarteten diskontierten Return</em>, wenn man im Zustand/Beobachtung \(\mathbf{o}_t\) die Aktion \(a_t\) wählt und danach der Policy folgt:</div>
+    <div class="formula-box center">\[ Q(\mathbf{o}_t, a_t) = \mathbb{E}\!\left[ R_t \mid \mathbf{o}_t, a_t \right] \]</div>
+    <div class="wlinks"><span class="wlinks-label">Wissen:</span>
+      <a class="wlink" data-src="reinforcement/q-learning-gridworld.html" data-title="Q-Learning &amp; SARSA — Grid World">Q-Learning &amp; SARSA</a>
+      <a class="wlink" data-src="reinforcement/mdp-grundlagen.html" data-title="MDP — Grundlagen">MDP Grundlagen</a>
+    </div>
+  </div>
+
+  <!-- Q15 -->
+  <div class="qa">
+    <div class="qhead"><span class="qnum">15</span>
+      <div class="question">Welchen zusätzlichen Loss-Term (neben dem Rekonstruktionsfehler) enthält ein Variational Auto-Encoder (VAE)?</div>
+    </div>
+    <span class="alabel">Lösung</span>
+    <div class="answer">Einen <em>KL-Divergenz</em>-Term, der die approximierte Posterior-Verteilung \(q(z\mid x)\) an die Prior-Verteilung \(p(z)\) (meist \(\mathcal{N}(0,I)\)) annähert:</div>
+    <div class="formula-box center">\[ \mathrm{KL}\!\left( q(z\mid x)\,\Vert\, p(z) \right) \]</div>
+    <div class="wlinks"><span class="wlinks-label">Wissen:</span>
+      <a class="wlink" data-src="unsupervized/ssl-deep.html" data-title="Deep Self-Supervised Learning">Deep SSL (VAE)</a>
+    </div>
+  </div>
+
+  <div class="section-head">Part 2 — Problems (3 Probleme, je 5 Punkte)</div>
+
+  <!-- Problem 1 -->
+  <div class="qa">
+    <div class="qhead"><span class="qnum">P1</span>
+      <div class="question"><em>Backpropagation in einem MLP mit einer Hidden-Schicht.</em> Input \(\mathbf{x}\in\mathbb{R}^{d_x}\), Target \(y\in\mathbb{R}\), \(\mathbf{W}\in\mathbb{R}^{d_h\times d_x}\), \(\mathbf{V}\in\mathbb{R}^{d_h}\). Mit \(\mathbf{a}=\mathbf{W}\mathbf{x}\) ist \(\hat{y}=\mathbf{V}^\top\sigma(\mathbf{a})\) und \(\mathcal{L}=\tfrac12(y-\hat{y})^2\).</div>
+    </div>
+    <div class="subpart">
+      <span class="subpart-label">(a) \(\partial\mathcal{L}/\partial\hat{y}\)</span>
+      <div class="formula-box center">\[ \frac{\partial \mathcal{L}}{\partial \hat{y}} = -(y-\hat{y}) = \hat{y}-y \]</div>
+      <details class="deriv"><summary>Schritt für Schritt</summary>
+        <ol class="dsteps">
+          <li class="dstep"><span class="di">Verlust hinschreiben,</span> \(y\) ist die feste Zielgröße (Konstante): \(\mathcal{L}=\tfrac12(y-\hat{y})^2\).</li>
+          <li class="dstep"><span class="di">Kettenregel auf das Quadrat:</span> äußere Ableitung \(\tfrac12\cdot 2(y-\hat{y})\), innere Ableitung \(\partial(y-\hat{y})/\partial\hat{y}=-1\).
+            <span class="dformula">\[ \frac{\partial\mathcal{L}}{\partial\hat{y}} = (y-\hat{y})\cdot(-1) \]</span></li>
+          <li class="dstep"><span class="di">Vorzeichen zusammenfassen:</span> \(\;\dfrac{\partial\mathcal{L}}{\partial\hat{y}}=\hat{y}-y\). Genau der Vorhersagefehler.</li>
+        </ol>
+      </details>
+    </div>
+    <div class="subpart">
+      <span class="subpart-label">(b) \(\partial\mathcal{L}/\partial a_k\) als Funktion von \(\sigma'(a_k)\)</span>
+      <div class="formula-box center">\[ \frac{\partial \mathcal{L}}{\partial a_k} = (\hat{y}-y)\,V_k\,\sigma'(a_k) \]</div>
+      <details class="deriv"><summary>Schritt für Schritt</summary>
+        <ol class="dsteps">
+          <li class="dstep"><span class="di">Abhängigkeitskette:</span> \(a_k\) beeinflusst \(\mathcal{L}\) nur über die Ausgabe \(\hat{y}\). Also Kettenregel \(\dfrac{\partial\mathcal{L}}{\partial a_k}=\dfrac{\partial\mathcal{L}}{\partial\hat{y}}\cdot\dfrac{\partial\hat{y}}{\partial a_k}\).</li>
+          <li class="dstep"><span class="di">Ausgabe ausschreiben:</span> \(\hat{y}=\mathbf{V}^\top\sigma(\mathbf{a})=\sum_j V_j\,\sigma(a_j)\).</li>
+          <li class="dstep"><span class="di">Nach \(a_k\) ableiten:</span> in der Summe hängt nur der Term \(j=k\) von \(a_k\) ab:
+            <span class="dformula">\[ \frac{\partial\hat{y}}{\partial a_k}=V_k\,\sigma'(a_k) \]</span></li>
+          <li class="dstep"><span class="di">Mit (a) einsetzen:</span> \(\dfrac{\partial\mathcal{L}}{\partial\hat{y}}=\hat{y}-y\) ⇒ \(\dfrac{\partial\mathcal{L}}{\partial a_k}=(\hat{y}-y)\,V_k\,\sigma'(a_k)\).</li>
+        </ol>
+      </details>
+    </div>
+    <div class="subpart">
+      <span class="subpart-label">(c) \(\partial\mathcal{L}/\partial W_{ij}\)</span>
+      <div class="formula-box center">\[ \frac{\partial \mathcal{L}}{\partial W_{ij}} = (\hat{y}-y)\,V_i\,\sigma'(a_i)\,x_j \]</div>
+      <details class="deriv"><summary>Schritt für Schritt</summary>
+        <ol class="dsteps">
+          <li class="dstep"><span class="di">Welches \(a\) hängt von \(W_{ij}\) ab?</span> \(a_i=\sum_j W_{ij}x_j\) — nur die \(i\)-te Komponente. Kettenregel über \(a_i\): \(\dfrac{\partial\mathcal{L}}{\partial W_{ij}}=\dfrac{\partial\mathcal{L}}{\partial a_i}\cdot\dfrac{\partial a_i}{\partial W_{ij}}\).</li>
+          <li class="dstep"><span class="di">Inneren Faktor ableiten:</span> \(\dfrac{\partial a_i}{\partial W_{ij}}=x_j\).</li>
+          <li class="dstep"><span class="di">Ergebnis aus (b) für \(\partial\mathcal{L}/\partial a_i\) einsetzen:</span>
+            <span class="dformula">\[ \frac{\partial\mathcal{L}}{\partial W_{ij}}=(\hat{y}-y)\,V_i\,\sigma'(a_i)\,x_j \]</span></li>
+          <li class="dstep"><span class="di">Matrixform (äußeres Produkt):</span> der Fehlervektor \((\hat{y}-y)(\mathbf{V}\odot\sigma'(\mathbf{a}))\) mal \(\mathbf{x}^\top\):
+            <span class="dformula">\[ \frac{\partial\mathcal{L}}{\partial\mathbf{W}}=(\hat{y}-y)\,\big(\mathbf{V}\odot\sigma'(\mathbf{a})\big)\,\mathbf{x}^\top \]</span></li>
+        </ol>
+      </details>
+    </div>
+    <div class="wlinks"><span class="wlinks-label">Wissen:</span>
+      <a class="wlink" data-src="deep-learning/backpropagation.html" data-title="Backpropagation">Backpropagation</a>
+      <a class="wlink" data-src="deep-learning/mlp-netz.html" data-title="MLP — Forward Pass &amp; Loss Functions">MLP &amp; Loss Functions</a>
+    </div>
+  </div>
+
+  <!-- Problem 2 -->
+  <div class="qa">
+    <div class="qhead"><span class="qnum">P2</span>
+      <div class="question"><em>Generativer (decoder-only) Transformer.</em> Modell \(f_\theta(x_1,\dots,x_t)\) gibt Logits \(y_{t,k}\) aus mit \(p_\theta(x_{t+1}\mid x_1,\dots,x_t)=\mathrm{softmax}_k(y_{t,k})\).</div>
+    </div>
+    <div class="subpart">
+      <span class="subpart-label">(a) Forward-Passes zum Generieren einer Länge-\(T\)-Sequenz</span>
+      <div class="formula-box center"><b>\(T\)</b> Forward-Passes</div>
+      <details class="deriv"><summary>Schritt für Schritt</summary>
+        <ol class="dsteps">
+          <li class="dstep"><span class="di">Generierung ist autoregressiv:</span> Token \(x_{t+1}\) wird aus den bereits erzeugten Tokens \(x_1,\dots,x_t\) gesampelt.</li>
+          <li class="dstep"><span class="di">Jeder neue Token braucht einen eigenen Forward-Pass</span> — man kann nicht parallelisieren, weil der nächste Input erst aus dem vorigen Output entsteht.</li>
+          <li class="dstep"><span class="di">Für \(T\) Tokens</span> ⇒ \(T\) Forward-Passes (mit KV-Cache je ein günstiger Pass pro Token, siehe Frage 13).</li>
+        </ol>
+      </details>
+    </div>
+    <div class="subpart">
+      <span class="subpart-label">(b) Next-Token-Prediction-Loss für Target \(x'_1,\dots,x'_T\)</span>
+      <div class="formula-box center">\[ \mathcal{L} = -\sum_{t=1}^{T-1} \log\, \mathrm{softmax}_{x'_{t+1}}\!\big(y_{t,\cdot}\big) = -\sum_{t=1}^{T-1}\log p_\theta\!\big(x'_{t+1}\mid x'_1,\dots,x'_t\big) \]</div>
+      <details class="deriv"><summary>Schritt für Schritt</summary>
+        <ol class="dsteps">
+          <li class="dstep"><span class="di">Was sagt das Modell an Position \(t\) vorher?</span> Die Logits \(y_{t,\cdot}\) liefern über Softmax die Verteilung des <em>nächsten</em> Tokens \(p_\theta(x_{t+1}\mid x_{\le t})\).</li>
+          <li class="dstep"><span class="di">Richtiges Ziel auswählen:</span> der wahre nächste Token ist \(x'_{t+1}\); seine Wahrscheinlichkeit ist \(\mathrm{softmax}_{x'_{t+1}}(y_{t,\cdot})\).</li>
+          <li class="dstep"><span class="di">Cross-Entropy pro Position</span> = negativer Log dieser Wahrscheinlichkeit: \(-\log p_\theta(x'_{t+1}\mid x'_{\le t})\).</li>
+          <li class="dstep"><span class="di">Über alle Positionen summieren</span> \(t=1,\dots,T-1\) (die letzte Position hat keinen Nachfolger).</li>
+        </ol>
+      </details>
+    </div>
+    <div class="subpart">
+      <span class="subpart-label">(c) Forward-Passes zur Berechnung dieses Loss</span>
+      <div class="formula-box center"><b>1</b> Forward-Pass</div>
+      <details class="deriv"><summary>Schritt für Schritt</summary>
+        <ol class="dsteps">
+          <li class="dstep"><span class="di">Beim Training (Teacher Forcing)</span> ist die ganze Zielsequenz \(x'_1,\dots,x'_T\) bereits bekannt — sie muss nicht erst generiert werden.</li>
+          <li class="dstep"><span class="di">Die kausale Maske</span> sorgt dafür, dass Position \(t\) nur Tokens \(\le t\) sieht. Dadurch sind alle \(T\) Vorhersagen gleichzeitig korrekt berechenbar.</li>
+          <li class="dstep"><span class="di">Ein einziger Forward-Pass</span> liefert alle Logits \(y_{1,\cdot},\dots,y_{T,\cdot}\) parallel ⇒ Loss in <b>1</b> Pass (Gegensatz zur Generierung in (a)).</li>
+        </ol>
+      </details>
+    </div>
+    <div class="subpart">
+      <span class="subpart-label">(d) Policy-Gradient-Loss mit Advantage \(A_i=r_i-\mathrm{mean}_i(r_i)\)</span>
+      <div class="formula-box center">\[ \mathcal{L} = -\frac{1}{G}\sum_{i=1}^{G} A_i \sum_{t=q+1}^{T_i} \log p_\theta\!\big(x^i_t \mid x^i_{<t}\big) \]</div>
+      <details class="deriv"><summary>Schritt für Schritt</summary>
+        <ol class="dsteps">
+          <li class="dstep"><span class="di">Setup (GRPO):</span> aus dem festen Prefix \(x_1,\dots,x_q\) werden \(G\) Fortsetzungen \(x^i\) gesampelt; ein Verifier gibt jeder den Reward \(r_i\).</li>
+          <li class="dstep"><span class="di">Advantage als Baseline:</span> \(A_i=r_i-\mathrm{mean}_i(r_i)\) misst, wie viel besser als der Gruppendurchschnitt — zentriert die Rewards und senkt die Varianz.</li>
+          <li class="dstep"><span class="di">Log-Likelihood der Sequenz:</span> \(\log p_\theta(x^i)=\sum_{t=q+1}^{T_i}\log p_\theta(x^i_t\mid x^i_{<t})\) (nur die generierten Tokens).</li>
+          <li class="dstep"><span class="di">Policy-Gradient / REINFORCE:</span> jede Sequenz mit ihrem Advantage gewichten und über die Gruppe mitteln; das Minuszeichen macht aus „Reward maximieren" einen Minimierungs-Loss.</li>
+          <li class="dstep"><span class="di">Wirkung:</span> \(A_i>0\) erhöht die Wahrscheinlichkeit der Sequenz, \(A_i<0\) senkt sie.</li>
+        </ol>
+      </details>
+    </div>
+    <div class="wlinks"><span class="wlinks-label">Wissen:</span>
+      <a class="wlink" data-src="deep-learning/transformer.html" data-title="Transformer &amp; Attention">Transformer &amp; Attention</a>
+      <a class="wlink" data-src="weitere-themen/llm-agents.html" data-title="LLMs &amp; Coding Agents">LLMs &amp; Coding Agents (GRPO)</a>
+    </div>
+  </div>
+
+  <!-- Problem 3 -->
+  <div class="qa">
+    <div class="qhead"><span class="qnum">P3</span>
+      <div class="question"><em>Reinforcement-Learning-Losses.</em> Rollouts \((\mathbf{o}_t, a_t, r_{t+1})\), Policy \(\pi_\theta(a_t\mid\mathbf{o}_t)\), Wertschätzer \(v_\theta(\mathbf{o}_t)\).</div>
+    </div>
+    <div class="subpart">
+      <span class="subpart-label">(a) Diskontierter Return \(R_t\)</span>
+      <div class="formula-box center">\[ R_t = \sum_{t'=t}^{\infty} \gamma^{\,t'-t}\, r_{t'+1} \]</div>
+      <details class="deriv"><summary>Schritt für Schritt</summary>
+        <ol class="dsteps">
+          <li class="dstep"><span class="di">Return = Summe aller zukünftigen Rewards</span> ab Zeit \(t\).</li>
+          <li class="dstep"><span class="di">Diskontierung:</span> ein Reward \(k\) Schritte in der Zukunft zählt nur \(\gamma^{k}\)-fach (\(0\le\gamma<1\)) — sichert Konvergenz über den unendlichen Horizont.</li>
+          <li class="dstep"><span class="di">Indizierung beachten:</span> die Rollouts sind \((\mathbf{o}_t,a_t,r_{t+1})\), der Reward <em>nach</em> der Aktion bei \(t\) heißt \(r_{t+1}\). Mit Laufindex \(t'\): Faktor \(\gamma^{t'-t}\) auf \(r_{t'+1}\).</li>
+        </ol>
+      </details>
+    </div>
+    <div class="subpart">
+      <span class="subpart-label">(b) 1-Step-Bellman-Target + MSE-TD-Loss (Stop-Gradient markiert)</span>
+      <div class="formula-box center">\[ \mathcal{L}_{TD} = \tfrac12\Big(v_\theta(\mathbf{o}_t) - \mathrm{sg}\big[r_{t+1} + \gamma\, v_\theta(\mathbf{o}_{t+1})\big]\Big)^2 \]</div>
+      <details class="deriv"><summary>Schritt für Schritt</summary>
+        <ol class="dsteps">
+          <li class="dstep"><span class="di">Bellman-Idee:</span> der Wert eines Zustands ist „sofortiger Reward + diskontierter Wert des Folgezustands": \(v(\mathbf{o}_t)\approx r_{t+1}+\gamma\,v(\mathbf{o}_{t+1})\).</li>
+          <li class="dstep"><span class="di">Target definieren:</span> \(y_t=r_{t+1}+\gamma\,v_\theta(\mathbf{o}_{t+1})\) ist das (bootstrappte) Regressionsziel.</li>
+          <li class="dstep"><span class="di">MSE-Regression:</span> \(v_\theta(\mathbf{o}_t)\) soll \(y_t\) treffen ⇒ \(\tfrac12(v_\theta(\mathbf{o}_t)-y_t)^2\).</li>
+          <li class="dstep"><span class="di">Stop-Gradient \(\mathrm{sg}[\cdot]\):</span> das Target wird als Konstante behandelt — der Gradient fließt nur durch \(v_\theta(\mathbf{o}_t)\), nicht durch \(v_\theta(\mathbf{o}_{t+1})\). Das stabilisiert das Bootstrapping.</li>
+        </ol>
+      </details>
+    </div>
+    <div class="subpart">
+      <span class="subpart-label">(c) K-Step-Bellman-Target + MSE-TD-Loss</span>
+      <div class="formula-box center">\[ y_t^{(K)} = \sum_{k=0}^{K-1}\gamma^{k}\, r_{t+k+1} + \gamma^{K}\,\overline{v_\theta(\mathbf{o}_{t+K})} \]</div>
+      <div class="formula-box center">\[ \mathcal{L}_{TD}^{(K)} = \tfrac12\Big(v_\theta(\mathbf{o}_t) - \mathrm{sg}\big[y_t^{(K)}\big]\Big)^2 \]</div>
+      <details class="deriv"><summary>Schritt für Schritt</summary>
+        <ol class="dsteps">
+          <li class="dstep"><span class="di">Bellman \(K\)-mal entfalten</span> statt nur einmal: man nutzt \(K\) echte Rewards, bevor man bootstrappt.</li>
+          <li class="dstep"><span class="di">Erste \(K\) Rewards diskontiert aufsummieren:</span> \(\sum_{k=0}^{K-1}\gamma^{k}r_{t+k+1}\).</li>
+          <li class="dstep"><span class="di">Rest mit Wertschätzer abschneiden:</span> \(+\,\gamma^{K}v_\theta(\mathbf{o}_{t+K})\) (Stop-Gradient).</li>
+          <li class="dstep"><span class="di">Gleiche MSE-Form</span> wie 1-Step; größeres \(K\) = weniger Bias, mehr Varianz (\(K=1\): viel Bootstrapping, \(K\to\infty\): Monte-Carlo-Return).</li>
+        </ol>
+      </details>
+    </div>
+    <div class="subpart">
+      <span class="subpart-label">(d) Policy-Gradient- (Actor-) Loss mit \(A_t=R_t-v_\phi(\mathbf{o}_t)\)</span>
+      <div class="formula-box center">\[ \mathcal{L}_{actor} = -\sum_t \mathrm{sg}\big[A_t\big]\,\log \pi_\theta\!\big(a_t \mid \mathbf{o}_t\big) \]</div>
+      <details class="deriv"><summary>Schritt für Schritt</summary>
+        <ol class="dsteps">
+          <li class="dstep"><span class="di">Ziel:</span> erwarteten Return \(\mathbb{E}[R_t]\) maximieren durch Anpassen der Policy \(\pi_\theta\).</li>
+          <li class="dstep"><span class="di">Log-Derivative-Trick:</span> \(\nabla_\theta\,\mathbb{E}[R]=\mathbb{E}\big[R\,\nabla_\theta\log\pi_\theta(a_t\mid\mathbf{o}_t)\big]\) — erlaubt Gradienten durch das Sampling.</li>
+          <li class="dstep"><span class="di">Baseline einziehen:</span> ersetze \(R_t\) durch den Advantage \(A_t=R_t-v_\phi(\mathbf{o}_t)\). Senkt die Varianz, ohne den Erwartungswert zu verfälschen.</li>
+          <li class="dstep"><span class="di">Als Loss schreiben:</span> Minuszeichen für Gradientenabstieg, \(A_t\) per Stop-Gradient als Gewicht behandeln (Gradient nur durch \(\log\pi_\theta\)):
+            <span class="dformula">\[ \mathcal{L}_{actor}=-\sum_t \mathrm{sg}[A_t]\,\log\pi_\theta(a_t\mid\mathbf{o}_t) \]</span></li>
+        </ol>
+      </details>
+    </div>
+    <div class="wlinks"><span class="wlinks-label">Wissen:</span>
+      <a class="wlink" data-src="reinforcement/actor-critic.html" data-title="Policy Gradient, REINFORCE &amp; Actor-Critic">Actor-Critic &amp; REINFORCE</a>
+    </div>
+  </div>
+
+</div>
+
+<p class="src-note">// Quelle: 192.183 Machine Learning 2026S — Practice Exam 1 (ML SS2026)</p>
+
+<script>
+  document.querySelectorAll('.wlink').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const src = a.dataset.src, title = a.dataset.title;
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'open-card', src, title }, '*');
+      } else {
+        window.open(src, '_blank');
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

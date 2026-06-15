@@ -437,6 +437,14 @@
             <span class="card-desc">k-fold CV, Leave-One-Out, Train/Val/Test-Split, Data Leakage — interaktiver Fold-Animator.</span>
             <span class="card-badge">// interaktiv</span>
           </div>
+          <div class="algo-card" style="color:var(--grundlagen)"
+               data-src="grundlagen/rechenkosten.html"
+               data-title="Rechenkosten — FLOPs &amp; Peak-Memory">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">Rechenkosten</span>
+            <span class="card-desc">Skalare Multiplikationen (FLOPs) &amp; Peak-Memory zählen — Matmul, MLP-Inferenz vs. Backprop, Self-Attention-Kosten, interaktiver Rechner.</span>
+            <span class="card-badge">// interaktiv</span>
+          </div>
         </div>
       </section>
 
@@ -516,6 +524,14 @@
             <span class="card-ext-icon">⤢</span>
             <span class="card-label">Polynomielle Regression</span>
             <span class="card-desc">Grad-Slider von 1–8: Underfitting, gute Anpassung und Overfitting live sehen.</span>
+            <span class="card-badge">// interaktiv</span>
+          </div>
+          <div class="algo-card" style="color:var(--supervised)"
+               data-src="supervised/logistische-regression.html"
+               data-title="Logistische Regression — Sigmoid-Klassifikator">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">Logistische Regression</span>
+            <span class="card-desc">Binäre Klassifikation mit Sigmoid σ(wᵀx+b), Entscheidungsgrenze, Binary Cross-Entropy &amp; Gradient — interaktive Sigmoid-Kurve.</span>
             <span class="card-badge">// interaktiv</span>
           </div>
           <div class="algo-card" style="color:var(--supervised)"
@@ -748,6 +764,22 @@
             <span class="card-badge">// interaktiv</span>
           </div>
           <div class="algo-card" style="color:var(--deep)"
+               data-src="deep-learning/kv-cache.html"
+               data-title="KV-Cache — Autoregressive Generierung">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">KV-Cache</span>
+            <span class="card-desc">Autoregressive Generierung beschleunigen — Keys/Values cachen, O(T²)→O(T), Cache-Speicher, interaktiver Schritt-Vergleich.</span>
+            <span class="card-badge">// interaktiv</span>
+          </div>
+          <div class="algo-card" style="color:var(--deep)"
+               data-src="deep-learning/flash-attention.html"
+               data-title="FlashAttention — IO-effiziente Attention">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">FlashAttention</span>
+            <span class="card-desc">IO-aware Attention ohne T×T-Matrix — SRAM/HBM-Hierarchie, Tiling, Online-Softmax, O(T)-Speicher bei gleichem Resultat.</span>
+            <span class="card-badge">// interaktiv</span>
+          </div>
+          <div class="algo-card" style="color:var(--deep)"
                data-src="deep-learning/conv1d.html"
                data-title="Conv1D &amp; TCN — Convolutional Networks für Sequenzen">
             <span class="card-ext-icon">⤢</span>
@@ -853,6 +885,16 @@
                 data-title="EX4 — Assignment 4: LLM Agents (GSM8k)">
             <span class="chip-icon">📄</span> EX4 — LLM Agents (GSM8k)
           </span>
+          <span class="slide-chip"
+                data-src="slides/exams/ML_2026S_exam_practice_1.pdf"
+                data-title="Practice Exam 1 — Angabe (PDF)">
+            <span class="chip-icon">📝</span> Practice Exam 1 — Angabe
+          </span>
+          <span class="slide-chip"
+                data-src="slides/exams/ML_2026S_exam_practice_2.pdf"
+                data-title="Practice Exam 2 — Angabe (PDF)">
+            <span class="chip-icon">📝</span> Practice Exam 2 — Angabe
+          </span>
         </div>
         <div class="algo-grid">
           <div class="algo-card" style="color:var(--examples)"
@@ -862,6 +904,22 @@
             <span class="card-label">Logistic Regression on MNIST</span>
             <span class="card-desc">End-to-End: Forward Pass, Cross-Entropy Loss, Chain-Rule-Herleitung aller Gradienten, numerisches Beispiel.</span>
             <span class="card-badge">// ausarbeitung</span>
+          </div>
+          <div class="algo-card" style="color:var(--examples)"
+               data-src="examples/practice-exam-1.html"
+               data-title="Practice Exam 1 — Fragen &amp; Lösungen">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">Practice Exam 1 — Lösungen</span>
+            <span class="card-desc">15 Kurzfragen + 3 Probleme: Softmax/ReLU, MLP-Backprop, Transformer-Training, RL-Losses — mit verlinkten Wissens-Karten.</span>
+            <span class="card-badge">// lösungen</span>
+          </div>
+          <div class="algo-card" style="color:var(--examples)"
+               data-src="examples/practice-exam-2.html"
+               data-title="Practice Exam 2 — Fragen &amp; Lösungen">
+            <span class="card-ext-icon">⤢</span>
+            <span class="card-label">Practice Exam 2 — Lösungen</span>
+            <span class="card-desc">15 Kurzfragen + 3 Probleme: Quantisierung, Conv1d, PCA, Self-Attention-Kosten, Peak-Memory — mit verlinkten Wissens-Karten.</span>
+            <span class="card-badge">// lösungen</span>
           </div>
         </div>
       </section>

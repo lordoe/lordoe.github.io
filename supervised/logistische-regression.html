@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Logistische Regression — Sigmoid-Klassifikator</title>
+<script>
+  MathJax = {
+    tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+    options: { skipHtmlTags: ['script','noscript','style','textarea'] }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#0e0e11; --bg2:#16161b; --bg3:#1e1e26;
+    --border:rgba(255,255,255,0.08); --border2:rgba(255,255,255,0.14);
+    --text:#e8e6f0; --muted:#7a7890;
+    --accent:#3aa0ff; --accent-dim:rgba(58,160,255,0.15);
+    --green:#4ecdc4; --green-dim:rgba(78,205,196,0.12);
+    --blue:#2970c4; --blue-dim:rgba(41,112,196,0.12);
+    --yellow:#ffd93d; --yellow-dim:rgba(255,217,61,0.12);
+    --orange:#e8934a; --orange-dim:rgba(232,147,74,0.12);
+    --red:#ff6b6b; --red-dim:rgba(255,107,107,0.12);
+  }
+  mjx-container { color: var(--text) !important; }
+  body { background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; font-weight:300; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:2rem 1rem 4rem; }
+  header { width:100%; max-width:900px; margin-bottom:1.6rem; display:flex; align-items:baseline; gap:1rem; flex-wrap:wrap; padding-bottom:1rem; border-bottom:1px solid var(--border); }
+  h1 { font-family:'DM Mono',monospace; font-size:1.05rem; font-weight:500; letter-spacing:0.04em; color:var(--accent); }
+  .subtitle { font-size:0.78rem; color:var(--muted); font-family:'DM Mono',monospace; }
+  .main { width:100%; max-width:900px; display:flex; flex-direction:column; gap:1.2rem; }
+  .card { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:1.3rem 1.5rem; display:flex; flex-direction:column; gap:1rem; }
+  .card-title { font-family:'DM Mono',monospace; font-size:0.75rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--accent); padding-bottom:0.6rem; border-bottom:1px solid var(--border); }
+  .card-title.green{color:var(--green);border-color:rgba(78,205,196,0.2);} .card-title.orange{color:var(--orange);border-color:rgba(232,147,74,0.2);} .card-title.blue{color:var(--blue);border-color:rgba(41,112,196,0.2);}
+  .prose { font-size:0.88rem; line-height:1.75; color:#c0bdd0; }
+  .prose b { color:var(--text); font-weight:400; }
+  .formula-box { background:var(--bg3); border:1px solid var(--border2); border-radius:8px; padding:0.9rem 1.2rem; font-size:0.95rem; overflow-x:auto; }
+  .formula-box.center{text-align:center;}
+  .formula-box.accent{border-left:3px solid var(--accent); background:var(--accent-dim);}
+  .formula-box.green{border-left:3px solid var(--green); background:var(--green-dim);}
+  .formula-box.orange{border-left:3px solid var(--orange); background:var(--orange-dim);}
+  .demo { display:grid; grid-template-columns:1fr 240px; gap:1.2rem; align-items:start; }
+  @media(max-width:680px){ .demo{grid-template-columns:1fr;} }
+  canvas { width:100%; background:var(--bg3); border:1px solid var(--border2); border-radius:8px; }
+  .ctl { display:flex; flex-direction:column; gap:0.3rem; margin-bottom:0.9rem; }
+  .ctl label { font-family:'DM Mono',monospace; font-size:0.75rem; color:var(--muted); display:flex; justify-content:space-between; }
+  .ctl label b { color:var(--accent); }
+  input[type=range]{ accent-color:var(--accent); width:100%; }
+  .pill { font-family:'DM Mono',monospace; font-size:0.78rem; padding:0.4rem 0.6rem; border-radius:6px; background:var(--bg3); border:1px solid var(--border2); margin-top:0.4rem; }
+  .src-note { font-family:'DM Mono',monospace; font-size:0.7rem; color:#6a6866; text-align:center; margin-top:2rem; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Logistische Regression</h1>
+  <span class="subtitle">// Binäre Klassifikation mit der Sigmoid-Funktion</span>
+</header>
+
+<div class="main">
+
+  <div class="card">
+    <div class="card-title">Von linear zu Wahrscheinlichkeit</div>
+    <div class="prose">
+      Die lineare Funktion \(z=\mathbf{w}^\top\mathbf{x}+b\) liefert beliebige reelle Werte. Für eine
+      <b>Wahrscheinlichkeit</b> brauchen wir aber etwas in \([0,1]\). Die <b>Sigmoid</b> (logistische Funktion)
+      quetscht \(z\) in genau dieses Intervall:
+    </div>
+    <div class="formula-box center accent">
+      \[ p(y{=}1\mid\mathbf{x}) = \sigma(z) = \frac{1}{1+e^{-z}}, \qquad z=\mathbf{w}^\top\mathbf{x}+b \]
+    </div>
+    <div class="prose">
+      Die <b>Entscheidungsgrenze</b> liegt bei \(p=0.5 \Leftrightarrow z=0\), also \(\mathbf{w}^\top\mathbf{x}+b=0\)
+      (eine Hyperebene). \(\mathbf{w}\) steht senkrecht darauf, \(\lVert\mathbf{w}\rVert\) steuert die Steilheit des Übergangs.
+      Klassifikation: \(\hat y = 1\) falls \(p\ge 0.5\), sonst \(0\).
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title green">Training: Binary Cross-Entropy</div>
+    <div class="prose">
+      Trainiert wird über Maximum-Likelihood — äquivalent zur Minimierung des
+      <b>Binary-Cross-Entropy-Loss</b> (BCE), mit \(p_n=\sigma(\mathbf{w}^\top\mathbf{x}_n+b)\):
+    </div>
+    <div class="formula-box center green">
+      \[ \mathcal{L} = -\frac{1}{N}\sum_{n=1}^{N}\Big[\,y_n\log p_n + (1-y_n)\log(1-p_n)\,\Big] \]
+    </div>
+    <div class="prose">
+      Der Gradient hat dieselbe schöne Form wie bei Softmax + Cross-Entropy — Vorhersage minus Label:
+    </div>
+    <div class="formula-box center">
+      \[ \frac{\partial \mathcal{L}}{\partial \mathbf{w}} = \frac{1}{N}\sum_n (p_n-y_n)\,\mathbf{x}_n, \qquad
+         \frac{\partial \mathcal{L}}{\partial b} = \frac{1}{N}\sum_n (p_n-y_n) \]
+    </div>
+    <div class="prose" style="font-size:0.82rem">
+      Multiklassen-Verallgemeinerung: Sigmoid → Softmax, BCE → Cross-Entropy (siehe EX1 — Logistic Regression on MNIST).
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title blue">Interaktiv: Sigmoid &amp; Entscheidungsgrenze (1D)</div>
+    <div class="demo">
+      <canvas id="cv" width="600" height="320"></canvas>
+      <div>
+        <div class="ctl"><label>Gewicht w <b id="l-w">2.0</b></label><input id="s-w" type="range" min="-8" max="8" step="0.1" value="2"></div>
+        <div class="ctl"><label>Bias b <b id="l-b">0.0</b></label><input id="s-b" type="range" min="-8" max="8" step="0.1" value="0"></div>
+        <div class="pill">Grenze: x = <span id="bnd" style="color:var(--yellow)">0.00</span></div>
+        <div class="pill">p(y=1 | x=2) = <span id="px" style="color:var(--green)">–</span></div>
+        <div class="prose" style="font-size:0.78rem; margin-top:0.6rem">
+          <span style="color:var(--green)">●</span> Klasse 1&nbsp;&nbsp;
+          <span style="color:var(--red)">●</span> Klasse 0.
+          \(|w|\) groß ⇒ schärferer Übergang.
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<p class="src-note">// Quelle: Foliensatz 02 — Naive Bayes &amp; Covering / Predicting Numeric Values (ML SS2026)</p>
+
+<script>
+  const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height, pad = 36;
+  const sw = document.getElementById('s-w'), sb = document.getElementById('s-b');
+  const xmin = -6, xmax = 6;
+  // sample points
+  const pts = [];
+  for (let i=0;i<40;i++){ const x = xmin + Math.random()*(xmax-xmin); pts.push(x); }
+  function X2px(x){ return pad + (x-xmin)/(xmax-xmin)*(W-2*pad); }
+  function P2py(p){ return H-pad - p*(H-2*pad); }
+  const sig = z => 1/(1+Math.exp(-z));
+  function draw(){
+    const w=+sw.value, b=+sb.value;
+    document.getElementById('l-w').textContent=w.toFixed(1);
+    document.getElementById('l-b').textContent=b.toFixed(1);
+    const bnd = w!==0 ? (-b/w) : NaN;
+    document.getElementById('bnd').textContent = isNaN(bnd)?'—':bnd.toFixed(2);
+    document.getElementById('px').textContent = sig(w*2+b).toFixed(3);
+    ctx.clearRect(0,0,W,H);
+    // axes
+    ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(pad,P2py(0)); ctx.lineTo(W-pad,P2py(0)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pad,P2py(0.5)); ctx.lineTo(W-pad,P2py(0.5)); ctx.stroke();
+    ctx.fillStyle='#7a7890'; ctx.font='11px DM Mono'; ctx.fillText('p=0.5',W-pad-44,P2py(0.5)-4);
+    ctx.fillText('p=1',pad+2,P2py(1)+12); ctx.fillText('p=0',pad+2,P2py(0)-4);
+    // decision boundary
+    if(!isNaN(bnd) && bnd>=xmin && bnd<=xmax){
+      ctx.strokeStyle='#ffd93d'; ctx.setLineDash([5,4]);
+      ctx.beginPath(); ctx.moveTo(X2px(bnd),pad); ctx.lineTo(X2px(bnd),H-pad); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    // sigmoid curve
+    ctx.strokeStyle='#3aa0ff'; ctx.lineWidth=2.2; ctx.beginPath();
+    for(let i=0;i<=240;i++){ const x=xmin+(xmax-xmin)*i/240; const p=sig(w*x+b);
+      const px=X2px(x), py=P2py(p); i?ctx.lineTo(px,py):ctx.moveTo(px,py); }
+    ctx.stroke();
+    // points colored by true sigmoid>0.5 (with current params) -> illustrate classification
+    pts.forEach(x=>{ const p=sig(w*x+b); const cls=p>=0.5;
+      ctx.fillStyle = cls ? '#4ecdc4':'#ff6b6b';
+      ctx.beginPath(); ctx.arc(X2px(x), cls?P2py(0.93):P2py(0.07), 4, 0, 7); ctx.fill();
+    });
+  }
+  sw.addEventListener('input',draw); sb.addEventListener('input',draw); draw();
+</script>
+</body>
+</html>
