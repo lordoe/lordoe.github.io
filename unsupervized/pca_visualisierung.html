@@ -363,16 +363,36 @@
   </div>
 
   <div class="theory-block">
-    <h2>// algorithmus (pseudo-code)</h2>
-    <div class="code-box">
-      <span class="cm"># x hat Form N × d</span><br>
-      x = x - x.mean(axis=0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># Daten zentrieren</span><br>
-      C = (x.T @ x) / N&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># empirische Kovarianz, Form (d, d)</span><br>
-      lam, W = eigh(C)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># Eigenzerlegung (aufsteigend nach lam)</span><br>
-      W = W[:, ::-1][:, :K]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># Top-K Eigenvektoren, Form (d, K)</span><br>
-      z = x @ W&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># K-dim Repräsentation, Form (N, K)</span>
+    <h2>// zentrieren vs. normalisieren</h2>
+    <p>
+      Zwei getrennte Vorverarbeitungs-Schritte — nur der erste ist Pflicht:
+    </p>
+    <div class="theory-props">
+      <div class="theory-prop">▸ &nbsp;<b>Zentrieren</b> (\(\mathbf{x}-\bar{\mathbf{x}}\)): <b>immer nötig</b> — die Kovarianz misst Streuung <em>um den Mittelwert</em>.</div>
+      <div class="theory-prop">▸ &nbsp;<b>Skalieren</b> (\(\div\,\sigma\)): optional, aber sinnvoll bei <b>unterschiedlichen Einheiten/Skalen</b> — sonst dominiert ein Feature mit großem Zahlenbereich die Varianz allein wegen der Einheit.</div>
     </div>
-    <p class="src-note">// Quelle: Foliensatz 04 — Unsupervised Learning (ML SS2026)</p>
+    <p>
+      Beides zusammen = <b>z-Score-Normalisierung</b> \(x' = \tfrac{x-\bar{x}}{\sigma}\) (Spalte hat danach mean 0, std 1). PCA läuft dann effektiv auf der <b>Korrelations-</b> statt der Kovarianzmatrix. In der <b>Exam-Variante (mega.pdf §13.7.1) immer dabei.</b>
+    </p>
+  </div>
+
+  <div class="theory-block">
+    <h2>// algorithmus (pseudo-code, wie in der prüfung)</h2>
+    <div class="code-box">
+      <span class="ck">def</span> z_score(X):&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># X hat Form (B, D)</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;mu = X.mean(axis=0)&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># Mittelwert je Feature</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;sd = X.std(axis=0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># Std je Feature</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="ck">return</span> (X - mu) / sd&nbsp;&nbsp;&nbsp;<span class="cm"># mean 0, std 1 je Spalte</span><br>
+      <br>
+      <span class="ck">def</span> PCA(X, K):&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># X: (B, D) -> W: (D, K)</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;X = z_score(X)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># zentrieren + normalisieren</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;C = X.T @ X / X.shape[0]&nbsp;<span class="cm"># Kovarianz (D, D)</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;vals, vecs = eig(C)&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># Eigenwerte, Eigenvektoren</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;idx = argsort(vals)[::-1]<span class="cm"># größter Eigenwert zuerst</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;W = vecs[:, idx[:K]]&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># Top-K Eigenvektoren</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="ck">return</span> W&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># Projektion mit z = X @ W</span>
+    </div>
+    <p class="src-note">// Quelle: mega.pdf §13.7.1 — PCA-Rezept „as the exam asks" (ML SS2026)</p>
   </div>
 
 </div>
@@ -391,9 +411,14 @@ const mean=arr=>arr.reduce((a,b)=>a+b,0)/arr.length;
 const mx=mean(raw.map(p=>p[0])), my=mean(raw.map(p=>p[1]));
 const centered=raw.map(p=>[p[0]-mx,p[1]-my]);
 const n=centered.length;
-const cxx=centered.reduce((s,p)=>s+p[0]*p[0],0)/n;
-const cyy=centered.reduce((s,p)=>s+p[1]*p[1],0)/n;
-const cxy=centered.reduce((s,p)=>s+p[0]*p[1],0)/n;
+// z-Score: jedes Feature durch seine Standardabweichung teilen (mean 0, std 1)
+const sdx=Math.sqrt(centered.reduce((s,p)=>s+p[0]*p[0],0)/n);
+const sdy=Math.sqrt(centered.reduce((s,p)=>s+p[1]*p[1],0)/n);
+const normalized=centered.map(p=>[p[0]/sdx,p[1]/sdy]);
+// Kovarianz der normalisierten Daten == Korrelationsmatrix (Diagonale = 1)
+const cxx=normalized.reduce((s,p)=>s+p[0]*p[0],0)/n;
+const cyy=normalized.reduce((s,p)=>s+p[1]*p[1],0)/n;
+const cxy=normalized.reduce((s,p)=>s+p[0]*p[1],0)/n;
 
 let vx=1,vy=1;
 for(let i=0;i<200;i++){
@@ -486,14 +511,42 @@ const STEPS=[
     }
   },
   {
-    label:'3 · Kovarianzmatrix',
-    legend:[{c:C.cen,l:'Zentrierte Daten'},{c:C.cov,l:'Varianz-Ellipse'}],
-    info:`<strong>Schritt 3 – Kovarianzmatrix Σ:</strong> Σ misst, wie stark die Variablen gemeinsam variieren. Cov(x₁,x₂) = ${cxy.toFixed(2)} → starke positive Korrelation. Die violette Ellipse visualisiert die "Form" der Verteilung — sie zeigt uns die Hauptrichtungen der Streuung.`,
+    label:'2b · Normalisieren',
+    legend:[{c:'#8a8a90',l:'zentriert (vorher)',dash:true},{c:C.pt,l:'z-Score (Var = 1)'},{c:C.cov,l:'σ = 1 Referenz',dash:true}],
+    info:`<strong>Schritt 2b – Normalisieren (z-Score):</strong> Jedes Feature wird durch seine Standardabweichung geteilt (σ₁ = ${sdx.toFixed(2)}, σ₂ = ${sdy.toFixed(2)}) → beide Achsen haben danach Varianz 1. <em>Optional</em>, aber wichtig bei unterschiedlichen Einheiten: sonst würde ein Feature mit größerer Skala die Varianz allein wegen der Einheit dominieren. Danach läuft PCA auf der <strong>Korrelationsmatrix</strong>.`,
     draw(){
       setLayer('layer-grid',drawGrid());
       setLayer('layer-axes',drawAxes());
       let pts='';
       centered.forEach(p=>{
+        const [sx,sy]=toSVG(p[0],p[1]);
+        pts+=circle(sx,sy,4,'#8a8a90',0.3);
+      });
+      pts+=`<circle cx="${CX}" cy="${CY}" r="${SC}" fill="none" stroke="${C.cov}" stroke-width="1" stroke-dasharray="4 3" opacity="0.45"/>`;
+      normalized.forEach(p=>{
+        const [sx,sy]=toSVG(p[0],p[1]);
+        pts+=circle(sx,sy,5,C.pt,0.9);
+      });
+      const [mx2,my2]=toSVG(0,0);
+      pts+=`<circle cx="${mx2}" cy="${my2}" r="3" fill="${C.pc1}"/>`;
+      setLayer('layer-data',pts);
+      setLayer('layer-labels',`
+        <rect x="490" y="30" width="230" height="80" rx="8" fill="${C.bg2}" stroke="${C.border}" stroke-width="0.5"/>
+        <text x="505" y="52" font-size="12" fill="${C.text}" font-family="DM Mono,monospace">σ₁ = ${sdx.toFixed(2)}  →  1</text>
+        <text x="505" y="72" font-size="12" fill="${C.text}" font-family="DM Mono,monospace">σ₂ = ${sdy.toFixed(2)}  →  1</text>
+        <text x="505" y="96" font-size="11" fill="${C.cov}" font-family="DM Mono,monospace">Var = 1 je Achse</text>
+      `);
+    }
+  },
+  {
+    label:'3 · Kovarianzmatrix',
+    legend:[{c:C.cen,l:'Zentrierte Daten'},{c:C.cov,l:'Varianz-Ellipse'}],
+    info:`<strong>Schritt 3 – Kovarianzmatrix Σ:</strong> Nach der z-Score-Normalisierung ist die <em>Diagonale = 1.00</em> (jedes Feature hat Varianz 1) — Σ ist damit die <strong>Korrelationsmatrix</strong>. Corr(x₁,x₂) = ${cxy.toFixed(2)} → starke positive Korrelation. Die violette Ellipse visualisiert die "Form" der Verteilung und die Hauptrichtungen der Streuung.`,
+    draw(){
+      setLayer('layer-grid',drawGrid());
+      setLayer('layer-axes',drawAxes());
+      let pts='';
+      normalized.forEach(p=>{
         const [sx,sy]=toSVG(p[0],p[1]);
         pts+=circle(sx,sy,5,C.cen,0.7);
       });
@@ -523,7 +576,7 @@ const STEPS=[
       setLayer('layer-grid',drawGrid());
       setLayer('layer-axes',drawAxes());
       let pts='';
-      centered.forEach(p=>{
+      normalized.forEach(p=>{
         const [sx,sy]=toSVG(p[0],p[1]);
         pts+=circle(sx,sy,5,C.cen,0.7);
       });
@@ -554,7 +607,7 @@ const STEPS=[
       setLayer('layer-grid',drawGrid());
       setLayer('layer-axes',drawAxes());
       let pts='', lines='';
-      centered.forEach(p=>{
+      normalized.forEach(p=>{
         const [sx,sy]=toSVG(p[0],p[1]);
         const dot=p[0]*vx+p[1]*vy;
         const px=dot*vx, py=dot*vy;
@@ -585,7 +638,7 @@ const STEPS=[
         <text x="${ax2+10}" y="${ay2+4}" font-size="12" fill="${C.pc1}" font-family="DM Mono,monospace" font-weight="500">PC1 · ${varPct(l1)}% Varianz</text>
       `);
       let pts='';
-      centered.forEach(p=>{
+      normalized.forEach(p=>{
         const dot=p[0]*vx+p[1]*vy;
         const sx=CX+dot*SC;
         pts+=circle(sx,CY,6,C.proj,0.9);

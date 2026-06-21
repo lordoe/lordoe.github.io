@@ -297,6 +297,13 @@
     </div>
     <span class="alabel">Lösung</span>
     <div class="formula-box center">\[ p_k = \frac{e^{l_k}}{\sum_{j} e^{l_j}} \]</div>
+    <details class="deriv"><summary>Erklärung</summary>
+      <ol class="dsteps">
+        <li class="dstep"><span class="di">Zähler \(e^{l_k}\):</span> die Exponentialfunktion macht alle Werte positiv, unabhängig vom Vorzeichen der Logits.</li>
+        <li class="dstep"><span class="di">Nenner normiert auf 1:</span> die Summe über alle Klassen stellt sicher, dass \(\sum_k p_k = 1\) — \(p_k\) ist eine echte Wahrscheinlichkeitsverteilung.</li>
+        <li class="dstep"><span class="di">Monotonie:</span> die Klasse mit dem größten Logit bekommt die höchste Wahrscheinlichkeit. Das Verhältnis zwischen Klassen hängt nur von den Differenzen der Logits ab.</li>
+      </ol>
+    </details>
     <div class="wlinks"><span class="wlinks-label">Wissen:</span>
       <a class="wlink" data-src="deep-learning/mlp-netz.html" data-title="MLP — Forward Pass &amp; Loss Functions">MLP &amp; Loss Functions</a>
     </div>
@@ -309,6 +316,13 @@
     </div>
     <span class="alabel">Lösung</span>
     <div class="formula-box center">\[ f(a) = \max(0,\, a) \]</div>
+    <details class="deriv"><summary>Erklärung</summary>
+      <ol class="dsteps">
+        <li class="dstep"><span class="di">Für \(a \le 0\):</span> Ausgabe ist 0 — das Neuron ist inaktiv und lässt keine Information durch.</li>
+        <li class="dstep"><span class="di">Für \(a > 0\):</span> Ausgabe ist \(a\) selbst — vollständig linear, kein Sättigungseffekt.</li>
+        <li class="dstep"><span class="di">Vorteil gegenüber Sigmoid/Tanh:</span> die Ableitung ist entweder 0 oder 1. Damit gibt es kein Vanishing-Gradient-Problem für positive Aktivierungen, was tiefe Netze deutlich besser trainierbar macht.</li>
+      </ol>
+    </details>
     <div class="wlinks"><span class="wlinks-label">Wissen:</span>
       <a class="wlink" data-src="deep-learning/mlp-netz.html" data-title="MLP — Forward Pass &amp; Loss Functions">MLP &amp; Loss Functions</a>
       <a class="wlink" data-src="deep-learning/training-stabilisierung.html" data-title="Training Stabilization">Training Stabilization</a>
@@ -361,6 +375,13 @@
     </div>
     <span class="alabel">Lösung</span>
     <div class="formula-box center">\[ \mathcal{L}_{CE} = -\frac{1}{N}\sum_{n=1}^{N} \log p_{n,c_n} \]</div>
+    <details class="deriv"><summary>Erklärung</summary>
+      <ol class="dsteps">
+        <li class="dstep"><span class="di">\(\log p_{n,c_n}\):</span> der natürliche Logarithmus der vorhergesagten Wahrscheinlichkeit für die wahre Klasse. Bei \(p=1\) ist \(\log 1 = 0\) (kein Verlust); bei \(p \to 0\) geht der Loss gegen \(-\infty\) (hoher Verlust).</li>
+        <li class="dstep"><span class="di">Minuszeichen:</span> macht aus dem negativen Log-Wert einen positiven Verlust, den wir minimieren wollen.</li>
+        <li class="dstep"><span class="di">Mittelung über \(N\):</span> normiert den Loss auf Sample-Größe, damit Batch-Größe und Lernrate unabhängig voneinander eingestellt werden können.</li>
+      </ol>
+    </details>
     <div class="wlinks"><span class="wlinks-label">Wissen:</span>
       <a class="wlink" data-src="deep-learning/mlp-netz.html" data-title="MLP — Forward Pass &amp; Loss Functions">MLP &amp; Loss Functions</a>
       <a class="wlink" data-src="examples/logistic-regression-mnist.html" data-title="EX1 — Logistic Regression on MNIST">EX1 — Logistic Regression</a>
@@ -387,6 +408,13 @@
     </div>
     <span class="alabel">Lösung</span>
     <div class="formula-box center">\[ \text{out} = \mathbf{x} + f(\mathbf{x}) \]</div>
+    <details class="deriv"><summary>Erklärung</summary>
+      <ol class="dsteps">
+        <li class="dstep"><span class="di">Residual-Lernen:</span> der Block muss nicht die vollständige Transformation, sondern nur die <em>Differenz</em> \(f(\mathbf{x})\) (das Residual) zum Identity-Mapping lernen. Das ist einfacher, wenn die ideale Funktion nahe der Identität liegt.</li>
+        <li class="dstep"><span class="di">Skip Connection ermöglicht direkten Gradientenfluss:</span> beim Backprop wird durch die Addition ein Pfad mit Gradient = 1 erzeugt — das verhindert das Vanishing-Gradient-Problem in sehr tiefen Netzen.</li>
+        <li class="dstep"><span class="di">Spezialfall \(f(\mathbf{x}) = 0\):</span> der Block gibt einfach \(\mathbf{x}\) zurück (Identity). Das Netz lernt neue Schichten als kleine Korrekturen — deshalb skaliert ResNet auf hunderte von Schichten.</li>
+      </ol>
+    </details>
     <div class="wlinks"><span class="wlinks-label">Wissen:</span>
       <a class="wlink" data-src="deep-learning/training-stabilisierung.html" data-title="Training Stabilization">Training Stabilization (Skip Connections)</a>
     </div>
@@ -399,6 +427,13 @@
     </div>
     <span class="alabel">Lösung</span>
     <div class="formula-box center">\[ R_t = \sum_{t'=t}^{\infty} \gamma^{\,t'-t}\, r_{t'} \]</div>
+    <details class="deriv"><summary>Erklärung</summary>
+      <ol class="dsteps">
+        <li class="dstep"><span class="di">Diskontierung \(\gamma^{t'-t}\):</span> ein Reward \(k\) Schritte in der Zukunft zählt nur \(\gamma^k\)-fach. Mit \(0 \le \gamma < 1\) sichert das die Konvergenz der unendlichen Summe (geometrische Reihe).</li>
+        <li class="dstep"><span class="di">Interpretation von \(\gamma\):</span> \(\gamma \approx 1\) → langfristiges Planen; \(\gamma \approx 0\) → kurzfristiger Greedy-Agent, der nur den unmittelbaren Reward beachtet.</li>
+        <li class="dstep"><span class="di">Ziel der Policy:</span> \(\mathbb{E}[R_t]\) maximieren — der Return fasst alle zukünftigen Rewards zu einer einzigen Zielgröße zusammen, die das Training steuert.</li>
+      </ol>
+    </details>
     <div class="wlinks"><span class="wlinks-label">Wissen:</span>
       <a class="wlink" data-src="reinforcement/mdp-grundlagen.html" data-title="MDP — Grundlagen">MDP Grundlagen</a>
       <a class="wlink" data-src="reinforcement/actor-critic.html" data-title="Policy Gradient, REINFORCE &amp; Actor-Critic">Actor-Critic</a>
@@ -412,6 +447,13 @@
     </div>
     <span class="alabel">Lösung</span>
     <div class="formula-box center">\[ K \cdot K \cdot D \cdot D' \]</div>
+    <details class="deriv"><summary>Erklärung</summary>
+      <ol class="dsteps">
+        <li class="dstep"><span class="di">Ein Kernel hat Form \(K\times K\):</span> er schaut auf einen \(K\times K\)-Ausschnitt des Eingangsfeatures.</li>
+        <li class="dstep"><span class="di">Pro Ausgangskanal gibt es \(D\) solcher Kernel</span> — einen je Eingangskanal. Ihre Ausgaben werden aufsummiert.</li>
+        <li class="dstep"><span class="di">Für \(D'\) Ausgangskanäle</span> wird die Zahl mit \(D'\) multipliziert: \(K \cdot K \cdot D \cdot D'\). Gewichtsteilung über die Bildposition macht Conv-Schichten deutlich parameterschlanker als vollverbundene Schichten.</li>
+      </ol>
+    </details>
     <div class="wlinks"><span class="wlinks-label">Wissen:</span>
       <a class="wlink" data-src="deep-learning/conv2d.html" data-title="Conv2D — Convolutional Networks für Bilder">Conv2D &amp; CNN</a>
     </div>
@@ -577,12 +619,12 @@
     </div>
     <div class="subpart">
       <span class="subpart-label">(d) Policy-Gradient-Loss mit Advantage \(A_i=r_i-\mathrm{mean}_i(r_i)\)</span>
-      <div class="formula-box center">\[ \mathcal{L} = -\frac{1}{G}\sum_{i=1}^{G} A_i \sum_{t=q+1}^{T_i} \log p_\theta\!\big(x^i_t \mid x^i_{<t}\big) \]</div>
+      <div class="formula-box center">\[ \mathcal{L} = -\frac{1}{G}\sum_{i=1}^{G} A_i \sum_{t=q+1}^{T_i} \log p_\theta\!\big(x^i_t \mid x^i_{&lt;t}\big) \]</div>
       <details class="deriv"><summary>Schritt für Schritt</summary>
         <ol class="dsteps">
           <li class="dstep"><span class="di">Setup (GRPO):</span> aus dem festen Prefix \(x_1,\dots,x_q\) werden \(G\) Fortsetzungen \(x^i\) gesampelt; ein Verifier gibt jeder den Reward \(r_i\).</li>
           <li class="dstep"><span class="di">Advantage als Baseline:</span> \(A_i=r_i-\mathrm{mean}_i(r_i)\) misst, wie viel besser als der Gruppendurchschnitt — zentriert die Rewards und senkt die Varianz.</li>
-          <li class="dstep"><span class="di">Log-Likelihood der Sequenz:</span> \(\log p_\theta(x^i)=\sum_{t=q+1}^{T_i}\log p_\theta(x^i_t\mid x^i_{<t})\) (nur die generierten Tokens).</li>
+          <li class="dstep"><span class="di">Log-Likelihood der Sequenz:</span> \(\log p_\theta(x^i)=\sum_{t=q+1}^{T_i}\log p_\theta(x^i_t\mid x^i_{&lt;t})\) (nur die generierten Tokens).</li>
           <li class="dstep"><span class="di">Policy-Gradient / REINFORCE:</span> jede Sequenz mit ihrem Advantage gewichten und über die Gruppe mitteln; das Minuszeichen macht aus „Reward maximieren" einen Minimierungs-Loss.</li>
           <li class="dstep"><span class="di">Wirkung:</span> \(A_i>0\) erhöht die Wahrscheinlichkeit der Sequenz, \(A_i<0\) senkt sie.</li>
         </ol>

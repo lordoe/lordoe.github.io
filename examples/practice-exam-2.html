@@ -300,6 +300,13 @@
     </div>
     <span class="alabel">Lösung</span>
     <div class="formula-box center">\[ \mathbf{y} = \mathbf{W}^{(2)}\, f\!\big(\mathbf{W}^{(1)}\mathbf{x}\big) \]</div>
+    <details class="deriv"><summary>Erklärung</summary>
+      <ol class="dsteps">
+        <li class="dstep"><span class="di">Erste Schicht \(\mathbf{W}^{(1)}\mathbf{x}\):</span> lineare Projektion von Input- in Hidden-Space — noch keine Nichtlinearität.</li>
+        <li class="dstep"><span class="di">Aktivierung \(f\):</span> wird elementweise angewendet und führt die notwendige Nichtlinearität ein. Ohne sie wären beide Schichten zu einer einzigen Linearschicht äquivalent.</li>
+        <li class="dstep"><span class="di">Zweite Schicht \(\mathbf{W}^{(2)}\):</span> bildet die Hidden-Repräsentation auf den Ausgaberaum ab (z. B. Klassen-Logits).</li>
+      </ol>
+    </details>
     <div class="wlinks"><span class="wlinks-label">Wissen:</span>
       <a class="wlink" data-src="deep-learning/mlp-netz.html" data-title="MLP — Forward Pass &amp; Loss Functions">MLP &amp; Loss Functions</a>
     </div>
@@ -312,6 +319,13 @@
     </div>
     <span class="alabel">Lösung</span>
     <div class="formula-box center">\[ 2^8 = 256 \]</div>
+    <details class="deriv"><summary>Erklärung</summary>
+      <ol class="dsteps">
+        <li class="dstep"><span class="di">8 Bits = 8 binäre Stellen:</span> jede kann 0 oder 1 sein → \(2^8 = 256\) verschiedene Bitmuster.</li>
+        <li class="dstep"><span class="di">Signed int8:</span> Werte von \(-128\) bis \(+127\); unsigned: \(0\) bis \(255\) — immer 256 verschiedene Werte.</li>
+        <li class="dstep"><span class="di">Relevanz für Quantisierung:</span> float32 nutzt 32 Bit (\(\approx 4 \cdot 10^9\) Werte). int8-Quantisierung reduziert auf 256 unterschiedliche Gewichtswerte, was den Speicher auf \(\tfrac{1}{4}\) senkt — mit akzeptablem Genauigkeitsverlust.</li>
+      </ol>
+    </details>
     <div class="wlinks"><span class="wlinks-label">Wissen:</span>
       <a class="wlink" data-src="weitere-themen/ressourcen-effizienz.html" data-title="Resource Efficient Deep Learning">Ressourceneffizienz (Quantisierung)</a>
     </div>
@@ -324,6 +338,13 @@
     </div>
     <span class="alabel">Lösung</span>
     <div class="formula-box center">\[ p(y{=}1\mid\mathbf{x}) = \sigma\!\big(\mathbf{w}^\top\mathbf{x}+b\big) = \frac{1}{1+e^{-(\mathbf{w}^\top\mathbf{x}+b)}} \]</div>
+    <details class="deriv"><summary>Erklärung</summary>
+      <ol class="dsteps">
+        <li class="dstep"><span class="di">Linearer Score \(\mathbf{w}^\top\mathbf{x}+b\):</span> misst, wie sehr \(\mathbf{x}\) in Richtung des Gewichtsvektors liegt — positiv heißt „eher Klasse 1", negativ heißt „eher Klasse 0".</li>
+        <li class="dstep"><span class="di">Sigmoid \(\sigma\):</span> bildet jeden reellen Wert auf \((0,1)\) ab und macht ihn damit als Wahrscheinlichkeit interpretierbar. \(\sigma(0)=0.5\) ist die Entscheidungsgrenze.</li>
+        <li class="dstep"><span class="di">Entscheidungsgrenze:</span> \(\mathbf{w}^\top\mathbf{x}+b=0\) — eine lineare Hyperebene im Eingaberaum. Logistische Regression ist daher ein linearer Klassifikator.</li>
+      </ol>
+    </details>
     <div class="wlinks"><span class="wlinks-label">Wissen:</span>
       <a class="wlink" data-src="supervised/logistische-regression.html" data-title="Logistische Regression — Sigmoid-Klassifikator">Logistische Regression</a>
       <a class="wlink" data-src="examples/logistic-regression-mnist.html" data-title="EX1 — Logistic Regression on MNIST">EX1 — Logistic Regression</a>
@@ -337,6 +358,13 @@
     </div>
     <span class="alabel">Lösung</span>
     <div class="formula-box center">\[ K \cdot D \cdot D' \]</div>
+    <details class="deriv"><summary>Erklärung</summary>
+      <ol class="dsteps">
+        <li class="dstep"><span class="di">Ein 1D-Kernel:</span> hat \(K\) Gewichte entlang der Zeit-/Sequenzachse (statt \(K\times K\) wie bei Conv2D).</li>
+        <li class="dstep"><span class="di">Pro Ausgangskanal gibt es \(D\) solcher Kernel</span> — einen je Eingangskanal — deren Ausgaben summiert werden.</li>
+        <li class="dstep"><span class="di">Für alle \(D'\) Ausgangskanäle:</span> Gesamtzahl \(K \cdot D \cdot D'\). Auch hier teilen sich alle Zeitschritte dieselben Gewichte (Gewichtsteilung über die Sequenz).</li>
+      </ol>
+    </details>
     <div class="wlinks"><span class="wlinks-label">Wissen:</span>
       <a class="wlink" data-src="deep-learning/conv1d.html" data-title="Conv1D &amp; TCN — Convolutional Networks für Sequenzen">Conv1D &amp; TCN</a>
     </div>
@@ -401,6 +429,13 @@
     </div>
     <span class="alabel">Lösung</span>
     <div class="formula-box center">\[ A_t = R_t - v(\mathbf{o}_t) \]</div>
+    <details class="deriv"><summary>Erklärung</summary>
+      <ol class="dsteps">
+        <li class="dstep"><span class="di">Baseline \(v(\mathbf{o}_t)\):</span> schätzt den erwarteten Return aus dem aktuellen Zustand — also wie gut die Situation ohnehin ist, unabhängig von der gewählten Aktion.</li>
+        <li class="dstep"><span class="di">Advantage misst die Verbesserung:</span> \(A_t > 0\) heißt, die Trajektorie war besser als erwartet → Policy-Gradient erhöht die Wahrscheinlichkeit dieser Aktion; \(A_t < 0\) → Wahrscheinlichkeit sinkt.</li>
+        <li class="dstep"><span class="di">Varianzreduktion:</span> ohne Baseline würde der Policy-Gradient mit dem vollen \(R_t\) skaliert, der stark variiert. Die Subtraktion der Baseline senkt die Varianz des Gradientenschätzers erheblich — ohne den Erwartungswert zu verfälschen.</li>
+      </ol>
+    </details>
     <div class="wlinks"><span class="wlinks-label">Wissen:</span>
       <a class="wlink" data-src="reinforcement/actor-critic.html" data-title="Policy Gradient, REINFORCE &amp; Actor-Critic">Actor-Critic &amp; REINFORCE</a>
     </div>
@@ -506,13 +541,13 @@
     </div>
     <div class="subpart">
       <span class="subpart-label">(b) Peak-Memory eines vollen Inference-Passes</span>
-      <div class="formula-box center">\[ \text{Peak} = d^2 + 2Bd \quad (\text{unabhängig von } L) \]</div>
+      <div class="formula-box center">\[ \text{Peak} \approx \underbrace{L\,d^2}_{\text{alle Gewichte}} + \underbrace{2Bd}_{\text{Aktivierungen}} \;=\; \mathcal{O}\big(L\,d^2 + Bd\big) \]</div>
       <details class="deriv"><summary>Schritt für Schritt</summary>
         <ol class="dsteps">
+          <li class="dstep"><span class="di">Gewichte aller Schichten:</span> die \(L\) Matrizen \(\mathbf{W}_1,\dots,\mathbf{W}_L\) (je \(d^2\)) müssen <em>alle</em> resident sein ⇒ \(L\,d^2\). Sie hängen direkt von der Tiefe \(L\) ab.</li>
           <li class="dstep"><span class="di">Schichtweise rechnen:</span> \(\mathbf{x}_\ell=\sigma(\mathbf{W}_\ell\mathbf{x}_{\ell-1})\) braucht nur die vorige Aktivierung \(\mathbf{x}_{\ell-1}\).</li>
-          <li class="dstep"><span class="di">Aktivierungen freigeben:</span> sobald \(\mathbf{x}_\ell\) berechnet ist, kann \(\mathbf{x}_{\ell-1}\) verworfen werden (bei Inferenz braucht man keine Backward-Werte).</li>
-          <li class="dstep"><span class="di">Gewichte streamen:</span> immer nur die aktuelle Matrix \(\mathbf{W}_\ell\) (\(d^2\)) im Speicher.</li>
-          <li class="dstep"><span class="di">Momentaufnahme:</span> 1 Matrix + 2 Aktivierungen = \(d^2+2Bd\) — konstant, <em>unabhängig von \(L\)</em>.</li>
+          <li class="dstep"><span class="di">Aktivierungen überschreiben:</span> sobald \(\mathbf{x}_\ell\) berechnet ist, kann \(\mathbf{x}_{\ell-1}\) verworfen werden (bei Inferenz braucht man keine Backward-Werte). Es koexistieren nur Input/Output-Block ⇒ \(\sim 2Bd\).</li>
+          <li class="dstep"><span class="di">Momentaufnahme:</span> \(L\,d^2 + 2Bd\). Der <em>Aktivierungsanteil</em> ist nur \(\mathcal{O}(Bd)\) — unabhängig von \(L\); der Gesamt-Peak wächst dennoch über die Gewichte \(L\,d^2\) linear mit \(L\).</li>
         </ol>
       </details>
     </div>
@@ -640,14 +675,14 @@
     <div class="subpart">
       <span class="subpart-label">(d) Skalare Multiplikationen + Peak-Memory (Funktion von \(d,D,T\))</span>
       <div class="formula-box center">\[ \#\text{Mult} = 3\,T D d + 2\,T^2 d \]</div>
-      <div class="formula-box center">\[ \text{Peak} = \underbrace{T^2}_{\mathbf{A}} + \underbrace{3Dd}_{\text{Params}} + \underbrace{4Td}_{\mathbf{Q},\mathbf{K},\mathbf{V},\mathbf{O}} \;=\; \mathcal{O}(T^2) \]</div>
+      <div class="formula-box center">\[ \text{Peak} \approx \underbrace{T^2}_{\mathbf{A}} + \underbrace{4Td}_{\mathbf{Q},\mathbf{K},\mathbf{V},\mathbf{O}} + \underbrace{TD}_{\mathbf{X}} + \underbrace{3Dd}_{\text{Params}} \;=\; \mathcal{O}(T^2) \]</div>
       <details class="deriv"><summary>Schritt für Schritt</summary>
         <ol class="dsteps">
           <li class="dstep"><span class="di">Multiplikationen einer Matmul</span> \(\mathbf{A}\,(m\times n)\cdot\mathbf{B}\,(n\times p)\) = \(m\cdot n\cdot p\).</li>
           <li class="dstep"><span class="di">Projektionen Q,K,V:</span> je \(\mathbf{X}(T\times D)\cdot\mathbf{W}(D\times d)=T D d\), dreimal ⇒ \(3TDd\).</li>
           <li class="dstep"><span class="di">Scores \(\mathbf{Q}\mathbf{K}^\top\):</span> \((T\times d)(d\times T)=T^2 d\); Output \(\mathbf{A}\mathbf{V}\): \((T\times T)(T\times d)=T^2 d\). Zusammen \(2T^2 d\).</li>
           <li class="dstep"><span class="di">Summe:</span> \(3TDd+2T^2 d\) — für \(T\gg D\) dominiert \(T^2\) (quadratisch).</li>
-          <li class="dstep"><span class="di">Peak-Memory:</span> die \(T\times T\)-Matrix \(\mathbf{A}\) (\(T^2\)) dominiert, dazu Parameter \(3Dd\) und \(\mathbf{Q},\mathbf{K},\mathbf{V},\mathbf{O}\) (\(4Td\)) ⇒ \(\mathcal{O}(T^2)\) (Motivation für FlashAttention).</li>
+          <li class="dstep"><span class="di">Peak-Memory:</span> die \(T\times T\)-Matrix \(\mathbf{A}\) (\(T^2\)) dominiert, dazu \(\mathbf{Q},\mathbf{K},\mathbf{V},\mathbf{O}\) (\(4Td\)), der Input \(\mathbf{X}\) (\(TD\)) und die Parameter \(\mathbf{W}_Q,\mathbf{W}_K,\mathbf{W}_V\) (\(3Dd\)) ⇒ \(\mathcal{O}(T^2)\) (Motivation für FlashAttention).</li>
         </ol>
       </details>
     </div>
