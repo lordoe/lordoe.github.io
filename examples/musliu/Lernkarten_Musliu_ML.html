@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lernkarten — M. ML 2026S</title>
+<script>
+  MathJax = {
+    tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+    options: { skipHtmlTags: ['script','noscript','style','textarea'] }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<style>
+  :root{
+    --bg:#161a2e;
+    --bg2:#1f2542;
+    --panel:#fbf7ef;
+    --panel-edge:#e7ddca;
+    --ink:#20243c;
+    --ink-soft:#5a5f78;
+    --amber:#e8a13a;
+    --amber-deep:#c8821f;
+    --teal:#3fb8a0;
+    --rose:#e0688a;
+    --line:#2c3357;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:var(--sans);
+    background:radial-gradient(1200px 600px at 80% -10%, #2a3260 0%, transparent 55%),
+               radial-gradient(900px 500px at 0% 110%, #241b39 0%, transparent 50%),
+               var(--bg);
+    color:#e9eaf2;
+    min-height:100%;
+    display:flex;flex-direction:column;align-items:center;
+    padding:clamp(16px,4vw,40px) 16px 48px;
+  }
+  header{width:100%;max-width:760px;margin-bottom:18px}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--amber);opacity:.9}
+  h1{font-size:clamp(22px,4.5vw,30px);font-weight:680;letter-spacing:-.01em;margin-top:6px;line-height:1.1}
+  h1 span{color:#9aa0c4;font-weight:500}
+  .sub{color:#9aa0c4;font-size:13.5px;margin-top:8px}
+
+  /* category chips */
+  .cats{display:flex;flex-wrap:wrap;gap:7px;width:100%;max-width:760px;margin-bottom:16px}
+  .chip{
+    font-family:var(--mono);font-size:11.5px;letter-spacing:.03em;
+    border:1px solid var(--line);background:rgba(255,255,255,.02);color:#b9bedb;
+    padding:6px 11px;border-radius:999px;cursor:pointer;transition:.18s;
+    white-space:nowrap;
+  }
+  .chip:hover{border-color:#48507e;color:#fff}
+  .chip[aria-pressed="true"]{background:var(--amber);border-color:var(--amber);color:#241500;font-weight:600}
+
+  /* card */
+  .stage{width:100%;max-width:760px;perspective:1800px}
+  .card{
+    position:relative;width:100%;min-height:340px;cursor:pointer;
+    transform-style:preserve-3d;transition:transform .55s cubic-bezier(.2,.7,.2,1);
+    border-radius:22px;
+  }
+  .card.flipped{transform:rotateY(180deg)}
+  .face{
+    position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;
+    border-radius:22px;padding:clamp(22px,4.5vw,38px);
+    display:flex;flex-direction:column;
+    background:linear-gradient(168deg,var(--panel),#f4ecdc);
+    border:1px solid var(--panel-edge);
+    box-shadow:0 24px 60px -28px rgba(0,0,0,.7),0 2px 0 var(--panel-edge);
+    color:var(--ink);
+  }
+  .back{transform:rotateY(180deg);background:linear-gradient(168deg,#fbf7ef,#efe6d3)}
+  .face-tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--amber-deep);display:flex;justify-content:space-between;align-items:center}
+  .face-tag .side{color:#a99b78}
+  .qtext{font-size:clamp(19px,3.6vw,25px);line-height:1.32;font-weight:560;margin:auto 0;letter-spacing:-.005em}
+  .atext{font-size:clamp(15.5px,2.7vw,18px);line-height:1.5;margin:14px 0 auto;color:#2c2f44}
+  .atext b{color:#1a1d30}
+  .verdict{display:inline-block;font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.08em;
+    padding:4px 10px;border-radius:7px;margin-bottom:12px}
+  .v-true{background:#d8f0e8;color:#176b56}
+  .v-false{background:#fbdfe8;color:#a8325a}
+  .formula{font-family:var(--mono);background:#ece2cf;border:1px solid #ddd0b4;border-radius:9px;
+    padding:9px 12px;margin:10px 0;font-size:14px;line-height:1.5;color:#3a3320;overflow-x:auto}
+  mjx-container { color: var(--ink) !important; }
+  .hint{font-family:var(--mono);font-size:11.5px;color:#a99b78;margin-top:14px;letter-spacing:.02em}
+
+  /* controls */
+  .bar{width:100%;max-width:760px;margin-top:18px;display:flex;flex-direction:column;gap:14px}
+  .progress{height:6px;background:rgba(255,255,255,.07);border-radius:999px;overflow:hidden}
+  .progress > i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--amber),var(--amber-deep));transition:width .35s}
+  .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center}
+  .count{font-family:var(--mono);font-size:13px;color:#aab0d2;min-width:74px;text-align:center}
+  button.nav,button.act{
+    font-family:var(--sans);font-size:14px;border-radius:11px;cursor:pointer;border:1px solid var(--line);
+    background:rgba(255,255,255,.04);color:#e9eaf2;padding:11px 16px;transition:.16s;font-weight:550;
+  }
+  button.nav:hover,button.act:hover{border-color:#5a6298;background:rgba(255,255,255,.09)}
+  button.know{border-color:#2c6e5e;color:#79e6c8}
+  button.know:hover{background:rgba(63,184,160,.14)}
+  button.again{border-color:#7a3450;color:#f3a5be}
+  button.again:hover{background:rgba(224,104,138,.14)}
+  .icon{font-size:18px;line-height:1}
+  .meta{font-family:var(--mono);font-size:11.5px;color:#8a90b4;text-align:center;letter-spacing:.03em}
+  .meta b{color:var(--teal)}
+  .meta .rem{color:var(--rose)}
+  kbd{font-family:var(--mono);font-size:11px;background:rgba(255,255,255,.07);border:1px solid var(--line);
+    border-radius:5px;padding:1px 6px;color:#c2c7e4}
+  .footnote{margin-top:26px;font-size:12px;color:#787e9e;max-width:760px;text-align:center;line-height:1.55}
+  @media(max-width:560px){.count{order:-1;width:100%}}
+</style>
+</head>
+<body>
+<header>
+  <div class="eyebrow">TU Wien · 192.183 · 2026S</div>
+  <h1>Lernkarten <span>— Prof. M., klassisches ML</span></h1>
+  <div class="sub">Klick auf die Karte oder <kbd>Leertaste</kbd> zum Umdrehen · <kbd>←</kbd> <kbd>→</kbd> blättern · Themen unten filtern.</div>
+</header>
+
+<div class="cats" id="cats"></div>
+
+<div class="stage">
+  <div class="card" id="card" tabindex="0" role="button" aria-label="Lernkarte umdrehen">
+    <div class="face front">
+      <div class="face-tag"><span id="catFront">—</span><span class="side">Frage</span></div>
+      <div class="qtext" id="q">…</div>
+      <div class="hint">Tippen zum Aufdecken</div>
+    </div>
+    <div class="face back">
+      <div class="face-tag"><span id="catBack">—</span><span class="side">Antwort</span></div>
+      <div class="atext" id="a">…</div>
+    </div>
+  </div>
+</div>
+
+<div class="bar">
+  <div class="progress"><i id="progBar"></i></div>
+  <div class="row">
+    <button class="nav" id="prev"><span class="icon">←</span></button>
+    <button class="again act" id="again">Nochmal</button>
+    <div class="count" id="count">0 / 0</div>
+    <button class="know act" id="know">Gewusst ✓</button>
+    <button class="nav" id="next"><span class="icon">→</span></button>
+  </div>
+  <div class="row">
+    <button class="act" id="shuffle">↻ Mischen</button>
+    <button class="act" id="reset">Fortschritt zurücksetzen</button>
+  </div>
+  <div class="meta" id="meta">Gewusst: <b>0</b> · Nochmal: <span class="rem">0</span> · offen: 0</div>
+</div>
+
+<div class="footnote">
+  Alle Karten stammen aus deiner Ausarbeitung (klassische ML-Themen + Altprüfungen).
+  Der Fortschritt wird nur für diese Sitzung gemerkt.
+</div>
+
+<script>
+const CARDS = [
+  // ---------- Grundlagen ----------
+  {c:"Grundlagen", q:"Wahr oder falsch? Classification ist eine ML-Aufgabe, bei der das Zielattribut nominal ist.", a:"<span class='verdict v-true'>WAHR</span> Klassifikation sagt eine nominale (kategorische) Klasse voraus. Regression sagt dagegen eine numerische Größe voraus."},
+  {c:"Grundlagen", q:"Wahr oder falsch? Ordinaldaten erlauben keine Distanzberechnung zwischen Datenpunkten.", a:"<span class='verdict v-true'>WAHR</span> Ordinal hat eine Ordnung (Rang), aber keine sinnvollen numerischen Abstände."},
+  {c:"Grundlagen", q:"Ziel & Setting von Klassifikation — Abgrenzung zu anderen ML-Aufgaben?", a:"Aus gelabelten Daten eine Funktion lernen, die neuen Instanzen eine <b>nominale Klasse</b> zuordnet (supervised). Verwandt mit Regression (numerisches Ziel). Anders als Clustering (unsupervised) und RL (nur Reward-Signal)."},
+
+  // ---------- Regression ----------
+  {c:"Regression", q:"Lineares Regressionsmodell — Formel & Bedeutung der Terme?", a:"<div class='formula'>\\(\\hat{y} = w_0 + w_1x_1 + \\dots + w_nx_n = w^\\top x\\)</div>\\(w_0\\) = Intercept/Bias, \\(w_j\\) = Gewicht von Feature j (Änderung von \\(\\hat{y}\\) bei +1 in \\(x_j\\))."},
+  {c:"Regression", q:"Kostenfunktion der linearen Regression (RSS)?", a:"<div class='formula'>\\(\\mathrm{RSS}(w) = \\sum_i \\big(y^{(i)} - h_w(x^{(i)})\\big)^2\\)</div>Residuen quadriert → Vorzeichen heben sich nicht auf, große Fehler stark bestraft. Perfekter Fit → 0."},
+  {c:"Regression", q:"Normalengleichung (geschlossene Form) vs. Gradientenabstieg?", a:"<div class='formula'>\\(w = (X^\\top X)^{-1} X^\\top y\\)</div>Exakt in einem Schritt, aber teuer bei vielen Features. <b>Trap:</b> „GD ist immer effizienter” → FALSE; bei wenigen Features ist die Normalengleichung effizienter."},
+  {c:"Regression", q:"Unterschied Ridge (L2) vs. Lasso (L1)?", a:"Ridge: \\(+ \\lambda\\sum w_j^2\\) → schrumpft Gewichte, aber nie auf exakt 0. Lasso: \\(+ \\lambda\\sum |w_j|\\) → treibt Gewichte auf <b>exakt 0</b> ⇒ Feature-Selektion."},
+  {c:"Regression", q:"Was ist polynomiale Regression? Vor-/Nachteile?", a:"Features um Potenzen (\\(x^2, x^3, \\dots\\)) erweitert, bleibt linear in den Parametern. <b>+</b> modelliert Kurven. <b>−</b> Overfitting bei hohem Grad, schlechte Extrapolation, schwerer interpretierbar."},
+  {c:"Regression", q:"Drei Methoden, den Fehler in Regression zu berechnen?", a:"<div class='formula'>\\[\\begin{aligned}\\mathrm{MAE} &= \\frac{1}{n}\\sum |y-\\hat{y}| \\\\ \\mathrm{MSE} &= \\frac{1}{n}\\sum (y-\\hat{y})^2 \\\\ \\mathrm{RMSE} &= \\sqrt{\\mathrm{MSE}}\\end{aligned}\\]</div>MAE robust gegen Outlier; MSE/RMSE strafen große Fehler stark. RMSE in Einheit von y."},
+  {c:"Regression", q:"Wahr oder falsch? Der F-Score evaluiert Regressionstechniken.", a:"<span class='verdict v-false'>FALSCH</span> F-Score ist eine Klassifikationsmetrik. Regression nutzt MAE, MSE, RMSE."},
+
+  // ---------- Naive Bayes ----------
+  {c:"Naive Bayes", q:"Naive-Bayes-Klassifikationsregel?", a:"<div class='formula'>\\(c^* = \\arg\\max_c\\ P(c) \\prod_k P(E_k \\mid c)\\)</div>„Naiv” = bedingte Unabhängigkeit der Features gegeben die Klasse. Nutzt alle Attribute. Eager learner."},
+  {c:"Naive Bayes", q:"Zero-Frequency-Problem & Laplace-Glättung?", a:"Kommt ein Wert nie mit einer Klasse vor → \\(P=0\\) annulliert das ganze Produkt. <div class='formula'>\\(P(E_k=v \\mid c) = \\frac{n_{c,v}+1}{n_c+V}\\)</div>\\(V\\) = Anzahl möglicher Werte des Attributs."},
+  {c:"Naive Bayes", q:"Wie behandelt Naive Bayes fehlende und numerische Werte?", a:"<b>Fehlend:</b> Faktor weglassen (symmetrisch → fair). <b>Numerisch:</b> Gauß annehmen, \\(\\mu, \\sigma\\) pro Klasse schätzen, Dichte einsetzen — ODER diskretisieren."},
+  {c:"Naive Bayes", q:"Wahr oder falsch? Bei numerischen Attributen muss in Naive Bayes immer eine Dichtefunktion verwendet werden.", a:"<span class='verdict v-false'>FALSCH</span> Man kann numerische Attribute auch <b>diskretisieren</b> (in Intervalle binnen) statt eine Gauß-Dichte zu nehmen."},
+  {c:"Naive Bayes", q:"Wahr oder falsch? Naive Bayes ist ein lazy learner.", a:"<span class='verdict v-false'>FALSCH</span> Eager — die Wahrscheinlichkeitstabellen werden beim Training gebaut."},
+  {c:"Naive Bayes", q:"Durchrechnen: F1=a, F2=n, F3=s. Klasse − = {a:1/4, n:2/4, s:2/4}, \\(P(-)=4/7\\). Klasse + = {a:2/3, n:1/3, s:2/3}, \\(P(+)=3/7\\). Vorhersage?", a:"\\(L(-)=\\frac{4}{7}\\cdot\\frac{1}{4}\\cdot\\frac{2}{4}\\cdot\\frac{2}{4}=\\frac{1}{28}\\approx 0{,}036\\)<br>\\(L(+)=\\frac{3}{7}\\cdot\\frac{2}{3}\\cdot\\frac{1}{3}\\cdot\\frac{2}{3}=\\frac{4}{63}\\approx 0{,}064\\)<br>\\(L(+) > L(-)\\) → <b>Vorhersage: +</b>"},
+
+  // ---------- Bayes-Netze ----------
+  {c:"Naive Bayes", q:"Wahr oder falsch? Ein Bayes-Netz ist ein gerichteter zyklischer Graph.", a:"<span class='verdict v-false'>FALSCH</span> Es ist ein gerichteter <b>azyklischer</b> Graph (DAG)."},
+  {c:"Naive Bayes", q:"Wann sind zwei Knoten in einem Bayes-Netz d-separiert?", a:"Wenn jeder Pfad blockiert ist: seriell/divergierend blockiert ein <b>beobachteter</b> Zwischenknoten; ein Collider blockiert, wenn er (und seine Nachkommen) <b>unbeobachtet</b> ist. d-separiert ⇒ bedingt unabhängig."},
+  {c:"Naive Bayes", q:"Collider \\(A\\to B\\leftarrow C\\): Sind A und C abhängig?", a:"Ohne Bedingung <b>unabhängig</b>; gegeben B (oder einen Nachkommen) werden sie <b>abhängig</b> (Beobachten des Colliders öffnet den Pfad)."},
+  {c:"Naive Bayes", q:"Local-Search-Algorithmus für Bayes-Netz-Strukturlernen?", a:"Hill-Climbing: leerer Graph → wiederholt Kante hinzufügen/löschen/umkehren (azyklisch halten) → Zug behalten, der den BIC-Score am meisten verbessert → bei lokalem Optimum stoppen. <div class='formula'>\\(\\mathrm{BIC}=\\log L-\\frac{k}{2}\\log m\\)</div>"},
+
+  // ---------- Rule Learning ----------
+  {c:"Decision Trees", q:"Wie wählt 1R ein Attribut? Beziehung zu Decision Trees?", a:"Pro Attribut die beste Ein-Attribut-Regel bilden, Attribut mit <b>kleinster Fehlerrate</b> wählen. 1R = Decision Tree der Tiefe 1."},
+  {c:"Decision Trees", q:"PRISM: nach welchem Kriterium werden Bedingungen gewählt?", a:"Bedingung wählen, die <b>p/t</b> maximiert (t = abgedeckte Instanzen, p = davon positive). Hinzufügen bis p/t = 1. Bei Gleichstand: größeres t. Separate-and-conquer."},
+
+  // ---------- Decision Trees ----------
+  {c:"Decision Trees", q:"Entropie und Information Gain — Formeln?", a:"<div class='formula'>\\[\\begin{aligned}H(X) &= -\\sum_i p_i \\log_2 p_i \\\\ IG &= H(X) - \\sum_j \\frac{|X_j|}{|X|}H(X_j)\\end{aligned}\\]</div>Max-Entropie für \\(C\\) gleiche Klassen = \\(\\log_2 C\\). Split mit größtem IG wählen."},
+  {c:"Decision Trees", q:"Gini-Impurity — Formel & Maximum bei 2 Klassen?", a:"<div class='formula'>\\(I_G = 1 - \\sum_i p_i^2\\)</div>Max für 2 Klassen = 0,5. Kein Logarithmus → billiger. CART-Default."},
+  {c:"Decision Trees", q:"Wozu Gain Ratio statt Information Gain?", a:"IG ist verzerrt zugunsten von Attributen mit <b>vielen Werten</b> (ID-Attribut → jedes Kind rein → IG maximal, aber nutzlos). <div class='formula'>\\(\\mathrm{GainRatio}=\\frac{IG}{\\mathrm{SplitInfo}}\\)</div>"},
+  {c:"Decision Trees", q:"Max-Tiefe: 1000 Obs, min-split = 200, min-leaf = 300. Maximale Tiefe (ohne Wurzel)?", a:"Zum Splitten braucht ein Knoten 2 Kinder ≥300 ⇒ <b>≥600</b>. 1000→(300|700)→(300|400); 400<600 Stopp. <b>Max-Tiefe = 2.</b> Die Blatt-Regel bindet."},
+  {c:"Decision Trees", q:"Wahr oder falsch? Ein Baum kann tiefer sein als die Anzahl der Trainingsbeispiele.", a:"<span class='verdict v-false'>FALSCH</span> Tiefe \\(\\le N-1\\): jeder Split trennt mindestens 1 Beispiel."},
+  {c:"Decision Trees", q:"Wahr oder falsch? Ein Decision Tree kann in eine Regelmenge umgewandelt werden.", a:"<span class='verdict v-true'>WAHR</span> Ein Pfad Wurzel→Blatt = eine IF-THEN-Regel."},
+  {c:"Decision Trees", q:"Wahr oder falsch? Decision Trees können nur binäre Klassifikation lösen.", a:"<span class='verdict v-false'>FALSCH</span> Bäume handhaben Multi-Class problemlos."},
+  {c:"Decision Trees", q:"Wahr oder falsch? Entropie ist am höchsten, wenn alle Klassen gleich viele Samples haben.", a:"<span class='verdict v-true'>WAHR</span> Max-Entropie \\(\\log_2 C\\) bei Gleichverteilung. Am niedrigsten (0) bei reinem Knoten."},
+
+  // ---------- kNN ----------
+  {c:"kNN", q:"Was bedeutet „lazy learner” bei kNN?", a:"Keine Trainingsarbeit — die Trainingsdaten sind das Modell, alle Arbeit passiert zur Query-Zeit. Gegenteil: eager (Tree, Perceptron)."},
+  {c:"kNN", q:"Welche Distanzfunktionen nutzt kNN?", a:"<div class='formula'>\\[\\begin{aligned}\\text{Euklid: }&\\sqrt{\\sum_i(a_i-b_i)^2} \\\\ \\text{Manhattan: }&\\sum_i |a_i-b_i| \\\\ \\text{Cosine: }&1-\\frac{\\sum_i a_i b_i}{\\lVert x\\rVert\\lVert y\\rVert}\\end{aligned}\\]</div>"},
+  {c:"kNN", q:"Welche Prüfungsfalle gilt bei kNN immer?", a:"<b>Feature-Scaling ist entscheidend</b> — ungeskalierte Features mit großem Wertebereich dominieren die Distanz."},
+  {c:"kNN", q:"Wahr oder falsch? Der Trainingsfehler eines 1-NN-Klassifizierers ist 0.", a:"<span class='verdict v-true'>WAHR</span> Der nächste Nachbar eines Trainingspunkts ist er selbst (Distanz 0) → immer korrekt."},
+  {c:"kNN", q:"Wahr oder falsch? Majority Voting wird bei kNN-Regression nicht verwendet.", a:"<span class='verdict v-true'>WAHR</span> kNN-Regression <b>mittelt</b> die Nachbarwerte; Mehrheitsvotum nur bei Klassifikation."},
+
+  // ---------- Evaluation ----------
+  {c:"Evaluation", q:"Precision, Recall und F1 — Formeln?", a:"<div class='formula'>\\[\\begin{aligned}\\mathrm{Precision} &= \\frac{TP}{TP+FP} \\\\ \\mathrm{Recall} &= \\frac{TP}{TP+FN} \\\\ F_1 &= \\frac{2PR}{P+R}\\end{aligned}\\]</div>Precision: von den positiv Vorhergesagten richtige. Recall: von den echten Positiven gefundene."},
+  {c:"Evaluation", q:"Type-I- vs. Type-II-Error?", a:"<b>Type I = False Positive</b> (Fehlalarm). <b>Type II = False Negative</b> (verpasst). Klassischer Verwechslungsfehler!"},
+  {c:"Evaluation", q:"Unterschied Micro- vs. Macro-Averaging?", a:"<b>Macro:</b> Metrik pro Klasse, dann ungewichtet mitteln (jede Klasse gleich → seltene sichtbar). <b>Micro:</b> alle TP/FP/FN poolen, dann einmal rechnen (häufige Klassen dominieren; = Accuracy bei Single-Label)."},
+  {c:"Evaluation", q:"Wahr oder falsch? Macro-Averaging berechnet erst die Metrik pro Klasse und mittelt dann.", a:"<span class='verdict v-true'>WAHR</span> Genau das ist die Definition (jede Klasse gleich gewichtet)."},
+  {c:"Evaluation", q:"Wahr oder falsch? Der Paired t-Test wird bei Cross-Validation verwendet (nicht bei Holdout).", a:"<span class='verdict v-true'>WAHR</span> Paired t-Test vergleicht zwei Modelle über dieselben CV-Folds. Für ein einzelnes Test-Set: McNemar."},
+  {c:"Evaluation", q:"Wahr oder falsch? MAE ist empfindlicher gegen Outlier als RMSE.", a:"<span class='verdict v-false'>FALSCH</span> RMSE/MSE quadrieren die Fehler → empfindlicher. MAE ist robuster."},
+  {c:"Evaluation", q:"Wofür wird ein Validation-Set verwendet?", a:"<b>Early Stopping</b> und <b>Hyperparameter-Tuning</b>. <b>Nicht</b> für Signifikanztests (dafür Test-Set/CV). Niemals auf dem Test-Set tunen!"},
+  {c:"Evaluation", q:"Wie bekämpft man Overfitting?", a:"Mehr Daten, Regularisierung (L1/L2), Pruning (Bäume), einfacheres Modell/weniger Features, Cross-Validation + Early Stopping."},
+
+  // ---------- Ensembles ----------
+  {c:"Ensembles", q:"Was sind die ZWEI Quellen der Zufälligkeit in Random Forests?", a:"1) <b>Bootstrap-Sampling</b> der Daten (Bagging). 2) <b>Zufällige Feature-Teilmenge</b> an jedem Split (m von p). Beide nennen — sonst halbe Punkte!"},
+  {c:"Ensembles", q:"Was ist Out-Of-Bag (OOB) Evaluation?", a:"Jeder Baum sieht ~37% der Daten nicht → diese Punkte sind ein gratis Validierungsset. OOB-Fehler ohne separates Hold-out."},
+  {c:"Ensembles", q:"Bagging vs. Boosting — Kernunterschied?", a:"Bagging: parallele Modelle auf Bootstrap-Samples, <b>gleiche</b> Stimmen. Boosting: <b>sequentiell</b>, jedes Modell korrigiert Fehler des vorigen, <b>gewichtete</b> Stimmen."},
+  {c:"Ensembles", q:"Wahr oder falsch? Das erste Modell in Gradient Boosting ist ein Zero-Rule-Modell.", a:"<span class='verdict v-true'>WAHR</span> GB startet mit einer konstanten Vorhersage (Mittel/Log-Odds = ZeroR) und fittet dann auf die Residuen."},
+  {c:"Ensembles", q:"Wahr oder falsch? In AdaBoost werden die Gewichte zufällig initialisiert.", a:"<span class='verdict v-false'>FALSCH</span> Sie werden <b>uniform</b> initialisiert (1/N je Beispiel)."},
+  {c:"Ensembles", q:"Welche Klassifikationsmethoden nutzen Majority Voting?", a:"<b>k-NN</b> (Mehrheit der Nachbarn) und <b>Random Forests</b> (Mehrheit der Bäume). NICHT: einzelner Tree, Bayes-Netz, Max-Confidence-Ensemble."},
+
+  // ---------- SVM ----------
+  {c:"SVM", q:"Was maximiert eine SVM? Was bei nicht-separablen Daten?", a:"Den <b>Margin</b> (Abstand zur nächsten Punkten = Support Vectors). Bei nicht-separablen Daten: <b>Soft Margin</b> (C-Parameter, Slack-Variablen)."},
+  {c:"SVM", q:"Wahr oder falsch? SVMs finden immer eine optimalere Trenngrenze als Perceptrons.", a:"<span class='verdict v-false'>FALSCH</span> „Immer optimaler” ist zu stark. SVM wählt die margin-maximale Grenze (eindeutig); Perceptron findet irgendeine trennende."},
+  {c:"SVM", q:"Wahr oder falsch? SVMs mit linearem Kernel eignen sich für hochdimensionale, sparse Daten.", a:"<span class='verdict v-true'>WAHR</span> Klassiker: Textklassifikation (Bag-of-Words)."},
+  {c:"SVM", q:"Wahr oder falsch? SVMs können standardmäßig nur binäre Klassifikation lösen.", a:"<span class='verdict v-true'>WAHR</span> Von Haus aus binär; Multi-Class via one-vs-rest / one-vs-one."},
+  {c:"SVM", q:"Können Kernel-Methoden auf das Perceptron angewandt werden?", a:"<b>Ja.</b> Das Perceptron lässt sich dual schreiben (nur Skalarprodukte). Ersetzt man das Skalarprodukt durch eine Kernel-Funktion → Kernel-Perceptron mit nichtlinearen Grenzen."},
+
+  // ---------- Preprocessing ----------
+  {c:"Preprocessing", q:"z-score vs. min-max — Formeln, Bereich, wann?", a:"<div class='formula'>\\[\\begin{aligned}\\text{z-score: }&x' = \\frac{x-\\mu}{\\sigma} \\\\ \\text{min-max: }&x' = \\frac{x-\\min}{\\max-\\min}\\in[0,1]\\end{aligned}\\]</div>z-score bei Mittel 0/Std 1 und ~Gauß/Outliern; min-max bei gewünschtem Bereich, milden Outliern. Nur numerisch."},
+  {c:"Preprocessing", q:"Warum Skalierungsparameter nur am Trainingsset berechnen?", a:"Sonst leaken Test-Statistiken ins Training (<b>Data Leakage</b>) → zu optimistische, ungültige Schätzung. Min-max ist outlier-empfindlicher als z-score."},
+  {c:"Preprocessing", q:"Warum One-Hot statt Integer-Encoding für nominale Features?", a:"Integer erfindet eine falsche Ordnung & falsche Abstände. One-Hot macht alle Kategorien gleich weit entfernt — korrekt für Nominaldaten."},
+  {c:"Preprocessing", q:"Umgang mit fehlenden Werten in Train- und Test-Set?", a:"Löschen oder <b>imputieren</b> (Mean/Median numerisch, Modus kategorisch). Imputationsstatistik <b>nur am Trainingsset</b> berechnen, dann auf Test anwenden. Median robuster als Mean."},
+  {c:"Preprocessing", q:"Information Gain vs. PCA — supervised oder unsupervised?", a:"IG = <b>supervised</b> (nutzt Labels, wählt Original-Features). PCA = <b>unsupervised</b> Feature-Extraktion (max. Varianz, ignoriert Labels). PCA kann ein niedrig-varianten, aber prädiktiven Feature verwerfen."},
+  {c:"Preprocessing", q:"Was ist Data Augmentation? Auf welchen Split anwenden?", a:"Neue Trainingsbeispiele durch <b>label-erhaltende</b> Transformationen (Rotation, Flip, Crop, Jitter), v.a. bei Bildern. Nur auf das <b>Trainingsset</b>."},
+  {c:"Preprocessing", q:"Drei Familien der Feature-Selektion?", a:"<b>Filter</b> (z.B. Information Gain) — schnell, modell-agnostisch. <b>Wrapper</b> (Forward Selection, RFE) — genau, teuer. <b>Embedded</b> (Lasso L1, Tree-Importances) — während des Trainings."},
+
+  // ---------- Metalearning ----------
+  {c:"Metalearning", q:"No-Free-Lunch-Theorem — Aussage & Implikation?", a:"Über alle möglichen Probleme gemittelt sind alle Algorithmen gleich gut → kein universell bester Lerner → pro Datensatz auswählen. <b>Trap:</b> sagt NICHT, dass alle auf deinem Problem gleich gut sind."},
+  {c:"Metalearning", q:"Rice's Framework — vier Räume?", a:"Problem space P (Datensätze) → Feature space F (Meta-Features \\(f(x)\\)) → Algorithm space A → Performance space Y. Selektion: \\(\\alpha = S(f(x)) = \\arg\\max \\mathrm{Perf}\\)."},
+  {c:"Metalearning", q:"Was sind Landmarking-Features? Beispiele?", a:"Die <b>Accuracies schneller, einfacher Lerner</b> (Naive Bayes, 1-NN, OneR, Decision Stump) auf dem Datensatz. Sie verraten die Geometrie des Problems (hohe OneR ⇒ ein Feature genügt)."},
+  {c:"Metalearning", q:"Wahr oder falsch? Modell-basierte Meta-Features werden direkt aus dem Datensatz extrahiert.", a:"<span class='verdict v-false'>FALSCH</span> Sie kommen aus einem <b>auf dem Datensatz trainierten Modell</b> (z.B. Tiefe/Knotenzahl eines Baums)."},
+  {c:"Metalearning", q:"Was ist das CASH-Problem?", a:"Combined Algorithm Selection and Hyperparameter optimisation: Algorithmuswahl ist eine <b>kategorische Top-Level-Hyperparameter</b> in einem bedingten Suchraum. Wahl + HPO sind vereint."},
+  {c:"Metalearning", q:"Warum schlägt Random Search oft Grid Search bei gleichem Budget?", a:"Meist sind nur wenige Hyperparameter wichtig. Random Search probiert mehr <b>distinkte Werte der wichtigen</b> Parameter; Grid verschwendet Trials auf unwichtige Kombinationen."},
+
+  // ---------- Reinforcement Learning ----------
+  {c:"Reinforcement Learning", q:"Die vier Elemente eines RL-Problems?", a:"<b>Policy</b> \\(\\pi(a\\mid s)\\) — was tun. <b>Reward</b> \\(r\\) — was jetzt gut ist. <b>Value</b> \\(v(s)\\) — erwarteter Langzeit-Reward (Weitsicht). <b>Model</b> (optional) — Umweltdynamik."},
+  {c:"Reinforcement Learning", q:"ε-greedy beim k-armed Bandit erklären?", a:"Mit Wkt. \\(1-\\varepsilon\\) die Aktion mit höchstem \\(Q(a)\\) (<b>Exploitation</b>), mit Wkt. \\(\\varepsilon\\) ein zufälliger Arm (<b>Exploration</b>). \\(\\varepsilon\\) steuert den Trade-off; \\(\\varepsilon=0\\) = rein greedy."},
+  {c:"Reinforcement Learning", q:"Inkrementelles Sample-Average-Update?", a:"<div class='formula'>\\(Q_{n+1} = Q_n + \\frac{1}{n}(R_n-Q_n)\\)</div>\\([R_n-Q_n]\\) = Fehler/Überraschung. Konstantes \\(\\alpha\\) für nicht-stationäre Probleme."},
+  {c:"Reinforcement Learning", q:"Bandit: gewählte Aktion ≠ greedy-Arm — was folgt?", a:"Dann war es <b>definitiv der ε-Fall</b> (zufällige Exploration). Methode: Q-Tabelle Schritt für Schritt updaten, an jedem t greedy-Arm bestimmen, mit gewählter Aktion vergleichen."},
+  {c:"Reinforcement Learning", q:"Discounted Return — Formel & Rolle von γ?", a:"<div class='formula'>\\(G_t = \\sum_{k\\ge 0}\\gamma^k R_{t+k+1}\\)</div>\\(\\gamma\\in[0,1]\\) gewichtet nähere Rewards stärker; \\(\\gamma<1\\) hält die Summe endlich."},
+  {c:"Reinforcement Learning", q:"Temporal-Difference (TD) Update?", a:"<div class='formula'>\\(V(S_t) \\leftarrow V(S_t) + \\alpha\\big[R_{t+1}+\\gamma V(S_{t+1})-V(S_t)\\big]\\)</div>Lernt aus jedem Schritt — kein Warten aufs Episodenende (anders als Monte Carlo)."},
+  {c:"Reinforcement Learning", q:"Wahr oder falsch? Bei Monte-Carlo-RL werden Value & Policy nur am Episodenende geändert.", a:"<span class='verdict v-true'>WAHR</span> MC braucht den vollständigen Return einer Episode; Updates erst am Ende."},
+  {c:"Reinforcement Learning", q:"Wahr oder falsch? k-armed Bandits wählen Aktionen nach dem erwarteten zukünftigen Reward.", a:"<span class='verdict v-false'>FALSCH</span> Bandits haben nur einen Zustand, keinen „zukünftigen” Return — sie wählen nach dem geschätzten erwarteten <b>sofortigen</b> Reward Q(a)."},
+];
+
+// ---- state ----
+let order = CARDS.map((_,i)=>i);
+let pos = 0;
+let activeCat = "Alle";
+const status = {}; // idx -> 'know' | 'again'
+
+const cats = ["Alle", ...Array.from(new Set(CARDS.map(c=>c.c)))];
+const catBar = document.getElementById('cats');
+cats.forEach(cat=>{
+  const b=document.createElement('button');
+  b.className='chip'; b.textContent=cat; b.setAttribute('aria-pressed', cat==="Alle");
+  b.onclick=()=>{ activeCat=cat; rebuild(); [...catBar.children].forEach(ch=>ch.setAttribute('aria-pressed', ch.textContent===cat)); };
+  catBar.appendChild(b);
+});
+
+const card=document.getElementById('card');
+const qEl=document.getElementById('q'), aEl=document.getElementById('a');
+const cfEl=document.getElementById('catFront'), cbEl=document.getElementById('catBack');
+const countEl=document.getElementById('count'), progBar=document.getElementById('progBar');
+const metaEl=document.getElementById('meta');
+
+function filtered(){ return order.filter(i => activeCat==="Alle" || CARDS[i].c===activeCat); }
+
+function rebuild(){ pos=0; render(); }
+
+function typesetMath(){
+  if (window.MathJax && MathJax.typesetPromise) {
+    MathJax.typesetPromise([qEl, aEl]).catch(() => {});
+  }
+}
+
+function render(){
+  const list=filtered();
+  if(!list.length) return;
+  if(pos>=list.length) pos=list.length-1;
+  const idx=list[pos];
+  const cd=CARDS[idx];
+  card.classList.remove('flipped');
+  qEl.innerHTML=cd.q; aEl.innerHTML=cd.a;
+  typesetMath();
+  cfEl.textContent=cd.c; cbEl.textContent=cd.c;
+  countEl.textContent=(pos+1)+" / "+list.length;
+  progBar.style.width=((pos+1)/list.length*100)+"%";
+  updateMeta();
+}
+
+function updateMeta(){
+  const list=filtered();
+  let know=0, again=0;
+  list.forEach(i=>{ if(status[i]==='know')know++; else if(status[i]==='again')again++; });
+  metaEl.innerHTML=`Gewusst: <b>${know}</b> · Nochmal: <span class="rem">${again}</span> · offen: ${list.length-know-again}`;
+}
+
+function flip(){ card.classList.toggle('flipped'); }
+function go(d){
+  const list=filtered();
+  pos=(pos+d+list.length)%list.length;
+  render();
+}
+function mark(s){
+  const list=filtered();
+  status[list[pos]]=s;
+  updateMeta();
+  go(1);
+}
+
+card.addEventListener('click', flip);
+document.getElementById('next').onclick=(e)=>{e.stopPropagation();go(1);};
+document.getElementById('prev').onclick=(e)=>{e.stopPropagation();go(-1);};
+document.getElementById('know').onclick=(e)=>{e.stopPropagation();mark('know');};
+document.getElementById('again').onclick=(e)=>{e.stopPropagation();mark('again');};
+document.getElementById('shuffle').onclick=()=>{
+  for(let i=order.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]];}
+  pos=0; render();
+};
+document.getElementById('reset').onclick=()=>{ for(const k in status) delete status[k]; render(); };
+
+document.addEventListener('keydown', e=>{
+  if(e.code==='Space'){e.preventDefault();flip();}
+  else if(e.code==='ArrowRight')go(1);
+  else if(e.code==='ArrowLeft')go(-1);
+  else if(e.key==='1')mark('again');
+  else if(e.key==='2')mark('know');
+});
+
+render();
+</script>
+</body>
+</html>

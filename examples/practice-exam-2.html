@@ -553,13 +553,14 @@
     </div>
     <div class="subpart">
       <span class="subpart-label">(c) Peak-Memory für Backpropagation</span>
-      <div class="formula-box center">\[ \text{Peak} = d^2 + (L+1)\,Bd + 2Bd \;=\; \mathcal{O}\big(L\,Bd + d^2\big) \]</div>
+      <div class="formula-box center">\[ \text{Peak} = \underbrace{L\,d^2}_{\text{alle Gewichte}} + \underbrace{(L+1)\,Bd}_{\text{alle Aktivierungen}} + \underbrace{2Bd}_{\text{Grad.-Arbeitsspeicher}} \;=\; \mathcal{O}\big(L\,d^2 + L\,Bd\big) \]</div>
       <details class="deriv"><summary>Schritt für Schritt</summary>
         <ol class="dsteps">
           <li class="dstep"><span class="di">Backward braucht die Forward-Aktivierungen:</span> um den Gradienten an Schicht \(\ell\) zu bilden, wird deren Eingabe \(\mathbf{x}_{\ell-1}\) benötigt — sie darf <em>nicht</em> verworfen werden.</li>
           <li class="dstep"><span class="di">Alle Aktivierungen speichern:</span> \(\mathbf{x}_0,\dots,\mathbf{x}_L\) sind \(L{+}1\) Stück à \(Bd\) ⇒ \((L+1)\,Bd\).</li>
-          <li class="dstep"><span class="di">Arbeitsspeicher pro Schritt:</span> aktuelle Gewichtsmatrix \(d^2\) plus Aktivierungs-/Gradientenpaar \(\sim 2Bd\).</li>
-          <li class="dstep"><span class="di">Summe:</span> \(d^2+(L+1)Bd+2Bd=\mathcal{O}(L\,Bd+d^2)\) — der Aktivierungsspeicher wächst jetzt <em>linear mit der Tiefe \(L\)</em> (Motivation für Checkpointing).</li>
+          <li class="dstep"><span class="di">Gewichte aller Schichten:</span> wie bei der Inferenz müssen alle \(L\) Matrizen resident sein ⇒ \(L\,d^2\) (Backward braucht jedes \(\mathbf{W}_\ell\), um den Gradienten weiterzureichen).</li>
+          <li class="dstep"><span class="di">Arbeitsspeicher pro Schritt:</span> zusätzlich ein Aktivierungs-/Gradientenpaar \(\sim 2Bd\).</li>
+          <li class="dstep"><span class="di">Summe:</span> \(L\,d^2+(L+1)Bd+2Bd=\mathcal{O}(L\,d^2+L\,Bd)\). Gegenüber der Inferenz (\(L\,d^2+\mathcal{O}(Bd)\)) ist der Gewichtsanteil identisch; nur der <em>Aktivierungsanteil</em> wächst jetzt <em>linear mit der Tiefe \(L\)</em> statt konstant zu bleiben (Motivation für Checkpointing).</li>
         </ol>
       </details>
     </div>
@@ -604,13 +605,16 @@
     <div class="subpart">
       <span class="subpart-label">(c) \(k>1\): Pseudocode <code>PCA(X)</code> mit <code>eig(A)</code></span>
 <pre class="code"><span class="kw">def</span> <span class="fn">PCA</span>(X, k):
-    C = (X.T @ X) / X.shape[0]    <span class="cm"># Kovarianz (X zentriert/normiert)</span>
-    vals, vecs = <span class="fn">eig</span>(C)           <span class="cm"># Eigenwerte + -vektoren</span>
-    idx = argsort(vals)[::-1]     <span class="cm"># absteigend sortieren</span>
-    <span class="kw">return</span> vecs[:, idx[:k]]         <span class="cm"># w in R^{D x k}</span></pre>
+    X = <span class="fn">z_score</span>(X)              <span class="cm"># zentrieren + normieren</span>
+    C = X.T @ X / X.shape[0]      <span class="cm"># (D, D) Kovarianz</span>
+    vals, vecs = <span class="fn">eig</span>(C)           <span class="cm"># Eigenwerte, Eigenvektoren</span>
+    idx = argsort(vals)[::-1]     <span class="cm"># größter Eigenwert zuerst</span>
+    W = vecs[:, idx[:k]]          <span class="cm"># Top-k Eigenvektoren</span>
+    <span class="kw">return</span> W                     <span class="cm"># Projektion: z = X @ W</span></pre>
       <details class="deriv"><summary>Schritt für Schritt</summary>
         <ol class="dsteps">
-          <li class="dstep"><span class="di">Kovarianzmatrix bilden:</span> \(\mathbf{C}=\tfrac1B\mathbf{X}^\top\mathbf{X}\in\mathbb{R}^{D\times D}\) (X ist bereits zentriert/normiert).</li>
+          <li class="dstep"><span class="di">Zentrieren + normieren:</span> <code>z_score(X)</code> zieht pro Feature den Mittelwert ab und teilt durch die Standardabweichung — sonst misst die Kovarianz die Streuung um den Ursprung statt um den Datenschwerpunkt.</li>
+          <li class="dstep"><span class="di">Kovarianzmatrix bilden:</span> \(\mathbf{C}=\tfrac1B\mathbf{X}^\top\mathbf{X}\in\mathbb{R}^{D\times D}\).</li>
           <li class="dstep"><span class="di">Eigenzerlegung:</span> <code>eig(C)</code> liefert Eigenwerte \(\lambda_i\) (= Varianz je Richtung) und Eigenvektoren (= Hauptkomponenten-Richtungen).</li>
           <li class="dstep"><span class="di">Absteigend sortieren:</span> die größten Eigenwerte erfassen die meiste Varianz.</li>
           <li class="dstep"><span class="di">Top-\(k\) wählen:</span> die ersten \(k\) Eigenvektoren als Spalten ergeben die Projektionsmatrix \(\mathbf{w}\in\mathbb{R}^{D\times k}\).</li>

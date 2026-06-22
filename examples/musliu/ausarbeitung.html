@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ausarbeitung — Prof. M. ML 2026S</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script>
+  MathJax = {
+    tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+    options: { skipHtmlTags: ['script','noscript','style','textarea'] }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  :root {
+    --bg:#0f0f11;
+    --surface:#17171a;
+    --surface2:#1f1f24;
+    --border:rgba(255,255,255,0.09);
+    --border2:rgba(255,255,255,0.16);
+    --text:#e8e6e0;
+    --muted:#9b9890;
+    --soft:#c9c4b8;
+    --accent:#c9488e;
+    --accent2:#4ecdc4;
+    --mono:'DM Mono', monospace;
+    --sans:'DM Sans', sans-serif;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.68;
+  }
+  mjx-container { color: var(--text) !important; }
+  .page { width: min(980px, calc(100vw - 32px)); margin: 0 auto; padding: 48px 0 72px; }
+  header { border-bottom: 1px solid var(--border); padding-bottom: 28px; margin-bottom: 34px; }
+  .eyebrow { font-family: var(--mono); color: var(--accent); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+  h1 { font-size: clamp(30px, 5vw, 48px); line-height: 1.08; margin: 10px 0 14px; letter-spacing: -0.02em; }
+  .lede { max-width: 760px; color: var(--soft); font-size: 16px; }
+  main { display: grid; gap: 12px; }
+  h1, h2, h3, h4 { color: var(--text); font-weight: 650; }
+  main h1 { font-size: clamp(26px, 4vw, 38px); margin: 40px 0 10px; padding-top: 8px; }
+  h2 { font-size: clamp(21px, 3vw, 29px); margin: 34px 0 6px; border-top: 1px solid var(--border); padding-top: 28px; }
+  h3 { font-size: clamp(17px, 2.2vw, 21px); margin: 24px 0 4px; color: #f0ddd2; }
+  h4 { font-size: 15px; margin: 20px 0 4px; color: var(--accent2); }
+  p { margin: 0 0 10px; color: #d8d4ca; }
+  strong { color: #fff2e8; font-weight: 650; }
+  em { color: #f0c3d9; font-style: normal; }
+  ul, ol { margin: 0 0 12px 1.25rem; padding: 0; color: #d8d4ca; }
+  li { margin: 6px 0; padding-left: 2px; }
+  blockquote { margin: 14px 0; padding: 14px 18px; border-left: 3px solid var(--accent); background: var(--surface); color: #ded7cd; border-radius: 0 8px 8px 0; }
+  code { font-family: var(--mono); font-size: .92em; color: #f3d38f; background: rgba(255,255,255,.06); padding: 1px 5px; border-radius: 5px; }
+  .equation { overflow-x: auto; margin: 12px 0 16px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: rgba(255,255,255,.025); }
+  .table-wrap { overflow-x: auto; margin: 14px 0 18px; border: 1px solid var(--border); border-radius: 8px; }
+  table { width: 100%; border-collapse: collapse; min-width: 520px; background: var(--surface); }
+  th, td { text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); padding: 9px 11px; font-size: 14px; }
+  th { color: #fff; font-weight: 650; background: var(--surface2); font-family: var(--mono); font-size: 12px; }
+  tr:last-child td { border-bottom: 0; }
+  hr { border: 0; border-top: 1px solid var(--border); margin: 26px 0; }
+  .src-note { font-family: var(--mono); font-size: 0.72rem; color: #77736d; text-align: center; margin-top: 42px; }
+  @media (max-width: 640px) {
+    .page { width: min(100vw - 24px, 980px); padding: 30px 0 56px; }
+    blockquote { padding: 12px 14px; }
+    th, td { padding: 8px 9px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <div class="eyebrow">TU Wien · Machine Learning 192.183 · 2026S</div>
+    <h1>Ausarbeitung — Prüfungsvorbereitung Prof. M.</h1>
+    <p class="lede">Klassisches Machine Learning aus der M.-Hälfte: Formeln, Prüfungsfallen, Handrechnungen und ausgearbeitete Altprüfungsfragen.</p>
+  </header>
+  <main>
+<h1>Ausarbeitung — Prüfungsvorbereitung Prof. M.</h1>
+<p><strong>Machine Learning (192.183) · TU Wien · 2026S</strong> Teil I des Kurses: klassisches Machine Learning. Diese Ausarbeitung deckt genau die Themen ab, die M. prüft, mit Formeln zum Auswendiglernen, durchgerechneten Beispielen und den klassischen Prüfungsfallen.</p>
+<hr>
+<h2>0. Wie M. prüft (Strategie zuerst)</h2>
+<p>M.-Hälfte testet in einem anderen Stil als B.-Hälfte. Das ändert, wie man lernt.</p>
+<ul><li><strong>Fragetypen:</strong> True/False (mit Negativbewertung), kurze Handrechnungen, „erkläre / vergleiche&quot;. Du musst kleine Modelle <strong>per Hand</strong> bauen können (Decision Tree, kNN, Naive Bayes…).</li><li><strong>Bewertung (wichtig!):</strong> Bei True/False gilt typischerweise <strong>+2 für richtig, 0 für keine Antwort, −1 für falsch</strong>. Wenn du eine Frage wirklich nicht weißt, ist <strong>leer lassen besser als raten</strong>. Prüfungsanleitung lesen, um das Schema zu bestätigen.</li><li><strong>Beste Vorbereitung:</strong> Alte Prüfungen rechnen — die Fragen kommen fast wortgleich wieder (Baumtiefe-Berechnung, Micro- vs. Macro-Averaging, „was sind Landmarking-Features&quot;, z-score vs. min-max, Bandit-„welche Schritte waren exploratorisch&quot;).</li></ul>
+<p><strong>M. unterrichtet (laut Folien):</strong> Lecture 1 Regression, Lecture 2 (1R, Naive Bayes, Covering), Lecture 5 (kNN, Decision Trees, Evaluation, Random Forests), Lecture 6 Reinforcement Learning (Bandits, MDPs, TD), Lecture 7 Metalearning &amp; AutoML. Dazu klassisch: Ensembles, SVM, Preprocessing.</p>
+<blockquote><strong>Achtung Querschneider:</strong> <em>Unsupervised Learning (Clustering, PCA)</em> unterrichtet <strong>B.</strong>, nicht M. <em>Reinforcement Learning</em> ist geteilt: die <strong>Grundlagen</strong> (k-armed Bandit, ε-greedy, MDP, TD) sind M.; der Deep-Tail (Advantage, Actor-Critic, GRPO, RLVR) ist B.</blockquote>
+<hr>
+<h2>1. Lineare &amp; Polynomiale Regression</h2>
+<p><strong>Idee:</strong> Regression beantwortet „wie viel?&quot; — das Ziel ist eine kontinuierliche Zahl (Hauspreis, Laufzeit, CPU-Performance).</p>
+<h3>Lineares Modell</h3>
+<div class="equation">\[\hat{y} = h_w(x) = w_0 + w_1 x_1 + \dots + w_n x_n = w^\top x\]</div>
+<ul><li>\(w_j\) = Gewicht von Feature \(j\) (wie stark ändert sich \(\hat y\) bei +1 Einheit in \(x_j\))</li><li>\(w_0\) = Intercept/Bias (Vorhersage wenn alle Features 0). Trick: Dummy-Feature \(x_0=1\).</li></ul>
+<h3>Kostenfunktion (RSS / MSE)</h3>
+<div class="equation">\[\text{RSS}(w) = \sum_{i=1}^m \big(y^{(i)} - h_w(x^{(i)})\big)^2\]</div>
+<p>Residuen werden quadriert, damit positive/negative Fehler sich nicht aufheben und große Fehler hart bestraft werden. Perfekter Fit → Kosten 0.</p>
+<h3>Gradientenabstieg</h3>
+<div class="equation">\[w_j \leftarrow w_j - \eta \frac{\partial}{\partial w_j} \text{Cost}(w)\]</div>
+<p>\(\eta\) = Lernrate. Iteratives Verfahren, wenn die geschlossene Lösung zu teuer ist.</p>
+<h3>Normalengleichung (geschlossene Form)</h3>
+<div class="equation">\[w = (X^\top X)^{-1} X^\top y\]</div>
+<p>Exakte Lösung in einem Schritt — aber \((X^\top X)^{-1}\) ist teuer bei vielen Features.</p>
+<h3>Polynomiale Regression</h3>
+<p>Features werden um Potenzen erweitert (\(x, x^2, x^3, \dots\)). Das Modell bleibt <strong>linear in den Parametern</strong> \(w\), ist aber nichtlinear in \(x\). Höherer Grad → höhere Gefahr von Overfitting.</p>
+<h3>Regularisierung</h3>
+<ul><li><strong>Ridge (L2):</strong> \(\text{RSS} + \lambda \sum w_j^2\) — schrumpft Gewichte, setzt sie aber nicht exakt auf 0.</li><li><strong>Lasso (L1):</strong> \(\text{RSS} + \lambda \sum |w_j|\) — treibt manche Gewichte auf <strong>exakt 0</strong> → Feature-Selektion.</li></ul>
+<blockquote><strong>Prüfungsfalle:</strong> F-Score ist eine <strong>Klassifikations</strong>metrik, <strong>nicht</strong> für Regression (→ Aussage „F-Score evaluiert Regression&quot; ist FALSE). Regression nutzt MAE, MSE, RMSE.</blockquote>
+<hr>
+<h2>2. Bayes'sches Lernen: Naive Bayes &amp; Bayes-Netze</h2>
+<h3>Bayes-Regel</h3>
+<div class="equation">\[P(H \mid E) = \frac{P(E \mid H)\, P(H)}{P(E)}\]</div>
+<p>Posterior = Likelihood × Prior / Evidence. \(P(E)\) ist Normalisierungskonstante (gleich für alle Hypothesen → kürzt sich beim Vergleich weg).</p>
+<h3>Naive Bayes</h3>
+<div class="equation">\[c^\star = \arg\max_c\ P(c) \prod_{k=1}^n P(E_k \mid c)\]</div>
+<p>„Naiv&quot; = Annahme, dass Features bei bekannter Klasse <strong>bedingt unabhängig</strong> sind. Nutzt — anders als 1R — <strong>alle</strong> Attribute. Naive Bayes ist ein <strong>eager learner</strong> (baut die Wahrscheinlichkeitstabellen beim Training).</p>
+<p><strong>Durchgerechnet (Wetter-Datensatz, 9 yes / 5 no):</strong> Neuer Tag: Outlook=Sunny, Temp=Cool, Humidity=High, Windy=True.</p>
+<div class="equation">\[L(\text{yes}) = \tfrac{2}{9}\cdot\tfrac{3}{9}\cdot\tfrac{3}{9}\cdot\tfrac{3}{9}\cdot\tfrac{9}{14} = 0{,}0053\]</div>
+<div class="equation">\[L(\text{no}) = \tfrac{3}{5}\cdot\tfrac{1}{5}\cdot\tfrac{4}{5}\cdot\tfrac{3}{5}\cdot\tfrac{5}{14} = 0{,}0206\]</div>
+<p>Normalisiert: \(P(\text{no}) = 0{,}0206/(0{,}0053+0{,}0206) = 0{,}795\) → <strong>Vorhersage: no</strong>.</p>
+<h3>Zero-Frequency-Problem &amp; Laplace</h3>
+<p>Kommt ein Attributwert nie mit einer Klasse vor → \(P=0\) → annulliert das ganze Produkt. Lösung — Add-One (Laplace):</p>
+<div class="equation">\[P(E_k=v \mid c) = \frac{n_{c,v}+1}{n_c+V}\]</div>
+<p>\(V\) = Anzahl möglicher Werte des Attributs. <strong>Beispiel:</strong> Overcast nie bei „no&quot; → roh \(0/5=0\). Mit Laplace: \(P(\text{Overcast}\mid\text{no}) = (0+1)/(5+3) = 1/8 = 0{,}125\).</p>
+<h3>Fehlende &amp; numerische Werte</h3>
+<ul><li><strong>Fehlend:</strong> den Faktor einfach weglassen (symmetrisch für beide Klassen → fair).</li><li><strong>Numerisch:</strong> Gauß annehmen, \(\mu,\sigma\) pro Klasse schätzen, Dichte einsetzen:</li></ul>
+<div class="equation">\[f(x) = \frac{1}{\sqrt{2\pi}\,\sigma}\exp\!\left(-\frac{(x-\mu)^2}{2\sigma^2}\right)\]</div>
+<h3>Bayes-Netze</h3>
+<p>DAG mit bedingten Wahrscheinlichkeitstabellen (CPTs). Naive Bayes ist der <strong>Spezialfall</strong>: ein Klassenknoten als Elternteil aller Feature-Knoten, keine Kanten zwischen Features.</p>
+<p><strong>Drei Verbindungstypen &amp; d-Separation:</strong></p>
+<ul><li><strong>Seriell</strong> \(A \to B \to C\): abhängig; <strong>unabhängig gegeben B</strong> (mittlerer Knoten blockiert die Kette).</li><li><strong>Divergierend</strong> \(A \leftarrow B \to C\): unabhängig gegeben B.</li><li><strong>Collider</strong> \(A \to B \leftarrow C\): unabhängig <strong>ohne</strong> Bedingung; <strong>abhängig gegeben B</strong> (Beobachten des Colliders öffnet den Pfad!).</li></ul>
+<p><strong>Strukturlernen:</strong> Hill-Climbing — leerer Graph, dann wiederholt Kante hinzufügen/löschen/umkehren (azyklisch halten), Zug mit bester BIC-Verbesserung behalten, bei lokalem Optimum stoppen. \(\text{BIC} = \log\text{-Likelihood} - \tfrac{k}{2}\log m\).</p>
+<blockquote><strong>Prüfungsfalle:</strong> Ein allgemeines Bayes-Netz kann Naive Bayes <strong>schlagen</strong>, weil es Abhängigkeiten zwischen Features modellieren kann. NB ist zur bedingten Unabhängigkeit gezwungen.</blockquote>
+<hr>
+<h2>3. Regellernen: 1R &amp; Covering (PRISM)</h2>
+<h3>1R (One-Rule)</h3>
+<p>Baut für <strong>jedes</strong> Attribut eine Ein-Attribut-Regel, wählt das Attribut mit der <strong>niedrigsten Fehlerrate</strong>. Holte (1993): erstaunlich oft fast so gut wie komplexe Modelle. <strong>„Simplicity first.&quot;</strong></p>
+<ul><li>1R ist ein <strong>Decision Tree der Tiefe 1</strong> (ein Split, ein Blatt pro Wert).</li><li><strong>Numerisch:</strong> Werte sortieren, Breakpoints setzen wo die Mehrheitsklasse wechselt; Mindestanzahl pro Intervall (z.B. 3) gegen Overfitting.</li></ul>
+<h3>PRISM (Covering / Separate-and-Conquer)</h3>
+<p>Eine Klasse wählen, Regel wachsen lassen, die möglichst viele ihrer Beispiele abdeckt und andere ausschließt; abgedeckte Beispiele entfernen; wiederholen.</p>
+<div class="equation">\[\text{Bedingung wählen, die } \frac{p}{t} \text{ maximiert}\]</div>
+<ul><li>\(t\) = abgedeckte Instanzen gesamt, \(p\) = davon positive. Bedingungen hinzufügen bis \(p/t=1\) (perfekt). Bei Gleichstand: größeres \(t\) bevorzugen.</li></ul>
+<blockquote><strong>Vergleich Covering vs. Decision Trees:</strong> Covering = separate-and-conquer (eine Klasse nach der anderen, geordnete IF-THEN-Liste). Trees = divide-and-conquer (alle Klassen gleichzeitig, sich gegenseitig ausschließende Pfade).</blockquote>
+<hr>
+<h2>4. Decision Trees</h2>
+<p>Greedy, top-down (ID3/C4.5/CART): am besten bewerteten Split nehmen, rekursiv weiter, stoppen bei reinem Knoten oder Stoppregel. Jedes Blatt sagt die Mehrheitsklasse voraus. Geometrisch: achsen-parallele Splits → rechteckige Regionen.</p>
+<h3>Split-Kriterien</h3>
+<p><strong>1. Misclassification Error:</strong> \(\text{Err} = 1 - \max_i p_i\). Einfach, aber schwacher Splitter (unempfindlich gegen Änderungen, die die Mehrheit nicht bewegen).</p>
+<p><strong>2. Entropie &amp; Information Gain:</strong></p>
+<div class="equation">\[H(X) = -\sum_{i=1}^C p_i \log_2 p_i \qquad IG = H(X) - \sum_j \frac{|X_j|}{|X|} H(X_j)\]</div>
+<p>Max-Entropie für \(C\) gleichwahrscheinliche Klassen = \(\log_2 C\) (2 Klassen → 1 bit). Wir wählen den Split mit dem <strong>größten IG</strong>.</p>
+<p><strong>3. Gini-Impurity:</strong></p>
+<div class="equation">\[I_G = 1 - \sum_{i=1}^C p_i^2\]</div>
+<p>Max für 2 Klassen = 0,5. Kein Logarithmus → billiger. CART-Default.</p>
+<p><strong>Durchgerechnetes Root-Beispiel (14 Zeilen, 9 yes / 5 no):</strong></p>
+<div class="equation">\[H(\text{root}) = -\tfrac{9}{14}\log_2\tfrac{9}{14} - \tfrac{5}{14}\log_2\tfrac{5}{14} = 0{,}940 \text{ bits}\]</div>
+<p>Attribut Price (low 4/0, medium 3/2, high 2/3): gewichtete Kinder-Entropie \(= \tfrac{4}{14}(0) + \tfrac{5}{14}(0{,}971) + \tfrac{5}{14}(0{,}971) = 0{,}694\). → \(IG(\text{Price}) = 0{,}940 - 0{,}694 = 0{,}246\) bits. Für jedes Attribut so rechnen, höchstes IG an die Wurzel.</p>
+<h3>Gain Ratio (C4.5)</h3>
+<div class="equation">\[\text{GainRatio} = \frac{IG}{\text{SplitInfo}},\quad \text{SplitInfo} = -\sum_i \frac{|T_i|}{|T|}\log_2\frac{|T_i|}{|T|}\]</div>
+<p>Korrigiert die Verzerrung von IG zugunsten von Attributen mit <strong>vielen Werten</strong> (ein ID-Attribut macht jedes Kind rein → IG maximal, aber nutzlos).</p>
+<h3>Max-Depth-Berechnung (Klassiker!)</h3>
+<p><em>Gegeben:</em> 1000 Beobachtungen; Split nur wenn Knoten ≥ 200 (min-to-split); jedes Blatt ≥ 300 (min-leaf). Maximale Tiefe ohne Wurzel? <strong>Logik:</strong> Um zu splitten braucht ein Knoten <strong>zwei</strong> Kinder ≥ 300, also ≥ 600 (die Blatt-Regel dominiert). Möglichst schief splitten:</p>
+<ul><li>Tiefe 0: \(1000 \ge 600\) → 300 | 700</li><li>Tiefe 1: \(700 \ge 600\) → 300 | 400</li><li>Tiefe 2: \(400 &lt; 600\) → Stopp.</li></ul>
+<p><strong>→ Maximale Tiefe = 2.</strong> Immer prüfen, welche der beiden Schwellen bindet.</p>
+<blockquote><strong>Prüfungsfallen:</strong><br>- Baumtiefe kann <strong>nie</strong> \(N-1\) überschreiten (jeder Split trennt ≥ 1 Beispiel). „Tiefer als Anzahl Samples&quot; → FALSE.<br>- Jeder Decision Tree lässt sich in eine <strong>äquivalente Menge von IF-THEN-Regeln</strong> umschreiben (ein Pfad = eine Regel) → TRUE.<br>- Verschiedene Kriterien (Error/Entropie/Gini) können <strong>verschiedene Bäume</strong> liefern.</blockquote>
+<p><strong>Stärken/Schwächen:</strong> interpretierbar, kein Scaling nötig, schnell ↔ überfittet leicht, instabil (kleine Datenänderung → anderer Baum), nur achsen-parallel, greedy.</p>
+<hr>
+<h2>5. k-Nearest Neighbours (kNN)</h2>
+<p><strong>Idee:</strong> Neuen Punkt durch Mehrheit seiner \(k\) nächsten Trainingsnachbarn klassifizieren. <strong>Lazy learner</strong> (keine Trainingsarbeit, alles zur Query-Zeit) — Gegenteil zu eager (Tree, Perceptron).</p>
+<h3>Distanzfunktionen</h3>
+<div class="equation">\[\text{Euklid: } \sqrt{\textstyle\sum_i (a_i-b_i)^2}\quad \text{Manhattan: } \textstyle\sum_i |a_i-b_i|\quad \text{Cosine: } 1 - \frac{\sum a_i b_i}{\|x\|\|y\|}\]</div>
+<h3>Effekt von k</h3>
+<p>Kleines \(k\) → flexibel, rauschempfindlich (overfit). Großes \(k\) → glatter, kann unterfit­ten. Bei Gleichstand kann sich die Vorhersage zwischen \(k=1\) und \(k=3\) umkehren.</p>
+<p><strong>kNN für Regression:</strong> Vorhersage = Mittelwert (oder gewichteter Mittelwert) der \(k\) Nachbarwerte.</p>
+<blockquote><strong>Prüfungsfalle:</strong> <strong>Feature-Scaling ist entscheidend.</strong> Ungeskalierte Features mit großem Wertebereich dominieren die Distanz. Beschleunigung: k-d-Tree.</blockquote>
+<hr>
+<h2>6. Modell-Evaluation &amp; statistische Tests</h2>
+<p><strong>Warum Test-Set:</strong> Misst man auf Trainingsdaten, belohnt man Memorisieren statt Generalisieren. Split: Train (fittet Parameter) / Validation (tunt Hyperparameter, Early Stopping) / Test (einmal am Ende).</p>
+<h3>Confusion Matrix</h3>
+<div class="table-wrap"><table><thead><tr><th></th><th>Predicted +</th><th>Predicted −</th></tr></thead><tbody><tr><td><strong>Actual +</strong></td><td>TP</td><td>FN</td></tr>
+<tr><td><strong>Actual −</strong></td><td>FP</td><td>TN</td></tr></tbody></table></div>
+<ul><li><strong>FP = Type-I-Error</strong> (Fehlalarm), <strong>FN = Type-II-Error</strong> (verpasst). <em>Klassischer Verwechslungsfehler!</em></li></ul>
+<h3>Metriken</h3>
+<div class="equation">\[\text{Accuracy} = \frac{TP+TN}{TP+TN+FP+FN}\quad \text{Precision} = \frac{TP}{TP+FP}\quad \text{Recall} = \frac{TP}{TP+FN}\]</div>
+<div class="equation">\[F_1 = \frac{2PR}{P+R} = \frac{2TP}{2TP+FP+FN}\]</div>
+<p><strong>Durchgerechnet</strong> (\(TP=40, FP=10, FN=20, TN=30\)): Accuracy 0,70; Precision 0,80; Recall 0,667; \(F_1 = 0{,}727\).</p>
+<blockquote>Accuracy lügt bei unbalancierten Klassen (99 % „gesund&quot; → 99 % Accuracy, nutzlos). Precision/Recall decken das auf.</blockquote>
+<h3>Micro- vs. Macro-Averaging (Multi-Class)</h3>
+<ul><li><strong>Macro:</strong> Metrik pro Klasse, dann ungewichtet mitteln → jede Klasse zählt gleich (gut für seltene Klassen).</li><li><strong>Micro:</strong> alle TP/FP/FN poolen, dann einmal rechnen → jedes Beispiel zählt gleich, häufige Klassen dominieren. (Single-Label: Micro-Precision = Micro-Recall = Accuracy.)</li></ul>
+<p><strong>Durchgerechnet</strong> (A: 90/10, B: 1/9, C: 2/8):</p>
+<div class="equation">\[P_{\text{macro}} = \tfrac{0{,}90+0{,}10+0{,}20}{3} = 0{,}40,\quad P_{\text{micro}} = \tfrac{93}{120} = 0{,}775\]</div>
+<p>Die große Lücke ist der Kern der Frage: Micro vom leichten A dominiert, Macro deckt schwaches B/C auf.</p>
+<h3>Cross-Validation</h3>
+<p>k-fold: in \(k\) Folds teilen, abwechselnd auf \(k-1\) trainieren / 1 testen, Scores mitteln. Jedes Beispiel genau einmal getestet → geringere Varianz. <strong>LOOCV</strong> = Extremfall \(k=n\) (fast unbiased, aber teuer, hohe Varianz).</p>
+<h3>Regression-Metriken</h3>
+<div class="equation">\[\text{MAE} = \tfrac{1}{n}\sum|y_i-\hat y_i|\quad \text{MSE} = \tfrac{1}{n}\sum(y_i-\hat y_i)^2\quad \text{RMSE} = \sqrt{\text{MSE}}\]</div>
+<blockquote><strong>Prüfungsfalle:</strong> MSE/RMSE (quadrieren) sind <strong>empfindlicher gegen Outlier</strong> als MAE. „MAE empfindlicher als RMSE&quot; → FALSE.</blockquote>
+<h3>Signifikanztests</h3>
+<ul><li><strong>Paired t-Test:</strong> zwei Modelle über dieselben CV-Folds.</li><li><strong>McNemar-Test:</strong> zwei Klassifizierer auf einem Test-Set (diskordante Counts \(b,c\)). Statistik \(\frac{(|b-c|-1)^2}{b+c}\) gegen kritischen Wert 3,84 (α=0,05, 1 df).</li></ul>
+<h3>Overfitting</h3>
+<p>Niedriger Trainings-, hoher Testfehler (wachsende Lücke). Gegenmittel: mehr Daten, Regularisierung (L1/L2), Pruning, einfacheres Modell, CV + Early Stopping.</p>
+<hr>
+<h2>7. Ensemble-Methoden</h2>
+<p><strong>Warum:</strong> Bias-Varianz-Tradeoff. Diversität reduziert die Varianz des Ensembles.</p>
+<h3>Bagging (Bootstrap Aggregating)</h3>
+<p>\(T\) Modelle auf je einer Bootstrap-Stichprobe; Regression → Mittelwert, Klassifikation → Mehrheit. Jeder Baum verpasst ≈ 37 % der Daten → <strong>Out-Of-Bag (OOB)</strong> als gratis Validierung.</p>
+<h3>Random Forests</h3>
+<p>Bagging + ein Extra-Trick.</p>
+<blockquote><strong>Prüfungsfalle — „Was ist die Zufälligkeit?&quot;</strong> Zwei Quellen (beide nennen!):<br>1. <strong>Bootstrap-Sampling</strong> der Daten (Bagging-Teil).<br>2. <strong>Zufällige Feature-Teilmenge</strong> an jedem Split — nur \(m\) von \(p\) Features als Kandidaten.</blockquote>
+<p>Default: \(m=\lfloor\sqrt p\rfloor\) (Klassifikation), \(m=\lfloor p/3\rfloor\) (Regression). Kleineres \(m\) → mehr Dekorrelation. \(m=p\) → reduziert sich auf Bagging.</p>
+<h3>Boosting</h3>
+<p>Sequentiell: jedes Modell korrigiert die Fehler des vorigen. <strong>AdaBoost</strong> (Gewichte auf falsch klassifizierte Beispiele erhöhen) vs. <strong>Gradient Boosting</strong> (auf Residuen fitten). Gewichtete Stimmen — Gegensatz zu Bagging (gleiche Stimmen).</p>
+<hr>
+<h2>8. Lineare Klassifizierer: Perceptron, SVM, Kernel</h2>
+<h3>Perceptron</h3>
+<p>Lineare Trenngrenze \(w^\top x + b = 0\). Update bei Fehlklassifikation: \(w \leftarrow w + \eta\, y_i x_i\). Konvergiert nur bei linear separierbaren Daten.</p>
+<h3>SVM</h3>
+<p>Maximiert den <strong>Margin</strong> (Abstand der Trenngrenze zu den nächsten Punkten = Support Vectors). <strong>Soft Margin</strong> (\(C\)-Parameter, Slack-Variablen) für nicht-separable Daten.</p>
+<h3>Kernel</h3>
+<p>„Kernel-Trick&quot; — nichtlineare Grenzen ohne explizite Transformation, durch Ersetzen des Skalarprodukts (z.B. RBF, polynomial). Kann auch auf das Perceptron angewandt werden.</p>
+<blockquote><strong>Perceptron vs. SVM:</strong> Beide linear; SVM wählt <strong>eindeutig</strong> die margin-maximale Grenze, Perceptron irgendeine trennende.</blockquote>
+<hr>
+<h2>9. Feature Selection &amp; Preprocessing</h2>
+<h3>Scaling: z-score vs. min-max</h3>
+<div class="equation">\[\text{z-score: } x' = \frac{x-\mu}{\sigma}\ (\text{Mittel 0, Std 1, unbeschränkt})\qquad \text{min-max: } x' = \frac{x-\min}{\max-\min}\ (\in[0,1])\]</div>
+<p>z-score bei ~gaußschen Daten / Distanz- &amp; Gradientenmethoden / Outliern; min-max wenn beschränkter Bereich gebraucht.</p>
+<blockquote><strong>Prüfungsfalle:</strong> Skalierungsparameter (\(\mu,\sigma\) bzw. min,max) <strong>nur am Trainingsset</strong> berechnen — sonst Data Leakage. Min-max ist <strong>outlier-empfindlicher</strong> als z-score → TRUE.</blockquote>
+<h3>Kategorische Features</h3>
+<p><strong>One-Hot</strong> statt Integer-Encoding für nominale Features (Integer erfindet falsche Ordnung &amp; Abstände).</p>
+<h3>Fehlende Werte</h3>
+<p>Löschen oder Imputation (Mean/Median numerisch, Modus kategorisch). <strong>Median robuster gegen Outlier</strong> als Mean.</p>
+<h3>Feature Selection — drei Familien</h3>
+<ul><li><strong>Filter</strong> (z.B. Information Gain, Korrelation) — schnell, modell-agnostisch.</li><li><strong>Wrapper</strong> (Forward Selection, RFE) — trainiert Modell auf Teilmengen, genau aber teuer.</li><li><strong>Embedded</strong> (Lasso L1, Tree-Importances) — Selektion während des Trainings.</li></ul>
+<h3>Information Gain vs. PCA (Klassiker)</h3>
+<div class="equation">\[IG(Y,X) = H(Y) - H(Y\mid X)\]</div>
+<blockquote><strong>Prüfungsfalle:</strong> „PCA ist unsupervised, Information Gain ist supervised&quot; → TRUE. IG nutzt die Labels \(y\) (misst Reduktion der Label-Entropie, wählt Original-Features). PCA ignoriert \(y\) völlig (maximiert Varianz in \(X\), <strong>erzeugt neue</strong> Komponenten = Feature-<strong>Extraktion</strong>, nicht -Selektion). PCA kann ein niedrig-varianten aber hoch-prädiktiven Feature verwerfen.</blockquote>
+<p><strong>Data Augmentation:</strong> label-erhaltende Transformationen (Rotation, Flip, Crop) — nur auf <strong>Trainingsdaten</strong>.</p>
+<hr>
+<h2>10. Metalearning, AutoML &amp; Hyperparameter-Optimierung</h2>
+<h3>No Free Lunch (NFL)</h3>
+<div class="equation">\[\sum_{\text{alle } f} \text{Perf}(A_1,f) = \sum_{\text{alle } f} \text{Perf}(A_2,f)\]</div>
+<p>Über <strong>alle</strong> möglichen Probleme gemittelt sind alle Algorithmen gleich gut. → Kein universell bester Lerner; man muss pro Datensatz auswählen.</p>
+<blockquote><strong>Prüfungsfalle:</strong> NFL sagt <strong>nicht</strong>, dass alle Algorithmen auf <em>deinem</em> Problem gleich gut sind — reale Probleme sind eine strukturierte Teilmenge.</blockquote>
+<h3>Rice's Framework (Algorithmenauswahl)</h3>
+<p>Vier Räume + Selektionsabbildung: <strong>Problem space P</strong> (Datensätze) → <strong>Feature space F</strong> (Meta-Features \(f(x)\)) → <strong>Algorithm space A</strong> → <strong>Performance space Y</strong>.</p>
+<div class="equation">\[\alpha = S(f(x)) = \arg\max_{a\in A} \widehat{\text{Perf}}(a, f(x))\]</div>
+<p>Beim Metalearning ist \(S\) selbst ein gelerntes Modell.</p>
+<h3>Meta-Features — vier Familien</h3>
+<ol><li><strong>Statistisch/informationstheoretisch</strong> (Anzahl Attribute/Klassen, Klassen-Entropie, Korrelation…).</li><li><strong>Modell-basiert</strong> (Tiefe/Knotenzahl eines auf den Daten gebauten Baums).</li><li><strong>Landmarking</strong> (s.u.).</li><li><strong>Learning Curves</strong> (Form der Accuracy-vs-Trainingsgröße-Kurve).</li></ol>
+<blockquote><strong>Landmarking-Features (wiederkehrende Frage):</strong> die <strong>Accuracies schneller, einfacher Lerner</strong> (Naive Bayes, 1-NN, OneR, Decision Stump), als Deskriptoren genutzt. Aussagekräftig, weil der Erfolg eines simplen Lerners die Geometrie des Problems verrät (hohe NB-Accuracy → Klassen fast separierbar; hohe OneR → ein Feature genügt).</blockquote>
+<h3>CASH &amp; AutoML</h3>
+<p><strong>Combined Algorithm Selection and Hyperparameter optimisation:</strong> Algorithmus-Wahl ist eine <strong>kategorische Top-Level-Hyperparameter</strong> in einem bedingten Suchraum. Algorithmenwahl und HPO sind <strong>vereint</strong>, nicht getrennt.</p>
+<h3>HPO</h3>
+<div class="equation">\[\lambda^\star = \arg\min_{\lambda\in\Lambda} f(\lambda),\quad f(\lambda) = \tfrac{1}{k}\sum_i \text{Loss}(A_\lambda \text{ auf Fold } i)\]</div>
+<ul><li><strong>Grid Search:</strong> alle Kombinationen — exponentielle Kosten.</li><li><strong>Random Search:</strong> zufällig — schlägt Grid oft, weil es mehr <strong>distinkte Werte der wenigen wichtigen</strong> Hyperparameter probiert.</li><li><strong>Bayesian Optimisation (SMBO):</strong> Surrogat-Modell von \(f(\lambda)\) + Acquisition-Funktion (Expected Improvement). SMAC nutzt Random-Forest-Surrogat. Lohnt nur wenn jede Auswertung teuer ist.</li></ul>
+<hr>
+<h2>11. Reinforcement Learning — M.-Teil (Grundlagen)</h2>
+<p><strong>RL</strong> = weder Labels noch fester Datensatz, nur ein Reward-Signal; der Agent erzeugt seine Daten durch Handeln. Kern: <strong>Exploration vs. Exploitation</strong>.</p>
+<p><strong>Vier Elemente:</strong> Policy \(\pi(a\mid s)\) (was tun), Reward \(r\) (was jetzt gut ist), Value \(v(s)\) (erwarteter Langzeit-Reward = Weitsicht), Model (optional, Umweltdynamik).</p>
+<h3>k-Armed Bandit</h3>
+<p>Ein Zustand, \(k\) Arme, unbekannte mittlere Rewards.</p>
+<div class="equation">\[q_*(a) = \mathbb{E}[R\mid A=a],\qquad Q_t(a) \approx q_*(a)\]</div>
+<p><strong>ε-greedy:</strong> mit Wahrscheinlichkeit \(1-\varepsilon\) greedy (\(\arg\max_a Q_t(a)\)), mit \(\varepsilon\) zufälliger Arm.</p>
+<p><strong>Inkrementelles Update (Sample-Average):</strong></p>
+<div class="equation">\[Q_{n+1} = Q_n + \tfrac{1}{n}\big(R_n - Q_n\big)\]</div>
+<p>\([R_n - Q_n]\) = Fehler/Überraschung. Schrittweite \(1/n\) = gleicher Reward-Gewicht; konstantes \(\alpha\) für nicht-stationäre Probleme (jüngere Rewards zählen mehr).</p>
+<p><strong>Smartere Exploration:</strong> Optimistic Initial Values (alle \(Q_0\) hoch → jeder Arm enttäuscht → systematisch erkunden); <strong>UCB:</strong> \(A_t = \arg\max_a [Q_t(a) + c\sqrt{\ln t / N_t(a)}]\).</p>
+<p><strong>Durchgerechneter Prüfungstyp — „welche Schritte waren definitiv exploratorisch?&quot;:</strong> Bei sample-average ε-greedy, \(Q_1(a)=0\). Man trackt \(Q_t(a)\) für jeden Arm und prüft an jedem Schritt: war die gewählte Aktion <strong>nicht</strong> die mit dem höchsten \(Q\)? Dann muss es der ε-Fall (Zufall) gewesen sein. Methodik: Q-Tabelle Schritt für Schritt updaten, an jedem \(t\) den greedy-Arm bestimmen, mit der tatsächlich gewählten Aktion vergleichen. Weicht sie ab → <strong>definitiv exploratorisch</strong>.</p>
+<h3>Markov Decision Process (MDP)</h3>
+<p>Agent-Umwelt-Schleife: beobachtet \(S_t\), wählt \(A_t\), erhält \(R_{t+1}, S_{t+1}\).</p>
+<p><strong>Discounted Return:</strong></p>
+<div class="equation">\[G_t = R_{t+1} + \gamma R_{t+2} + \gamma^2 R_{t+3} + \dots = \sum_{k=0}^\infty \gamma^k R_{t+k+1}\]</div>
+<p>\(\gamma\in[0,1]\) = Discount (nähere Rewards zählen mehr; \(\gamma&lt;1\) hält die Summe endlich).</p>
+<p><strong>Value-/Q-Funktion:</strong> \(v_\pi(s) = \mathbb{E}_\pi[G_t \mid S_t=s]\), \(q_\pi(s,a) = \mathbb{E}_\pi[G_t \mid S_t=s, A_t=a]\).</p>
+<p><strong>Temporal-Difference (TD):</strong></p>
+<div class="equation">\[V(S_t) \leftarrow V(S_t) + \alpha\big[\underbrace{R_{t+1} + \gamma V(S_{t+1})}_{\text{TD-Target}} - V(S_t)\big]\]</div>
+<p>Lernt aus jedem Schritt (kein Warten auf das Episodenende, anders als Monte Carlo).</p>
+<hr>
+<h2>12. Schnelle True/False-Checkliste (häufige Fallen)</h2>
+<ul><li>F-Score evaluiert Regression → <strong>FALSE</strong> (Klassifikation).</li><li>Baum tiefer als Anzahl Trainingsbeispiele → <strong>FALSE</strong> (≤ N−1).</li><li>Decision Tree ↔ IF-THEN-Regelmenge → <strong>TRUE</strong>.</li><li>MAE empfindlicher gegen Outlier als RMSE → <strong>FALSE</strong>.</li><li>Min-max outlier-empfindlicher als z-score → <strong>TRUE</strong>.</li><li>PCA unsupervised, Information Gain supervised → <strong>TRUE</strong>.</li><li>Naive Bayes ist lazy → <strong>FALSE</strong> (eager).</li><li>Type-I = FP, Type-II = FN.</li><li>Random-Forest-Zufall = Bootstrap <strong>+</strong> Feature-Subset (beide!).</li><li>NFL → alle Algorithmen auf meinem Problem gleich gut → <strong>FALSE</strong>.</li><li>Collider \(A\to B\leftarrow C\): gegeben B werden A, C <strong>abhängig</strong> (nicht unabhängig).</li></ul>
+<hr>
+<h2>13. Empfohlene Lernreihenfolge</h2>
+<ol><li>Diese Ausarbeitung einmal komplett durchlesen (Intuition + Formeln).</li><li>Handrechnungen mit Stift und Papier nachvollziehen: Naive Bayes (Wetter), IG/Entropie-Split, Max-Depth, Confusion-Matrix-Metriken, Micro/Macro, Bandit-Q-Update.</li><li><strong>3–4 alte M.-Prüfungen</strong> rechnen — die Fragen wiederholen sich fast wortgleich.</li><li>True/False-Checkliste oben als letzte Wiederholung vor der Prüfung.</li><li>Negativbewertung beachten: bei echtem Nichtwissen leer lassen.</li></ol>
+<hr>
+<h1>Teil B — Altprüfungen ausgearbeitet (Fragen + Antworten)</h1>
+<blockquote>Dieser Teil sammelt die rekonstruierten Fragen aus mehreren Altprüfungen, geordnet nach Prüfungsstruktur. <strong>TRUE/FALSE-Antworten</strong> sind fett markiert, mit kurzer Begründung. Einige Fragen betreffen B.-Deep-Learning-Hälfte (CNN, Vanishing Gradients, Dropout) — sie tauchen aber faktisch in derselben Prüfung auf, daher sind sie hier mit beantwortet und als <em>(B.-Teil)</em> gekennzeichnet.</blockquote>
+<h2>B.1 Prüfungsstruktur (typisch)</h2>
+<ul><li><strong>Teil 1 (26 P):</strong> 13 × True/False. <strong>+2</strong> richtig, <strong>−1</strong> falsch, <strong>0</strong> leer.</li><li><strong>Teil 2 (12 P):</strong> 4 × Handrechnung (kein Taschenrechner). <strong>+3</strong> richtig, <strong>−1,5</strong> falsch, <strong>0</strong> leer.</li><li><strong>Teil 3 (12 P):</strong> Multiple Choice, „alle richtigen ankreuzen&quot;. <strong>+2 nur wenn ALLE</strong> korrekten Optionen markiert sind, sonst <strong>0</strong>.</li><li>Gesamtzeit ~75 min, drei Gruppen.</li></ul>
+<hr>
+<h2>B.2 Teil 1 — True/False (mit Begründung)</h2>
+<p><strong>Grundlagen / Klassifikation</strong></p>
+<ol><li><em>Classification ist eine ML-Aufgabe, bei der das Zielattribut nominal ist.</em> → <strong>TRUE.</strong> Klassifikation sagt eine nominale (kategorische) Klasse voraus; Regression sagt eine numerische Größe voraus.</li><li><em>Decision Trees können nur binäre Klassifikationsprobleme lösen.</em> → <strong>FALSE.</strong> Bäume handhaben Multi-Class problemlos (ein Blatt pro Klasse möglich).</li><li><em>Der Fehler eines 1-NN-Klassifizierers auf dem Trainingsset ist 0.</em> → <strong>TRUE.</strong> Der nächste Nachbar eines Trainingspunkts ist er selbst (Distanz 0) → immer korrekt klassifiziert.</li><li><em>Die Softmax-Funktion in MLPs transformiert die Aktivierung in den Bereich −1…1.</em> → <strong>FALSE.</strong> Softmax liefert Werte in <strong>(0,1)</strong>, die sich zu 1 summieren (Wahrscheinlichkeiten). −1…1 ist tanh.</li><li><em>Ordinaldaten erlauben keine Distanzberechnung zwischen Datenpunkten.</em> → <strong>TRUE.</strong> Ordinal hat eine Ordnung (Rang), aber keine sinnvollen numerischen Abstände.</li></ol>
+<p><strong>Evaluation</strong></p>
+<ol><li><em>Macro-Averaging berechnet zuerst Accuracy/Precision/Recall pro Klasse und mittelt dann über die Klassen.</em> → <strong>TRUE.</strong> Genau das ist die Definition (jede Klasse zählt gleich).</li><li><em>Der Paired t-Test wird bei Holdout-Validierung verwendet.</em> → <strong>FALSE.</strong> Der Paired t-Test vergleicht zwei Modelle über dieselben <strong>Cross-Validation-Folds</strong>.</li><li><em>Der Paired t-Test wird bei Cross-Validation verwendet.</em> → <strong>TRUE.</strong> (siehe oben). Für ein einzelnes Test-Set nimmt man McNemar.</li><li><em>In einem Datensatz ist die Entropie am niedrigsten, wenn alle Klassen gleich viele Samples haben.</em> → <strong>FALSE.</strong> Niedrigste Entropie (0) bei <strong>reinem</strong> Knoten (eine Klasse). Gleichverteilung = maximale Entropie.</li><li><em>In einem Datensatz ist die Entropie am höchsten, wenn alle Klassen gleich viele Samples haben.</em> → <strong>TRUE.</strong> Max-Entropie \(\log_2 C\) bei Gleichverteilung.</li></ol>
+<p><strong>Ensembles &amp; SVM</strong></p>
+<ol><li><em>In AdaBoost werden die Gewichte zufällig initialisiert.</em> → <strong>FALSE.</strong> Sie werden <strong>uniform</strong> initialisiert (\(1/N\) für jedes Beispiel).</li><li><em>Das erste Modell in Gradient Boosting ist ein Zero-Rule-Modell.</em> → <strong>TRUE.</strong> Gradient Boosting startet mit einer konstanten Vorhersage (Mittelwert bei Regression / Log-Odds), also einem ZeroR-Modell, und fittet dann auf die Residuen.</li><li><em>SVMs finden immer eine optimalere Trenngrenze (Hyperplane) als Perceptrons.</em> → <strong>FALSE.</strong> „Immer optimaler&quot; ist zu stark. Auf separierbaren Daten findet das Perceptron <em>eine</em> gültige Trenngrenze; SVM wählt die <strong>margin-maximale</strong> (nach diesem Kriterium besser), aber das ist nicht generell „optimaler&quot; für jedes Ziel.</li><li><em>SVMs mit linearem Kernel eignen sich besonders für sehr hochdimensionale, sparse Daten.</em> → <strong>TRUE.</strong> Klassischer Fall: Textklassifikation (Bag-of-Words) ist hochdimensional/sparse — linearer SVM ist dort sehr stark.</li><li><em>SVMs können standardmäßig nur binäre Klassifikation lösen.</em> → <strong>TRUE.</strong> SVM ist von Haus aus binär; Multi-Class via one-vs-rest / one-vs-one.</li></ol>
+<p><strong>Naive Bayes / Bayes-Netze / Metalearning</strong></p>
+<ol><li><em>Wird Naive Bayes auf einen Datensatz mit numerischen Attributen angewandt, muss immer eine Wahrscheinlichkeitsdichtefunktion verwendet werden.</em> → <strong>FALSE.</strong> Man kann numerische Attribute auch <strong>diskretisieren</strong> (in Intervalle binnen) statt eine Gauß-Dichte anzunehmen.</li><li><em>Modell-basierte Features für Metalearning werden direkt aus dem Datensatz extrahiert.</em> → <strong>FALSE.</strong> Sie werden aus einem <strong>auf dem Datensatz trainierten Modell</strong> abgeleitet (z.B. Tiefe/Knotenzahl eines Baums), nicht direkt aus den Rohdaten.</li><li><em>Ein Bayes-Netz ist ein gerichteter zyklischer Graph.</em> → <strong>FALSE.</strong> Es ist ein gerichteter <strong>azyklischer</strong> Graph (DAG).</li><li><em>Ein Decision Tree kann in eine Regelmenge umgewandelt werden.</em> → <strong>TRUE.</strong> Ein Pfad Wurzel→Blatt = eine IF-THEN-Regel.</li></ol>
+<p><strong>Reinforcement Learning</strong></p>
+<ol><li><em>Bei der Monte-Carlo-Methode im RL werden Value-Schätzungen und Policy nur bei Abschluss einer Episode geändert.</em> → <strong>TRUE.</strong> MC braucht den vollständigen Return einer Episode; Updates erfolgen erst am Episodenende (anders als TD, das schrittweise updatet).</li><li><em>k-armed Bandits wählen die nächste Aktion basierend auf dem erwarteten zukünftigen Reward.</em> → <strong>FALSE (Vorsicht/Nuance).</strong> Bandits haben nur einen Zustand und keinen „zukünftigen&quot; Return — sie wählen nach dem geschätzten <strong>erwarteten (sofortigen) Reward</strong> \(Q_t(a)\). „Zukünftiger Reward&quot; ist MDP-Sprache (discounted return), nicht Bandit.</li></ol>
+<p><strong>Regression / Feature Selection</strong></p>
+<ol><li><em>Gradient Descent ist für lineare Regression immer effizienter als die Normalengleichung (analytisch).</em> → <strong>FALSE.</strong> Bei wenigen Features ist die Normalengleichung (geschlossene Lösung) effizienter; Gradient Descent gewinnt erst bei sehr vielen Features (wo \((X^\top X)^{-1}\) teuer wird).</li><li><em>Information Gain ist eine unsupervised Feature-Selection-Methode.</em> → <strong>FALSE.</strong> IG nutzt die Labels (\(H(Y)-H(Y|X)\)) → <strong>supervised</strong>.</li><li><em>PCA ist eine supervised Feature-Selection-Methode.</em> → <strong>FALSE.</strong> PCA ist <strong>unsupervised</strong> und ist Feature-<strong>Extraktion</strong> (neue Komponenten), nicht -Selektion.</li><li><em>Feature Selection dient primär dazu, die Effektivität (Genauigkeit) von ML zu verbessern.</em> → <strong>FALSE (Nuance).</strong> Primär verbessert sie <strong>Effizienz</strong> und Interpretierbarkeit und bekämpft Overfitting; Genauigkeitsgewinn ist ein möglicher Nebeneffekt, nicht das Primärziel.</li><li><em>Majority Voting wird nicht verwendet, wenn kNN für Regression eingesetzt wird.</em> → <strong>TRUE.</strong> kNN-Regression <strong>mittelt</strong> die Nachbarwerte; Mehrheitsvotum gibt es nur bei Klassifikation.</li></ol>
+<hr>
+<h2>B.3 Teil 2 — Handrechnungen (Methode + durchgerechnet)</h2>
+<h3>B.3.1 Naive Bayes: neue Zeile klassifizieren (ohne Laplace)</h3>
+<p><strong>Datensatz (7 Trainingsinstanzen), klassifiziere Instanz 8:</strong></p>
+<div class="table-wrap"><table><thead><tr><th>Inst</th><th>F1</th><th>F2</th><th>F3</th><th>Klasse</th></tr></thead><tbody><tr><td>1</td><td>a</td><td>y</td><td>k</td><td>−</td></tr>
+<tr><td>2</td><td>c</td><td>y</td><td>s</td><td>−</td></tr>
+<tr><td>3</td><td>a</td><td>y</td><td>k</td><td>+</td></tr>
+<tr><td>4</td><td>b</td><td>n</td><td>k</td><td>−</td></tr>
+<tr><td>5</td><td>b</td><td>y</td><td>s</td><td>+</td></tr>
+<tr><td>6</td><td>a</td><td>n</td><td>s</td><td>+</td></tr>
+<tr><td>7</td><td>b</td><td>n</td><td>s</td><td>−</td></tr>
+<tr><td><strong>8</strong></td><td><strong>a</strong></td><td><strong>n</strong></td><td><strong>s</strong></td><td><strong>?</strong></td></tr></tbody></table></div>
+<p>Klassenzählung: <strong>−</strong> = {1,2,4,7} (4), <strong>+</strong> = {3,5,6} (3). Priors: \(P(-)=4/7\), \(P(+)=3/7\).</p>
+<p><strong>Klasse −</strong> (F1=a, F2=n, F3=s): \(P(a\mid-)=1/4\) (nur Inst 1), \(P(n\mid-)=2/4\) (Inst 4,7), \(P(s\mid-)=2/4\) (Inst 2,7).</p>
+<div class="equation">\[L(-) = \tfrac{4}{7}\cdot\tfrac{1}{4}\cdot\tfrac{2}{4}\cdot\tfrac{2}{4} = \tfrac{4}{7}\cdot\tfrac{1}{16} = \tfrac{1}{28} \approx 0{,}0357\]</div>
+<p><strong>Klasse +</strong>: \(P(a\mid+)=2/3\) (Inst 3,6), \(P(n\mid+)=1/3\) (Inst 6), \(P(s\mid+)=2/3\) (Inst 5,6).</p>
+<div class="equation">\[L(+) = \tfrac{3}{7}\cdot\tfrac{2}{3}\cdot\tfrac{1}{3}\cdot\tfrac{2}{3} = \tfrac{3}{7}\cdot\tfrac{4}{27} = \tfrac{4}{63} \approx 0{,}0635\]</div>
+<p>\(L(+) &gt; L(-)\) → <strong>Vorhersage: +</strong>.</p>
+<h3>B.3.2 Decision Tree mit Entropie: neue Zeile klassifizieren</h3>
+<p>Gleicher Datensatz. <strong>Methode:</strong> Root-Attribut über IG wählen, dann ggf. weiter splitten, neue Instanz den Pfad hinunter schicken.</p>
+<p>Root-Entropie: \(H = -\tfrac{4}{7}\log_2\tfrac{4}{7} - \tfrac{3}{7}\log_2\tfrac{3}{7} \approx 0{,}985\) bits.</p>
+<p>IG für F1 (a: 1−,3+,6+ → 1/3 rein-ish; b: 4−,5+,7− ; c: 2−):</p>
+<ul><li>a (3 Inst, 2+/1−): \(H=0{,}918\); b (3 Inst, 1+/2−): \(H=0{,}918\); c (1 Inst, rein): \(H=0\).</li><li>gewichtet \(= \tfrac{3}{7}(0{,}918)+\tfrac{3}{7}(0{,}918)+\tfrac{1}{7}(0) = 0{,}787\) → \(IG(F1)=0{,}198\).</li></ul>
+<p>IG für F3 (k: 1−,3+,4− → 1+/2−, \(H=0{,}918\); s: 2−,5+,6+,7− → 2+/2−, \(H=1\)):</p>
+<ul><li>gewichtet \(=\tfrac{3}{7}(0{,}918)+\tfrac{4}{7}(1)=0{,}965\) → \(IG(F3)=0{,}020\).</li></ul>
+<p>F1 hat den höchsten IG → <strong>Wurzel = F1</strong>. Neue Instanz hat <strong>F1=a</strong>; im a-Zweig sind {1:−, 3:+, 6:+} → Mehrheit <strong>+</strong> (weiter auf F2/F3 splitten bestätigt dies, da n→+ und s→+). → <strong>Vorhersage: +</strong>.</p>
+<blockquote>Merke: Tritt im Zweig ein Gleichstand auf, weiter auf das nächstbeste Attribut splitten; sonst Mehrheitsklasse des Blatts.</blockquote>
+<h3>B.3.3 k-armed Bandit: welche Schritte waren zufällig (exploratorisch)?</h3>
+<p>\(k=5\), \(Q_1(a)=0\) für alle \(a\), ε-greedy, <strong>Sample-Average</strong>. Sequenz: \(A_1{=}1,R_1{=}{-}1\); \(A_2{=}2,R_2{=}{-}1\); \(A_3{=}2,R_3{=}2\); \(A_4{=}1,R_4{=}{-}1\); \(A_5{=}2,R_5{=}4\); \(A_6{=}5,R_6{=}3\).</p>
+<p><strong>Methode:</strong> vor jedem Schritt den greedy-Arm (\(\arg\max Q\)) bestimmen; weicht die gewählte Aktion davon ab → <strong>definitiv exploratorisch</strong>. (Ist sie greedy-konsistent, <em>kann</em> sie greedy gewesen sein → nicht definitiv zufällig.)</p>
+<div class="table-wrap"><table><thead><tr><th>t</th><th>Q vorher [1,2,3,4,5]</th><th>greedy-Arm(e)</th><th>gewählt</th><th>Verdikt</th></tr></thead><tbody><tr><td>1</td><td>[0,0,0,0,0]</td><td>alle (tie)</td><td>1</td><td>greedy möglich</td></tr>
+<tr><td>2</td><td>[−1,0,0,0,0]</td><td>2,3,4,5</td><td>2</td><td>greedy möglich</td></tr>
+<tr><td>3</td><td>[−1,−1,0,0,0]</td><td>3,4,5</td><td>2</td><td><strong>zufällig</strong></td></tr>
+<tr><td>4</td><td>[−1,0.5,0,0,0]</td><td>2</td><td>1</td><td><strong>zufällig</strong></td></tr>
+<tr><td>5</td><td>[−1,0.5,0,0,0]</td><td>2</td><td>2</td><td>greedy möglich</td></tr>
+<tr><td>6</td><td>[−1,1.67,0,0,0]</td><td>2</td><td>5</td><td><strong>zufällig</strong></td></tr></tbody></table></div>
+<p>(Updates: nach t2 hat Arm2 \(-1\); nach t3 Arm2 \(\{-1,2\}\to 0{,}5\); nach t5 Arm2 \(\{-1,2,4\}\to 1{,}67\).)</p>
+<p><strong>→ Definitiv zufällig: t3, t4, t6.</strong></p>
+<h3>B.3.4 Regression: MAE / RMSE berechnen</h3>
+<p><strong>Formeln:</strong> \(\text{MAE}=\tfrac{1}{n}\sum|y_i-\hat y_i|\), \(\text{RMSE}=\sqrt{\tfrac{1}{n}\sum(y_i-\hat y_i)^2}\).</p>
+<p><strong>Beispiel-Methode</strong> für eine Funktion \(\hat y = 3 + 2\,F_1 + F_2\) mit 4 Instanzen:</p>
+<div class="table-wrap"><table><thead><tr><th>F1</th><th>F2</th><th>\(\hat y = 3+2F_1+F_2\)</th><th>\(y\) (wahr)</th><th>$\</th><th>y-\hat y\</th><th>$</th></tr></thead><tbody><tr><td>1</td><td>0</td><td>5</td><td>4</td><td>1</td></tr>
+<tr><td>2</td><td>1</td><td>8</td><td>10</td><td>2</td></tr>
+<tr><td>0</td><td>2</td><td>5</td><td>8</td><td>3</td></tr>
+<tr><td>1</td><td>1</td><td>6</td><td>8</td><td>2</td></tr></tbody></table></div>
+<div class="equation">\[\text{MAE} = \frac{1+2+3+2}{4} = \frac{8}{4} = 2\]</div>
+<blockquote>Vorgehen in der Prüfung: (1) für jede Zeile \(\hat y\) aus der Funktion einsetzen, (2) absolute Residuen bilden, (3) mitteln. Für RMSE die Residuen <strong>quadrieren</strong>, mitteln, Wurzel ziehen. Antwortoptionen sind meist {2,5 / 2 / 1,5 / none} — exakt rechnen, nicht schätzen.</blockquote>
+<h3>B.3.5 1R: welches Feature wählt 1R?</h3>
+<p><strong>Methode:</strong> Für jedes Attribut die beste Ein-Attribut-Regel bilden (pro Wert Mehrheitsklasse), Fehler summieren. Attribut mit <strong>kleinstem Fehler</strong> gewinnt. Mit obigem 7-Instanzen-Datensatz:</p>
+<ul><li><strong>F1:</strong> a→{1−,3+,6+} pred + (1 Fehler); b→{4−,5+,7−} pred − (1 Fehler); c→{2−} pred − (0). <strong>Fehler = 2/7.</strong></li><li><strong>F2:</strong> y→{1−,2−,3+,5+} tie (2 Fehler); n→{4−,6+,7−} pred − (1). <strong>Fehler = 3/7.</strong></li><li><strong>F3:</strong> k→{1−,3+,4−} pred − (1); s→{2−,5+,6+,7−} tie (2). <strong>Fehler = 3/7.</strong></li></ul>
+<p><strong>→ 1R wählt F1</strong> (niedrigster Fehler 2/7).</p>
+<h3>B.3.6 <em>(B.-Teil)</em> Convolution-Output-Größe &amp; Max-Pooling</h3>
+<p><strong>Formel (pro Dimension):</strong> \(O = \left\lfloor \dfrac{W - K + 2P}{S}\right\rfloor + 1\).</p>
+<ul><li>Beispiel Input 32, \(K=5, P=0, S=1\) → \(O=28\).</li><li>\(K=5, P=0, S=2\) → \(O=\lfloor 13{,}5\rfloor+1 = 14\).</li><li>„Same&quot; \(K=5, P=2, S=1\) → \(O=32\).</li><li><strong>Max-Pool</strong> \(2\times2\), \(S=2\): halbiert → \(28\to14\). Pooling hat <strong>0 trainierbare Gewichte</strong> und ändert die Kanalzahl nicht.</li></ul>
+<hr>
+<h2>B.4 Teil 3 — Multiple Choice (alle richtigen ankreuzen)</h2>
+<h3>B.4.1 Welche sind bekannte CNN-Architekturen?</h3>
+<p><strong>Richtig: LeNet, ResNet</strong> (und Inception, falls „Reception&quot; ein Tippfehler dafür ist). Falsch: <strong>LSTM</strong> (rekurrentes Netz, kein CNN), <strong>TeNet</strong> (Fantasiename). <em>(B.-Teil)</em></p>
+<h3>B.4.2 Der Output eines Convolutional Layers ist größer, wenn …</h3>
+<p>Aus \(O=\frac{W-K+2P}{S}+1\): <strong>Richtig: Padding nimmt zu</strong> (größeres \(P\) → größeres \(O\)) <strong>und Stride nimmt ab</strong> (kleineres \(S\) → größeres \(O\)). Falsch: Padding nimmt ab; Stride nimmt zu. <em>(B.-Teil)</em></p>
+<h3>B.4.3 Welche Methoden helfen gegen Vanishing Gradients?</h3>
+<p>Toolbox (alle ankreuzen, die vorkommen): <strong>gute Initialisierung</strong> (\(1/\sqrt d\), He), <strong>Residual/Skip-Connections</strong>, <strong>Normalisierung</strong> (BatchNorm/LayerNorm), <strong>nicht-saturierende Aktivierungen</strong> (ReLU), <strong>LSTM-Gating</strong> (bei Sequenzen). <strong>Gradient Clipping</strong> wird oft mitgelistet — es zielt eigentlich auf <em>exploding</em> gradients, steht aber in derselben Toolbox. <em>(B.-Teil)</em></p>
+<h3>B.4.4 Welche Klassifikationsmethoden nutzen Majority Voting?</h3>
+<p><strong>Richtig: k-NN</strong> (Mehrheit der \(k\) Nachbarn) und <strong>Random Forests</strong> (Mehrheit der Bäume). Falsch: einzelner Decision Tree (kein Voting), Bayesian Network, und das Ensemble, das die Vorhersage des Modells mit der <strong>höchsten Confidence</strong> ausgibt (das ist Max-Confidence-Selektion, kein Majority Vote). „All of the above&quot; und „None&quot; daher falsch.</p>
+<h3>B.4.5 Welche Methoden verhindern Overfitting?</h3>
+<p><strong>Richtig: Regularisierung</strong> (L1/L2), <strong>Dropout</strong>, <strong>Cross-Validation</strong> (zur Modell-/Hyperparameterwahl &amp; Erkennung), zusätzlich oft <strong>Data Augmentation</strong> und <strong>Early Stopping</strong>. <strong>Batch Normalization</strong> hat einen leichten regularisierenden Nebeneffekt, dient aber primär der Trainingsstabilität. <em>(teils B.-Teil)</em></p>
+<h3>B.4.6 Wofür kann ein Validation-Set verwendet werden?</h3>
+<p><strong>Richtig: Early Stopping</strong> und <strong>Hyperparameter-Tuning</strong>. Falsch: <strong>Signifikanztests</strong> (dafür braucht man Test-Set/CV-Folds).</p>
+<h3>B.4.7 Welche Technik ähnelt Dropout in neuronalen Netzen?</h3>
+<p><strong>Richtig: Bagging.</strong> Beide trainieren viele Modelle auf perturbierten Versionen und mitteln; Dropouts Modelle sind gewichtsteilende Subnetze. <em>(B.-Teil)</em></p>
+<h3>B.4.8 Umgang mit fehlenden Werten in Trainings- und Test-Set</h3>
+<p><strong>Richtige Vorgehensweise:</strong> löschen oder <strong>imputieren</strong> (Mean/Median numerisch, Modus kategorisch). Wichtig: die <strong>Imputationsstatistik nur am Trainingsset</strong> berechnen und dieselben Werte auf das Test-Set anwenden (sonst Data Leakage). Median ist robuster gegen Outlier als Mean.</p>
+<hr>
+<h2>B.5 Offene Fragen — Musterantworten</h2>
+<p><strong>Können Kernel-Methoden auch auf das Perceptron angewandt werden? (mit Begründung)</strong> Ja. Das Perceptron lässt sich in „dualer&quot; Form schreiben, in der nur <strong>Skalarprodukte</strong> zwischen Datenpunkten vorkommen. Ersetzt man das Skalarprodukt durch eine Kernel-Funktion \(K(x,x')\), erhält man ein <strong>Kernel-Perceptron</strong>, das nichtlineare Trenngrenzen lernen kann — derselbe Trick wie bei der SVM.</p>
+<p><strong>Was ist Polynomiale Regression? Vor-/Nachteile gegenüber linearer Regression?</strong> Lineare Regression mit um Potenzen (\(x^2, x^3, \dots\)) erweiterten Features; bleibt linear in den Parametern. <strong>Vorteil:</strong> kann nichtlineare Zusammenhänge modellieren (Kurven). <strong>Nachteile:</strong> höhere Gefahr von <strong>Overfitting</strong> bei hohem Grad, schlechtere Extrapolation, schwerer interpretierbar.</p>
+<p><strong>Wann sind zwei Knoten in einem Bayes-Netz d-separiert?</strong> Wenn <strong>jeder</strong> Pfad zwischen ihnen „blockiert&quot; ist: bei seriellen/divergierenden Verbindungen blockiert ein <strong>beobachteter</strong> Zwischenknoten; bei einem Collider blockiert ein <strong>unbeobachteter</strong> Collider (dessen Nachkommen ebenfalls unbeobachtet). D-separiert ⇒ bedingt unabhängig.</p>
+<p><strong>Welche Features im Metalearning? Was sind Landmarking-Features?</strong> Vier Familien: statistisch/informationstheoretisch, modell-basiert, <strong>Landmarking</strong>, Learning Curves. Landmarking-Features sind die <strong>Accuracies schneller, einfacher Lerner</strong> (Naive Bayes, 1-NN, OneR, Decision Stump) auf dem Datensatz — sie charakterisieren die Geometrie des Problems (z.B. hohe OneR-Accuracy ⇒ ein Feature genügt).</p>
+<p><strong>Unterschied Micro- vs. Macro-Averaging?</strong> Macro: Metrik pro Klasse, dann ungewichtet mitteln (jede Klasse gleich → seltene Klassen sichtbar). Micro: alle TP/FP/FN poolen, dann einmal rechnen (jedes Beispiel gleich → häufige Klassen dominieren; = Accuracy bei Single-Label).</p>
+<p><strong>Max-Depth mit Pre-Pruning (1000 Obs, min-split 200, min-leaf 300)?</strong> Zum Splitten braucht ein Knoten zwei Kinder ≥ 300, also <strong>≥ 600</strong>. 1000→(300|700)→(300|400); 400 &lt; 600 → Stopp. <strong>Max-Tiefe = 2</strong> (ohne Wurzel). Die Blatt-Regel (≥300) bindet, nicht die schwächere Split-Regel (≥200).</p>
+<p><strong>Local-Search-Algorithmus für Bayes-Netz-Erstellung?</strong> Hill-Climbing: mit leerem Graph starten; wiederholt eine Kante <strong>hinzufügen/löschen/umkehren</strong> (azyklisch halten); den Zug behalten, der einen Score wie <strong>BIC</strong> (\(\log\)-Likelihood − Komplexitätsstrafe) am meisten verbessert; bei lokalem Optimum stoppen. Random Restarts helfen gegen schlechte Optima.</p>
+<p><strong>Ziel &amp; Setting von Klassifikation — Abgrenzung zu anderen ML-Aufgaben?</strong> Ziel: aus gelabelten Trainingsdaten eine Funktion lernen, die neuen Instanzen eine <strong>nominale Klasse</strong> zuordnet (supervised). Verwandt mit <strong>Regression</strong> (auch supervised, aber numerisches Ziel). Unterscheidet sich von <strong>Clustering</strong> (unsupervised, keine Labels) und <strong>Reinforcement Learning</strong> (nur Reward-Signal, keine Labels).</p>
+<p><strong>Methoden gegen Overfitting in neuronalen Netzen?</strong> Mehr Daten / Data Augmentation, <strong>Dropout</strong>, L1/L2-Regularisierung (Weight Decay), <strong>Early Stopping</strong>, <strong>Batch/Layer-Normalization</strong>, kleineres Modell. <em>(B.-Teil)</em></p>
+<p><strong>Drei Methoden zur Fehlerberechnung in Regression?</strong> <strong>MAE</strong> \(=\tfrac1n\sum|y-\hat y|\) (robust gegen Outlier), <strong>MSE</strong> \(=\tfrac1n\sum(y-\hat y)^2\) (straft große Fehler stark), <strong>RMSE</strong> \(=\sqrt{\text{MSE}}\) (gleiche Einheit wie \(y\)). (RSS = unnormierte Summe.)</p>
+<p><strong>z-score vs. min-max — was, wann, für welche Features?</strong> z-score \(x'=(x-\mu)/\sigma\) → Mittel 0, Std 1, unbeschränkt; gut bei ~gaußschen Daten, Distanz-/Gradientenmethoden und Outliern. min-max \(x'=(x-\min)/(\max-\min)\) → Bereich [0,1]; gut bei gewünschtem beschränktem Bereich, milden Outliern. Beide nur für <strong>numerische</strong> Features; Parameter nur am Trainingsset schätzen.</p>
+<p><strong>ε-greedy beim k-armed Bandit erklären.</strong> Mit Wahrscheinlichkeit \(1-\varepsilon\) wird die Aktion mit dem höchsten geschätzten Wert gewählt (<strong>Exploitation</strong>), mit Wahrscheinlichkeit \(\varepsilon\) ein zufälliger Arm (<strong>Exploration</strong>). \(\varepsilon\) steuert den Trade-off; \(\varepsilon=0\) = rein greedy (riskiert, einen anfangs unglücklichen, aber guten Arm nie wieder zu testen).</p>
+<p><strong>Was ist Data Augmentation?</strong> Erzeugen neuer Trainingsbeispiele durch <strong>label-erhaltende Transformationen</strong> (Rotation, Flip, Crop, Helligkeits-Jitter), v.a. bei Bildern — vergrößert die Datenmenge und macht das Modell robuster. Nur auf <strong>Trainingsdaten</strong> anwenden. <em>(B.-Teil)</em></p>
+<hr>
+<p><em>Viel Erfolg bei der Prüfung!</em></p>
+  </main>
+  <p class="src-note">// Quelle: Ausarbeitung_M._ML_2026S_1.md — Prüfungsvorbereitung Prof. M.; basierend auf Foliensätzen 01, 02, 05, 06 und 07 (ML SS2026)</p>
+</div>
+</body>
+</html>
